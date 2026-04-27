@@ -137,3 +137,92 @@
     @apply font-sans;
   }
 }
+
+/* ============================================
+   LANDING PAGE — DECORATIVE UTILITIES
+   ============================================ */
+
+@layer utilities {
+  /* Dot-grid background pattern */
+  .bg-dotgrid {
+    background-image: radial-gradient(circle, var(--muted-foreground) 1px, transparent 1px);
+    background-size: 28px 28px;
+  }
+
+  /* Gradient mesh orbs */
+  .orb-primary {
+    filter: blur(80px);
+    pointer-events: none;
+  }
+
+  /* Floating code decoration */
+  .float-slow {
+    animation: float-slow 8s ease-in-out infinite;
+  }
+  .float-medium {
+    animation: float-medium 6s ease-in-out infinite;
+  }
+  .float-fast {
+    animation: float-fast 4s ease-in-out infinite;
+  }
+
+  /* Staggered reveal animation */
+  .reveal-up {
+    opacity: 0;
+    transform: translateY(24px);
+    transition: opacity 0.7s ease, transform 0.7s ease;
+  }
+  .reveal-up.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  /* Glowing border effect */
+  .glow-border {
+    box-shadow: 0 0 0 1px var(--ring), 0 0 20px -5px var(--ring);
+  }
+
+  /* Gradient text */
+  .text-gradient {
+    background: linear-gradient(135deg, var(--primary) 0%, var(--chart-3) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+}
+
+@keyframes float-slow {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  33%       { transform: translateY(-12px) rotate(1deg); }
+  66%       { transform: translateY(-6px) rotate(-1deg); }
+}
+@keyframes float-medium {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  50%       { transform: translateY(-10px) rotate(-2deg); }
+}
+@keyframes float-fast {
+  0%, 100% { transform: translateY(0px) translateX(0px); }
+  25%       { transform: translateY(-8px) translateX(4px); }
+  75%       { transform: translateY(-4px) translateX(-4px); }
+}
+
+@keyframes ticker {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+.animate-ticker {
+  animation: ticker 28s linear infinite;
+}
+.animate-ticker:hover {
+  animation-play-state: paused;
+}
+
+/* Scrollbar hiding utility */
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* Code block decoration */
+.code-border {
+  border: 1px solid oklch(100% 0 0 / 0.1);
+  background: linear-gradient(135deg, oklch(0.15 0.015 260) 0%, oklch(0.18 0.02 260) 100%);
+}

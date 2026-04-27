@@ -14,8 +14,15 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "AlgoTutor - Master Algorithms with AI",
-  description: "Practice coding problems with AI-powered tutoring and real-time feedback",
+  title: "AlgoTutor — Master Algorithms with AI-Powered Guidance",
+  description:
+    "AlgoTutor is a smart online learning platform that combines algorithmic theory with hands-on coding through structured roadmaps and a context-aware AI tutor.",
+  keywords: ["algorithms", "data structures", "coding practice", "AI tutor", "roadmaps", "dynamic programming"],
+  openGraph: {
+    title: "AlgoTutor — Master Algorithms with AI",
+    description: "Learn algorithms systematically from foundational concepts to advanced problem-solving, powered by AI hints.",
+    type: "website",
+  },
 };
 
 export default function RootLayout({
