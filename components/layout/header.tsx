@@ -4,13 +4,15 @@ import {BellIcon, MoonIcon, SearchIcon, SunIcon} from "lucide-react";
 import {Button} from "@/components/ui/button";
 import {Input} from "@/components/ui/input";
 import {useTheme} from "next-themes";
-import {useEffect, useState} from "react";
+import {useState} from "react";
 
 function ThemeToggle() {
     const [mounted, setMounted] = useState(false);
     const {theme, setTheme} = useTheme();
 
-    useEffect(() => setMounted(true), []);
+    if (typeof window !== "undefined") {
+        setMounted(true);
+    }
 
     if (!mounted) return null;
 
