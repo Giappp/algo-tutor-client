@@ -18,22 +18,22 @@
  */
 
 import useSWR from "swr";
-import { apiClient } from "@/lib/api-client";
+import {apiClient} from "@/api/api-client";
 
 // Fetcher compatible with SWR — uses the axios instance
 const fetcher = <T>(url: string): Promise<T> =>
-  apiClient.get<T>(url).then((res) => res.data);
+    apiClient.get<T>(url).then((res) => res.data);
 
 export function useLandingData<T>(endpoint: string) {
-  return useSWR<T>(endpoint, fetcher, {
-    // Revalidate every 5 minutes so stats stay reasonably fresh
-    refreshInterval: 5 * 60 * 1000,
-    // Don't retry on auth errors (landing data doesn't need auth)
-    shouldRetryOnError: (err) => {
-      const status = err.response?.status;
-      return status !== 401 && status !== 403;
-    },
-    // Fallback to undefined while loading (not stale data)
-    fallbackData: undefined as T | undefined,
-  });
+    return useSWR<T>(endpoint, fetcher, {
+        // Revalidate every 5 minutes so stats stay reasonably fresh
+        refreshInterval: 5 * 60 * 1000,
+        // Don't retry on auth errors (landing data doesn't need auth)
+        shouldRetryOnError: (err) => {
+            const status = err.response?.status;
+            return status !== 401 && status !== 403;
+        },
+        // Fallback to undefined while loading (not stale data)
+        fallbackData: undefined as T | undefined,
+    });
 }
