@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { ArrowRight, Braces } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -60,12 +61,14 @@ export function Navbar() {
           {/* CTA */}
           <div className="hidden md:flex items-center gap-2">
             <ThemeToggle />
-            <Button variant="ghost" size="sm">
-              Sign In
+            <Button variant="ghost" size="sm" asChild>
+              <Link href="/auth">Sign In</Link>
             </Button>
-            <Button size="sm" className="gap-1.5">
-              Get Started
-              <ArrowRight className="size-3.5" />
+            <Button size="sm" className="gap-1.5" asChild>
+              <Link href="/auth?tab=signup">
+                Get Started
+                <ArrowRight className="size-3.5" />
+              </Link>
             </Button>
           </div>
 
@@ -99,12 +102,14 @@ export function Navbar() {
               </a>
             ))}
             <div className="flex items-center gap-2 mt-4 px-3">
-              <Button variant="outline" size="sm" className="flex-1">
-                Sign In
+              <Button variant="outline" size="sm" className="flex-1" asChild>
+                <Link href="/auth">Sign In</Link>
               </Button>
-              <Button size="sm" className="flex-1 gap-1.5">
-                Get Started
-                <ArrowRight className="size-3.5" />
+              <Button size="sm" className="flex-1 gap-1.5" asChild>
+                <Link href="/auth?tab=signup">
+                  Get Started
+                  <ArrowRight className="size-3.5" />
+                </Link>
               </Button>
             </div>
           </div>
