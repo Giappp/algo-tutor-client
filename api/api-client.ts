@@ -1,20 +1,22 @@
-/**
- * api-client — Axios instance configured for the Spring Boot backend.
- * All landing page API calls go through here.
- *
- * BACKEND: Set NEXT_PUBLIC_API_BASE_URL in your .env.local
- *   e.g. NEXT_PUBLIC_API_BASE_URL=http://localhost:8080/api
- */
-
 import axios from "axios";
+import {toast} from "sonner";
 
 export const apiClient = axios.create({
-    baseURL: process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8080/api",
+    baseURL: process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8080/api/v1",
     headers: {
         "Content-Type": "application/json",
     },
     withCredentials: true,
-    // Wait up to 10s for the backend to respond
     timeout: 10_000,
 });
+
+apiClient.interceptors.response.use(
+    (response) => response,
+    (error) => {
+        const message = error.response?.data?.message || "Lỗi kết nối đến máy chủ";
+        toast.error(message);
+
+        return Promise.reject(error);
+    }
+);
 

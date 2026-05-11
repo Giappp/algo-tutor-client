@@ -17,23 +17,50 @@
  *   GET /api/landing/how-it-works — HowItWorksStep[]
  */
 
-import useSWR from "swr";
-import {apiClient} from "@/api/api-client";
+import useSWR, {SWRConfiguration} from "swr";
+import {fetcher, fetcherWithParams} from "@/api/fetchers";
+import {PageResponse} from "@/lib/types/api";
 
-// Fetcher compatible with SWR — uses the axios instance
-const fetcher = <T>(url: string): Promise<T> =>
-    apiClient.get<T>(url).then((res) => res.data);
+export function useLandingData<T>(endpoint: string | null, config?: SWRConfiguration) {
+    const {data, error, mutate, isLoading, isValidating} = useSWR<T>(
+        endpoint,
+        fetcher,
+        config
+    );
 
-export function useLandingData<T>(endpoint: string) {
-    return useSWR<T>(endpoint, fetcher, {
-        // Revalidate every 5 minutes so stats stay reasonably fresh
-        refreshInterval: 5 * 60 * 1000,
-        // Don't retry on auth errors (landing data doesn't need auth)
-        shouldRetryOnError: (err) => {
-            const status = err.response?.status;
-            return status !== 401 && status !== 403;
+    return {
+        data,
+        error,
+        isLoading,
+        isValidating,
+        mutate,
+    };
+}
+
+export function usePaginatedData<T>(
+    endpoint: string | null,
+    params: { page: number; size: number; [key: string]: any },
+    config?: SWRConfiguration
+) {
+    const key = endpoint ? [endpoint, params] : null;
+
+    const {data, error, mutate, isLoading} = useSWR<PageResponse<T>>(
+        key,
+        // Trích xuất url và params từ SWR key
+        ([url, queryParams]) => fetcherWithParams<PageResponse<T>>(url, queryParams),
+        config
+    );
+
+    return {
+        data: data?.data || [],
+        pagination: {
+            page: data?.currentPage || 0,
+            size: data?.pageSize || 10,
+            totalElements: data?.totalElements || 0,
+            totalPages: data?.totalPages || 0,
         },
-        // Fallback to undefined while loading (not stale data)
-        fallbackData: undefined as T | undefined,
-    });
+        error,
+        isLoading,
+        mutate,
+    };
 }

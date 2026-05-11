@@ -12,17 +12,17 @@
 //       Difficulty breakdown requires a problems table with difficulty field.
 
 export interface RoadmapTopic {
-  id: string;
-  name: string;
-  iconKey: string; // Lucide icon name key — resolved on client via LucideIcons map
-  problemCount: number;
-  difficultyBreakdown: {
-    easy: number;
-    medium: number;
-    hard: number;
-  };
-  isLocked?: boolean; // for gated advanced topics
-  description?: string;
+    id: string;
+    name: string;
+    iconKey: string;
+    problemCount: number;
+    difficultyBreakdown: {
+        easy: number;
+        medium: number;
+        hard: number;
+    };
+    isLocked?: boolean;
+    description?: string;
 }
 
 // --- Testimonial ---
@@ -32,14 +32,14 @@ export interface RoadmapTopic {
 //       starRating may come from a ratings table or be static.
 
 export interface Testimonial {
-  id: string;
-  name: string;
-  role: string;
-  avatarInitials: string; // derived from user name; backend generates this
-  avatarColorIndex: number; // picks gradient variant on client
-  content: string;
-  starRating: number; // 1–5
-  createdAt?: string; // ISO date string
+    id: string;
+    name: string;
+    role: string;
+    avatarInitials: string; // derived from user name; backend generates this
+    avatarColorIndex: number; // picks gradient variant on client
+    content: string;
+    starRating: number; // 1–5
+    createdAt?: string; // ISO date string
 }
 
 // --- Platform Stats ---
@@ -51,10 +51,10 @@ export interface Testimonial {
 //   - avgCompletionRate: AVG(completed_problems / total_problems) from user_progress
 
 export interface PlatformStats {
-  totalStudents: number;
-  totalProblems: number;
-  totalTopics: number;
-  avgCompletionRate: number; // percentage 0–100
+    totalStudents: number;
+    totalProblems: number;
+    totalTopics: number;
+    avgCompletionRate: number; // percentage 0–100
 }
 
 // --- Feature Card ---
@@ -63,12 +63,12 @@ export interface PlatformStats {
 //                 Could be editable via admin panel in production.
 
 export interface Feature {
-  id: string;
-  title: string;
-  description: string;
-  iconKey: string; // Lucide icon name key
-  colorToken: string; // CSS oklch token or HSL string
-  bgToken: string; // CSS oklch token or HSLA string
+    id: string;
+    title: string;
+    description: string;
+    iconKey: string; // Lucide icon name key
+    colorToken: string; // CSS oklch token or HSL string
+    bgToken: string; // CSS oklch token or HSLA string
 }
 
 // --- FAQ Item ---
@@ -76,10 +76,10 @@ export interface Feature {
 // BACKEND STATUS: Could be static from CMS, or managed via admin panel.
 
 export interface FaqItem {
-  id: string;
-  question: string;
-  answer: string;
-  order: number; // for sorting
+    id: string;
+    question: string;
+    answer: string;
+    order: number; // for sorting
 }
 
 // --- How It Works Step ---
@@ -87,11 +87,11 @@ export interface FaqItem {
 // BACKEND STATUS: Static content — likely hardcoded or from a config table.
 
 export interface HowItWorksStep {
-  id: string;
-  stepNumber: string; // "01", "02", "03"
-  title: string;
-  description: string;
-  iconKey: string; // Lucide icon name key
+    id: string;
+    stepNumber: string; // "01", "02", "03"
+    title: string;
+    description: string;
+    iconKey: string; // Lucide icon name key
 }
 
 // --- Landing Page Full Response ---
@@ -99,10 +99,10 @@ export interface HowItWorksStep {
 // Returns all dynamic content in one request (for SSR/SSG).
 
 export interface LandingPageData {
-  stats: PlatformStats;
-  features: Feature[];
-  roadmaps: RoadmapTopic[];
-  testimonials: Testimonial[];
-  faqs: FaqItem[];
-  howItWorks: HowItWorksStep[];
+    stats: PlatformStats;
+    features: Feature[];
+    roadmaps: RoadmapTopic[];
+    testimonials: Testimonial[];
+    faqs: FaqItem[];
+    howItWorks: HowItWorksStep[];
 }
