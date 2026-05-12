@@ -36,7 +36,7 @@ export const MOCK_FAQS: FaqItem[] = [
         id: "faq-5",
         question: "Can I track my progress?",
         answer:
-            "Absolutely. Your dashboard shows completion rates per topic, streaks, difficulty distribution, and hints consumed — giving you a clear picture of your strengths and areas to improve.",
+            "Absolutely. Your (dashboard) shows completion rates per topic, streaks, difficulty distribution, and hints consumed — giving you a clear picture of your strengths and areas to improve.",
         order: 5,
     },
 ];

@@ -3,7 +3,7 @@ import {Geist, Geist_Mono} from "next/font/google";
 import "./globals.css";
 import {ThemeProvider} from "@/components/theme-provider";
 import {Toaster} from "sonner";
-import {SWRConfig} from "swr";
+import {SWRProvider} from "@/components/providers/SWRProvider";
 
 const geistSans = Geist({
     variable: "--font-geist-sans",
@@ -42,10 +42,10 @@ export default function RootLayout({
             disableTransitionOnChange
             storageKey="theme"
         >
-            <SWRConfig>
+            <SWRProvider>
                 {children}
                 <Toaster position={"top-right"}/>
-            </SWRConfig>
+            </SWRProvider>
         </ThemeProvider>
         </body>
         </html>

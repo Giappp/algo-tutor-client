@@ -29,7 +29,7 @@ function SignInFormInner() {
     const [isSubmitting, setIsSubmitting] = useState(false)
     const router = useRouter()
     const searchParams = useSearchParams()
-    const redirect = searchParams.get("redirect") ?? "/dashboard"
+    const redirect = searchParams.get("redirect") ?? "/(dashboard)"
 
     const {
         register,

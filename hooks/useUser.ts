@@ -12,7 +12,7 @@ export function useUser() {
         user: data,
         isLoading,
         isError: error,
-        isLoggedIn: !data,
+        isLoggedIn: !!data,
         mutate,
     };
 }
