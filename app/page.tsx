@@ -10,17 +10,14 @@
  *   GET /api/landing/faqs
  *   GET /api/landing/how-it-works
  *
- * Configure the backend base URL in .env.local:
- *   NEXT_PUBLIC_API_BASE_URL=http://localhost:8080/api
- *
  * Mock data for demo mode (when backend is offline): @/lib/mock/landing-data.ts
  * Axios client: @/lib/api-client.ts
  * SWR hook: @/hooks/use-landing-data.ts
  * Types: @/lib/types/landing.ts
  */
 
-import { LandingPageClient } from "@/components/landing/landing-page-client";
+import {LandingPageClient} from "@/components/landing/landing-page-client";
 
 export default function Home() {
-  return <LandingPageClient />;
+    return <LandingPageClient/>;
 }

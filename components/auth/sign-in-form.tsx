@@ -14,7 +14,7 @@ import {Label} from "@/components/ui/label"
 import {signIn} from "@/api/auth"
 import {isAxiosError} from "axios";
 import {ApiResponse} from "@/lib/types";
-import {useUser} from "@/hooks/useUser";
+import {useUser} from "@/hooks/use-user";
 
 const signInSchema = z.object({
     username: z.string().min(3, "Username must be at least 3 characters"),
@@ -29,7 +29,7 @@ function SignInFormInner() {
     const [isSubmitting, setIsSubmitting] = useState(false)
     const router = useRouter()
     const searchParams = useSearchParams()
-    const redirect = searchParams.get("redirect") ?? "/(dashboard)"
+    const redirect = searchParams.get("redirect") ?? "/home"
 
     const {
         register,

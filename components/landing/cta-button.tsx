@@ -2,7 +2,7 @@ import React from 'react'
 import {Button} from "@/components/ui/button";
 import Link from "next/link";
 import {ArrowRight, Loader2} from "lucide-react";
-import {useUser} from "@/hooks/useUser";
+import {useUser} from "@/hooks/use-user";
 
 const CtaButton = () => {
     const {isLoading, isLoggedIn} = useUser();

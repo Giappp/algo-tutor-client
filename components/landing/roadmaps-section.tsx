@@ -1,6 +1,6 @@
 "use client";
 
-import {useLandingData} from "@/hooks";
+import {useApiData} from "@/hooks";
 import {ArrowRight} from "lucide-react";
 import {Badge} from "@/components/ui/badge";
 import {Button} from "@/components/ui/button";
@@ -22,7 +22,7 @@ const ROADMAP_GRADIENTS = [
 ];
 
 export function RoadmapsSection() {
-    const {data: roadmaps, isLoading} = useLandingData<RoadmapTopic[]>("/landing/roadmaps");
+    const {data: roadmaps, isLoading} = useApiData<RoadmapTopic[]>("/landing/roadmaps");
 
     return (
         <section id="roadmaps" className="py-24 lg:py-32 bg-muted/10">
