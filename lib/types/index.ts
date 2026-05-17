@@ -2,6 +2,7 @@ export * from "./api"
 export * from "./landing"
 export * from "./auth"
 export * from "./roadmap"
+export * from "./lesson"
 
 export interface ChatMessage {
     id: string

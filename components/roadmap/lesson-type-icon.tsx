@@ -13,23 +13,30 @@ const lessonTypeConfig: Record<
     {
         icon: typeof BookOpenIcon;
         label: string;
-        colorClass: string;
+        pillClass: string;
+        iconClass: string;
     }
 > = {
     THEORY: {
         icon: BookOpenIcon,
         label: "Theory",
-        colorClass: "bg-blue-500/15 text-blue-500 border-blue-500/25",
+        pillClass:
+            "bg-blue-500/10 text-blue-600 border-blue-500/20 dark:bg-blue-500/15 dark:text-blue-400 dark:border-blue-500/25",
+        iconClass: "text-blue-500 dark:text-blue-400",
     },
     QUIZ: {
         icon: HelpCircleIcon,
         label: "Quiz",
-        colorClass: "bg-amber-500/15 text-amber-500 border-amber-500/25",
+        pillClass:
+            "bg-amber-500/10 text-amber-600 border-amber-500/20 dark:bg-amber-500/15 dark:text-amber-400 dark:border-amber-500/25",
+        iconClass: "text-amber-500 dark:text-amber-400",
     },
     CODING: {
         icon: Code2Icon,
         label: "Coding",
-        colorClass: "bg-emerald-500/15 text-emerald-500 border-emerald-500/25",
+        pillClass:
+            "bg-emerald-500/10 text-emerald-600 border-emerald-500/20 dark:bg-emerald-500/15 dark:text-emerald-400 dark:border-emerald-500/25",
+        iconClass: "text-emerald-500 dark:text-emerald-400",
     },
 };
 
@@ -41,16 +48,24 @@ export function LessonTypeIcon({
     const config = lessonTypeConfig[type];
     const Icon = config.icon;
 
+    if (!showLabel) {
+        return (
+            <div className={cn("flex items-center justify-center", className)}>
+                <Icon className={cn("size-4 shrink-0", config.iconClass)} strokeWidth={1.75} />
+            </div>
+        );
+    }
+
     return (
         <div
             className={cn(
-                "inline-flex items-center gap-1.5 rounded-md border px-2 py-1 text-xs font-medium",
-                config.colorClass,
+                "inline-flex items-center gap-1.5 rounded-lg border px-2 py-1 text-xs font-semibold",
+                config.pillClass,
                 className
             )}
         >
-            <Icon className="size-3.5 shrink-0" />
-            {showLabel && <span>{config.label}</span>}
+            <Icon className={cn("size-3.5 shrink-0", config.iconClass)} strokeWidth={1.75} />
+            <span>{config.label}</span>
         </div>
     );
 }

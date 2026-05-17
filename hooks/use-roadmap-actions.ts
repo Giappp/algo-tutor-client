@@ -4,7 +4,6 @@ import type {
     EnrollmentDetailResponse,
     LessonProgressUpdateResponse,
     ProgressStatus,
-    RoadmapDetailResponse,
 } from "@/lib/types/roadmap";
 
 export function useRoadmapActions() {

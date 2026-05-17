@@ -1,19 +1,18 @@
 "use client";
 
-import {use} from "react";
+import { use } from "react";
 import Link from "next/link";
-import {useApiData} from "@/hooks";
-import {useRoadmapActions} from "@/hooks/use-roadmap-actions";
-import type {LessonType, Level, RoadmapDetailResponse} from "@/lib/types";
-import {DifficultyBadge} from "@/components/roadmap/difficulty-badge";
-import {LessonTypeIcon} from "@/components/roadmap/lesson-type-icon";
-import {TopicAccordion} from "@/components/roadmap/topic-accordion";
-import {WhatYoullLearn} from "@/components/roadmap/what-youll-learn";
-import {StickyEnrollBar} from "@/components/roadmap/sticky-enroll-bar";
-import {RevealOnScroll} from "@/components/ui/reveal-on-scroll";
-import {Header} from "@/components/layout/header";
-import {Button} from "@/components/ui/button";
-import {Accordion} from "@/components/ui/accordion";
+import { useApiData } from "@/hooks";
+import { useRoadmapActions } from "@/hooks/use-roadmap-actions";
+import type { LessonType, Level, RoadmapDetailResponse } from "@/lib/types";
+import { DifficultyBadge } from "@/components/roadmap/difficulty-badge";
+import { LessonTypeIcon } from "@/components/roadmap/lesson-type-icon";
+import { TopicAccordion } from "@/components/roadmap/topic-accordion";
+import { WhatYoullLearn } from "@/components/roadmap/what-youll-learn";
+import { StickyEnrollBar } from "@/components/roadmap/sticky-enroll-bar";
+import { RevealOnScroll } from "@/components/ui/reveal-on-scroll";
+import { Button } from "@/components/ui/button";
+import { Accordion } from "@/components/ui/accordion";
 import {
     ArrowLeftIcon,
     BookOpenIcon,
@@ -38,14 +37,14 @@ function getCompletedCountByTopic(
     );
 }
 
-export default function LearningPathDetailPage({params}: PageProps) {
-    const {slug} = use(params);
+export default function LearningPathDetailPage({ params }: PageProps) {
+    const { slug } = use(params);
 
-    const {data: path, error, isLoading, mutate} = useApiData<RoadmapDetailResponse>(
+    const { data: path, error, isLoading, mutate } = useApiData<RoadmapDetailResponse>(
         `/roadmaps/${slug}`,
-        {revalidateOnFocus: false}
+        { revalidateOnFocus: false }
     );
-    const {enroll, isEnrolling} = useRoadmapActions();
+    const { enroll, isEnrolling } = useRoadmapActions();
 
     const enrolled = path?.enrolled ?? false;
     const completedCounts = path ? getCompletedCountByTopic(path.topics) : [];
@@ -54,16 +53,15 @@ export default function LearningPathDetailPage({params}: PageProps) {
         if (!path || isEnrolling) return;
         const result = await enroll(path.slug);
         if (result) {
-            mutate({...path, enrolled: true}, false);
+            mutate({ ...path, enrolled: true }, false);
         }
     };
 
     if (isLoading) {
         return (
             <div className="flex flex-col h-full">
-                <Header/>
                 <div className="flex-1 flex flex-col items-center justify-center gap-4">
-                    <Loader2Icon className="size-8 animate-spin text-muted-foreground"/>
+                    <Loader2Icon className="size-8 animate-spin text-muted-foreground" />
                     <p className="text-sm text-muted-foreground">Loading learning path...</p>
                 </div>
             </div>
@@ -73,10 +71,9 @@ export default function LearningPathDetailPage({params}: PageProps) {
     if (error || !path) {
         return (
             <div className="flex flex-col h-full">
-                <Header/>
                 <div className="flex flex-1 flex-col items-center justify-center gap-4 py-20">
                     <div className="size-16 rounded-full bg-muted flex items-center justify-center">
-                        <BookOpenIcon className="size-8 text-muted-foreground/50"/>
+                        <BookOpenIcon className="size-8 text-muted-foreground/50" />
                     </div>
                     <div className="text-center">
                         <h2 className="text-lg font-semibold mb-1">
@@ -89,7 +86,7 @@ export default function LearningPathDetailPage({params}: PageProps) {
                     </div>
                     <Button asChild variant="outline" size="sm">
                         <Link href="/roadmaps">
-                            <ArrowLeftIcon className="size-4 mr-1.5"/>
+                            <ArrowLeftIcon className="size-4 mr-1.5" />
                             Back to Roadmaps
                         </Link>
                     </Button>
@@ -120,8 +117,6 @@ export default function LearningPathDetailPage({params}: PageProps) {
                 onEnroll={handleEnroll}
                 enrolled={enrolled}
             />
-            <Header/>
-
             <div className="flex-1 overflow-y-auto">
                 <div className="max-w-4xl mx-auto px-6 py-8 space-y-10">
                     {/* Back Navigation */}
@@ -130,7 +125,7 @@ export default function LearningPathDetailPage({params}: PageProps) {
                             href="/roadmaps"
                             className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
                         >
-                            <ArrowLeftIcon className="size-4"/>
+                            <ArrowLeftIcon className="size-4" />
                             Back to Roadmaps
                         </Link>
                     </RevealOnScroll>
@@ -138,16 +133,21 @@ export default function LearningPathDetailPage({params}: PageProps) {
                     {/* Hero Section */}
                     <RevealOnScroll delay={50} direction="scale">
                         <div className="relative rounded-2xl overflow-hidden group">
-                            <Image
-                                src={path.thumbnailUrl}
-                                alt={path.name}
-                                className="h-56 w-full object-cover transition-transform duration-700 group-hover:scale-105"
-                            />
-                            <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/40 to-black/10"/>
+                            <div className="group relative w-full aspect-video overflow-hidden rounded-lg">
+                                <Image
+                                    fill
+                                    priority
+                                    src={path.thumbnailUrl}
+                                    alt={path.name}
+                                    sizes="(max-width: 768px) 100vw, 400px"
+                                    className="object-cover transition-transform duration-700 group-hover:scale-105"
+                                />
+                            </div>
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/40 to-black/10" />
 
                             {/* Badges */}
                             <div className="absolute top-4 right-4 flex items-center gap-2">
-                                <DifficultyBadge difficulty={path.level as Level}/>
+                                <DifficultyBadge difficulty={path.level as Level} />
                             </div>
                             {path.isPremium && (
                                 <div
@@ -157,7 +157,7 @@ export default function LearningPathDetailPage({params}: PageProps) {
                                         className="size-3 fill-[oklch(0.9_0.15_85)]"
                                     >
                                         <path
-                                            d="M6 1l1.35 2.73L10.5 4.1l-2.25 2.19.53 3.09L6 8.05 3.22 9.38l.53-3.09L1.5 4.1l3.15-.37z"/>
+                                            d="M6 1l1.35 2.73L10.5 4.1l-2.25 2.19.53 3.09L6 8.05 3.22 9.38l.53-3.09L1.5 4.1l3.15-.37z" />
                                     </svg>
                                     Premium
                                 </div>
@@ -205,7 +205,7 @@ export default function LearningPathDetailPage({params}: PageProps) {
                                     className="group flex flex-col gap-1 rounded-xl bg-card border border-border p-4 transition-all duration-300 hover:border-primary/20 hover:shadow-md hover:shadow-primary/5"
                                 >
                                     <div className="flex items-center gap-1.5 text-muted-foreground mb-1">
-                                        <stat.icon className="size-4 transition-colors group-hover:text-primary"/>
+                                        <stat.icon className="size-4 transition-colors group-hover:text-primary" />
                                         <span className="text-xs font-medium">
                                             {stat.label}
                                         </span>
@@ -222,10 +222,20 @@ export default function LearningPathDetailPage({params}: PageProps) {
                     <RevealOnScroll delay={150} direction="up">
                         <div className="flex flex-col sm:flex-row items-center gap-3">
                             {enrolled ? (
-                                <div className="flex items-center gap-2 text-sm text-primary font-medium">
-                                    <CheckCircleIcon className="size-5"/>
-                                    You&apos;re enrolled in this path
-                                </div>
+                                <>
+                                    <div className="flex items-center gap-2 text-sm text-primary font-medium">
+                                        <CheckCircleIcon className="size-5" />
+                                        You&apos;re enrolled in this path
+                                    </div>
+                                    <Button
+                                        asChild
+                                        className="bg-gradient-to-r from-purple-600 via-violet-600 to-fuchsia-600 text-white shadow-lg shadow-purple-600/30 hover:shadow-xl hover:shadow-purple-600/40 w-full sm:w-auto"
+                                    >
+                                        <Link href={`/learn/${slug}`}>
+                                            {enrolledCompleted > 0 ? "Continue Learning" : "Start Learning"}
+                                        </Link>
+                                    </Button>
+                                </>
                             ) : (
                                 <button
                                     onClick={handleEnroll}
@@ -233,9 +243,9 @@ export default function LearningPathDetailPage({params}: PageProps) {
                                     className="flex items-center gap-1.5 h-10 rounded-lg bg-gradient-to-r from-purple-600 via-violet-600 to-fuchsia-600 px-6 text-sm font-semibold text-white shadow-lg shadow-purple-600/30 transition-all duration-200 hover:scale-105 hover:shadow-xl hover:shadow-purple-600/40 active:scale-95 w-full sm:w-auto justify-center disabled:opacity-70 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:hover:shadow-lg"
                                 >
                                     {isEnrolling ? (
-                                        <Loader2Icon className="size-4 animate-spin"/>
+                                        <Loader2Icon className="size-4 animate-spin" />
                                     ) : (
-                                        <BookOpenIcon className="size-4"/>
+                                        <BookOpenIcon className="size-4" />
                                     )}
                                     {isEnrolling ? "Enrolling..." : "Enroll Now — It's Free"}
                                 </button>
@@ -264,7 +274,7 @@ export default function LearningPathDetailPage({params}: PageProps) {
                                     strokeLinecap="round"
                                     strokeLinejoin="round"
                                 >
-                                    <path d="M10 2v5M7.5 4.5L10 7l2.5-2.5M4 16h12M10 11v5M7.5 14l2.5 2 2.5-2"/>
+                                    <path d="M10 2v5M7.5 4.5L10 7l2.5-2.5M4 16h12M10 11v5M7.5 14l2.5 2 2.5-2" />
                                 </svg>
                             </div>
                             <div>
@@ -281,7 +291,7 @@ export default function LearningPathDetailPage({params}: PageProps) {
                     {/* What You'll Learn */}
                     {skills.length > 0 && (
                         <RevealOnScroll delay={250} direction="up">
-                            <WhatYoullLearn skills={skills}/>
+                            <WhatYoullLearn skills={skills} />
                         </RevealOnScroll>
                     )}
 
@@ -308,15 +318,14 @@ export default function LearningPathDetailPage({params}: PageProps) {
                                     <div
                                         className="h-full rounded-full bg-gradient-to-r from-purple-500 to-violet-500 transition-all duration-700"
                                         style={{
-                                            width: `${
-                                                totalLessons > 0
-                                                    ? Math.round(
-                                                        (enrolledCompleted /
-                                                            totalLessons) *
-                                                        100
-                                                    )
-                                                    : 0
-                                            }%`,
+                                            width: `${totalLessons > 0
+                                                ? Math.round(
+                                                    (enrolledCompleted /
+                                                        totalLessons) *
+                                                    100
+                                                )
+                                                : 0
+                                                }%`,
                                         }}
                                     />
                                 </div>
@@ -347,7 +356,7 @@ export default function LearningPathDetailPage({params}: PageProps) {
                                 showLabel={true}
                             />
                             <div className="flex items-center gap-2 text-xs text-muted-foreground ml-auto">
-                                <CircleDashedIcon className="size-3.5"/>
+                                <CircleDashedIcon className="size-3.5" />
                                 Complete topics in order to unlock the next
                             </div>
                         </div>
@@ -382,6 +391,7 @@ export default function LearningPathDetailPage({params}: PageProps) {
                                                     ? completedCounts[i] ?? 0
                                                     : 0
                                             }
+                                            roadmapSlug={slug}
                                         />
                                     ))}
                                 </Accordion>
@@ -390,7 +400,7 @@ export default function LearningPathDetailPage({params}: PageProps) {
                     </RevealOnScroll>
 
                     {/* Spacer for mobile sticky CTA */}
-                    <div className="h-20 sm:hidden"/>
+                    <div className="h-20 sm:hidden" />
                 </div>
             </div>
 
@@ -400,7 +410,7 @@ export default function LearningPathDetailPage({params}: PageProps) {
                 <div className="flex items-center gap-3">
                     {enrolled ? (
                         <div className="flex items-center gap-2 text-sm text-primary font-medium flex-1">
-                            <CheckCircleIcon className="size-5"/>
+                            <CheckCircleIcon className="size-5" />
                             Enrolled
                         </div>
                     ) : (
@@ -410,13 +420,13 @@ export default function LearningPathDetailPage({params}: PageProps) {
                             className="flex items-center gap-1.5 h-10 rounded-lg bg-gradient-to-r from-purple-600 via-violet-600 to-fuchsia-600 px-5 text-sm font-semibold text-white shadow-lg shadow-purple-600/30 flex-1 justify-center disabled:opacity-70 disabled:cursor-not-allowed"
                         >
                             {isEnrolling ? (
-                                <Loader2Icon className="size-4 animate-spin"/>
+                                <Loader2Icon className="size-4 animate-spin" />
                             ) : (
                                 "Enroll Now"
                             )}
                         </button>
                     )}
-                    <DifficultyBadge difficulty={path.level as Level}/>
+                    <DifficultyBadge difficulty={path.level as Level} />
                 </div>
             </div>
         </div>

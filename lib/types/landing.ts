@@ -1,35 +1,16 @@
-// ============================================================
-// LANDING PAGE — CORE DATA TYPES
-// These types define the data contracts for dynamic landing page
-// content. Each one is marked with its API route and whether it
-// needs backend integration.
-// ============================================================
-
-// --- Roadmap Topic ---
-// API ROUTE: GET /api/landing/roadmaps
-// BACKEND STATUS: Needs real DB query (roadmaps + problem counts table)
-// NOTE: Counts come from aggregating problems per topic in the DB.
-//       Difficulty breakdown requires a problems table with difficulty field.
+import { Level } from "./roadmap";
 
 export interface RoadmapTopic {
-    id: string;
     name: string;
-    iconKey: string;
-    problemCount: number;
-    difficultyBreakdown: {
-        easy: number;
-        medium: number;
-        hard: number;
-    };
-    isLocked?: boolean;
-    description?: string;
+    slug: string;
+    level: Level;
+    thumbnailUrl: string;
+    description: string;
+    goal: string;
+    topicCount: number;
+    lessonCount: number;
+    isPremium?: boolean;
 }
-
-// --- Testimonial ---
-// API ROUTE: GET /api/landing/testimonials
-// BACKEND STATUS: Needs real DB query (testimonials table, joined with users)
-// NOTE: In production, avatarUrl and role come from the users table.
-//       starRating may come from a ratings table or be static.
 
 export interface Testimonial {
     id: string;
@@ -42,13 +23,6 @@ export interface Testimonial {
     createdAt?: string; // ISO date string
 }
 
-// --- Platform Stats ---
-// API ROUTE: GET /api/landing/stats
-// BACKEND STATUS: Needs real aggregation queries:
-//   - totalStudents: COUNT(DISTINCT user_id) from user_problems
-//   - totalProblems: COUNT(*) from problems WHERE active = true
-//   - totalTopics: COUNT(*) from topics
-//   - avgCompletionRate: AVG(completed_problems / total_problems) from user_progress
 
 export interface PlatformStats {
     totalStudents: number;

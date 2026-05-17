@@ -1,10 +1,12 @@
 "use client";
 
 import {useEffect, useState} from "react";
+import Link from "next/link";
 import type {RoadmapDetailResponse} from "@/api/roadmap";
 import {DifficultyBadge} from "./difficulty-badge";
+import Image from "next/image";
 import {cn} from "@/lib/utils";
-import {BookOpenIcon, StarIcon} from "lucide-react";
+import {BookOpenIcon, PlayIcon, StarIcon} from "lucide-react";
 
 interface StickyEnrollBarProps {
     path: RoadmapDetailResponse;
@@ -40,9 +42,11 @@ export function StickyEnrollBar({
                 <div className="max-w-4xl mx-auto px-6 h-14 flex items-center justify-between gap-4">
                     {/* Path info */}
                     <div className="flex items-center gap-3 min-w-0">
-                        <img
+                        <Image
                             src={path.thumbnailUrl}
                             alt={path.name}
+                            width={32}
+                            height={32}
                             className="size-8 rounded-md object-cover shrink-0"
                         />
                         <div className="min-w-0">
@@ -68,9 +72,13 @@ export function StickyEnrollBar({
 
                     {/* CTA */}
                     {enrolled ? (
-                        <span className="text-sm font-medium text-primary whitespace-nowrap">
-                            Enrolled
-                        </span>
+                        <Link
+                            href={`/learn/${path.slug}`}
+                            className="flex items-center gap-1.5 h-9 rounded-lg bg-gradient-to-r from-purple-600 via-violet-600 to-fuchsia-600 px-5 text-sm font-semibold text-white shadow-lg shadow-purple-600/25 whitespace-nowrap transition-all duration-200 hover:scale-105 hover:shadow-xl hover:shadow-purple-600/35 active:scale-95"
+                        >
+                            <PlayIcon className="size-3.5" />
+                            Continue
+                        </Link>
                     ) : (
                         <button
                             onClick={onEnroll}

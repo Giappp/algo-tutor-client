@@ -9,8 +9,9 @@ import {SignUpForm} from "@/components/auth/sign-up-form"
 
 function AuthPageInner() {
     const searchParams = useSearchParams()
-    const initialTab = searchParams.get("tab") === "signup" ? "signup" : "signin"
-    const [activeTab, setActiveTab] = useState(initialTab)
+    const [activeTab, setActiveTab] = useState(
+        searchParams.get("tab") === "signup" ? "signup" : "signin"
+    )
 
     return (
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">

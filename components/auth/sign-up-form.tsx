@@ -22,16 +22,13 @@ const signUpSchema = z
             .min(3, "Username must be at least 3 characters")
             .max(20, "Username must be at most 20 characters")
             .regex(/^[a-zA-Z0-9_]+$/, "Username can only contain letters, numbers, and underscores"),
-        email: z.string().email("Please enter a valid email address"),
+        email: z.email("Please enter a valid email address"),
         password: z
             .string()
             .min(8, "Password must be at least 8 characters")
             .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
             .regex(/[0-9]/, "Password must contain at least one number"),
         confirmPassword: z.string(),
-        terms: z.boolean().refine((val) => val === true, {
-            message: "You must agree to the terms of service",
-        }),
     })
     .refine((data) => data.password === data.confirmPassword, {
         message: "Passwords do not match",
@@ -89,13 +86,13 @@ export function SignUpForm() {
             toast.error("Please agree to the terms of service")
             return
         }
-
+        console.log("Submit...")
         setIsSubmitting(true)
         try {
             const response = await signUp(data)
             if (response.success) {
                 toast.success(response.message || "Account created successfully!")
-                router.push("/dashboard")
+                router.push("/auth?tab=signin")
                 router.refresh()
             }
         } catch (error) {
@@ -237,6 +234,7 @@ export function SignUpForm() {
             <div className="flex items-start gap-2">
                 <button
                     type="button"
+                    role="checkbox"
                     aria-checked={agreedToTerms}
                     onClick={() => setAgreedToTerms(!agreedToTerms)}
                     className={cn(
@@ -245,7 +243,7 @@ export function SignUpForm() {
                             ? "bg-primary border-primary"
                             : "border-input bg-transparent hover:border-ring"
                     )}
-                    aria-pressed={agreedToTerms}
+                    aria-pressed={undefined}
                 >
                     {agreedToTerms && <Check className="size-3 text-primary-foreground"/>}
                 </button>
