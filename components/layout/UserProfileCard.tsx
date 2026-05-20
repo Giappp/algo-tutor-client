@@ -9,8 +9,8 @@ const UserProfileCard = () => {
     const {user} = useUser();
     return (
         <div
-            className="rounded-xl bg-gradient-to-br from-sidebar-accent to-sidebar p-3 ring-1 ring-sidebar-border mb-3">
-            <div className="flex items-center gap-2.5 mb-2">
+            className="rounded-xl bg-gradient-to-br from-sidebar-accent to-sidebar p-3.5 ring-1 ring-sidebar-border/50 mb-3">
+            <div className="flex items-center gap-3 mb-2.5">
                 <Avatar size="sm" className="shrink-0">
                     <AvatarImage src="" alt="User avatar"/>
                     <AvatarFallback
@@ -19,14 +19,14 @@ const UserProfileCard = () => {
                     </AvatarFallback>
                 </Avatar>
                 <div className="min-w-0">
-                    <p className="font-semibold truncate text-sidebar-foreground">{user?.username}</p>
+                    <p className="text-sm font-semibold truncate text-sidebar-foreground">{user?.username}</p>
                     <p className="text-xs text-muted-foreground truncate">Level 5 &middot; 1,250
                         XP</p>
                 </div>
             </div>
             <div className="space-y-1.5">
                 <div className="flex items-center justify-between text-xs text-muted-foreground">
-                    <span>Progress</span>
+                    <span>Tiến độ</span>
                     <span className="font-medium text-sidebar-foreground">42%</span>
                 </div>
                 <Progress value={42} className="h-1.5"/>

@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import rehypeRaw from "rehype-raw";
 import type { TheoryLesson } from "@/lib/types/lesson";
 import { LessonTypeIcon } from "@/components/roadmap/lesson-type-icon";
 import { DifficultyBadge } from "@/components/roadmap/difficulty-badge";
@@ -96,28 +97,28 @@ export function TheoryContent({ lesson, onComplete, isCompleted }: TheoryContent
                         <div className="h-px bg-border" />
                     </header>
 
-                    {/* Markdown Content — Medium-like: larger font, serif body, generous line-height */}
+                    {/* Markdown Content — Clean, readable: larger font, sans body, generous line-height */}
                     <article className="
                         prose prose-lg dark:prose-invert max-w-none
-                        prose-p:font-serif prose-p:text-[1.125rem] prose-p:leading-[1.8] prose-p:text-foreground/85 prose-p:tracking-[-0.003em]
+                        prose-p:text-[1.125rem] prose-p:leading-[1.85] prose-p:text-foreground/90 prose-p:tracking-[-0.01em]
                         prose-headings:font-sans prose-headings:font-bold prose-headings:tracking-tight prose-headings:text-foreground
-                        prose-h1:text-[2rem] prose-h1:mt-12 prose-h1:mb-5
-                        prose-h2:text-[1.5rem] prose-h2:mt-12 prose-h2:mb-4 prose-h2:pb-3 prose-h2:border-b prose-h2:border-border/60
-                        prose-h3:text-[1.25rem] prose-h3:mt-8 prose-h3:mb-3
+                        prose-h1:text-[2.125rem] prose-h1:mt-12 prose-h1:mb-5
+                        prose-h2:text-[1.625rem] prose-h2:mt-12 prose-h2:mb-4 prose-h2:pb-3 prose-h2:border-b prose-h2:border-border/60
+                        prose-h3:text-[1.375rem] prose-h3:mt-8 prose-h3:mb-3
                         prose-strong:text-foreground prose-strong:font-bold
                         prose-a:text-primary prose-a:no-underline hover:prose-a:underline
-                        prose-code:text-primary prose-code:bg-muted prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded-md prose-code:text-[0.875rem] prose-code:font-mono prose-code:before:content-[''] prose-code:after:content-['']
-                        prose-pre:bg-[#1e1e1e] prose-pre:border prose-pre:border-white/10 prose-pre:rounded-xl prose-pre:p-5 prose-pre:overflow-x-auto prose-pre:text-[0.875rem] prose-pre:leading-relaxed
-                        prose-blockquote:border-l-[3px] prose-blockquote:border-foreground/20 prose-blockquote:pl-5 prose-blockquote:italic prose-blockquote:text-foreground/70 prose-blockquote:font-serif prose-blockquote:text-[1.125rem]
-                        prose-ul:space-y-2 prose-ol:space-y-2
-                        prose-li:font-serif prose-li:text-[1.125rem] prose-li:leading-[1.75] prose-li:text-foreground/85
-                        prose-table:text-sm prose-table:border-collapse prose-table:rounded-lg prose-table:overflow-hidden
-                        prose-th:border prose-th:border-border prose-th:bg-muted/60 prose-th:px-4 prose-th:py-2.5 prose-th:text-left prose-th:font-semibold prose-th:text-foreground prose-th:text-sm
-                        prose-td:border prose-td:border-border prose-td:px-4 prose-td:py-2.5 prose-td:text-sm
+                        prose-code:text-primary prose-code:bg-muted prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded-md prose-code:text-[0.9rem] prose-code:font-mono prose-code:before:content-[''] prose-code:after:content-['']
+                        prose-pre:bg-[#1e1e1e] prose-pre:border prose-pre:border-white/10 prose-pre:rounded-xl prose-pre:p-5 prose-pre:overflow-x-auto prose-pre:text-[0.9rem] prose-pre:leading-relaxed
+                        prose-blockquote:border-l-[3px] prose-blockquote:border-foreground/20 prose-blockquote:pl-5 prose-blockquote:italic prose-blockquote:text-foreground/70 prose-blockquote:text-[1.125rem]
+                        prose-ul:space-y-2.5 prose-ol:space-y-2.5
+                        prose-li:text-[1.125rem] prose-li:leading-[1.8] prose-li:text-foreground/90
+                        prose-table:text-[0.9rem] prose-table:border-collapse prose-table:rounded-lg prose-table:overflow-hidden
+                        prose-th:border prose-th:border-border prose-th:bg-muted/60 prose-th:px-4 prose-th:py-2.5 prose-th:text-left prose-th:font-semibold prose-th:text-foreground
+                        prose-td:border prose-td:border-border prose-td:px-4 prose-td:py-2.5
                         prose-hr:border-border prose-hr:my-10
                         prose-img:rounded-xl prose-img:shadow-lg
                     ">
-                        <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                        <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]}>
                             {lesson.content}
                         </ReactMarkdown>
                     </article>

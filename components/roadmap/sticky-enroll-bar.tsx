@@ -73,10 +73,10 @@ export function StickyEnrollBar({
                     {/* CTA */}
                     {enrolled ? (
                         <Link
-                            href={`/learn/${path.slug}`}
+                            href={`/app/learn/${path.slug}`}
                             className="flex items-center gap-1.5 h-9 rounded-lg bg-gradient-to-r from-purple-600 via-violet-600 to-fuchsia-600 px-5 text-sm font-semibold text-white shadow-lg shadow-purple-600/25 whitespace-nowrap transition-all duration-200 hover:scale-105 hover:shadow-xl hover:shadow-purple-600/35 active:scale-95"
                         >
-                            <PlayIcon className="size-3.5" />
+                            <PlayIcon className="size-3.5"/>
                             Continue
                         </Link>
                     ) : (

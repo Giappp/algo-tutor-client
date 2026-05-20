@@ -21,6 +21,7 @@ import {
 interface QuizContentProps {
     quiz: Quiz;
     onComplete: () => void;
+    onMarkComplete?: () => void;
     isCompleted: boolean;
 }
 
@@ -288,16 +289,18 @@ function QuizResultsPanel({
                     <RefreshCwIcon className="size-4" />
                     Retry Quiz
                 </Button>
-                <Button onClick={onContinue} className="flex-1 gap-1.5">
-                    Continue
-                    <ArrowRightIcon className="size-4" />
-                </Button>
+                {passed && (
+                    <Button onClick={onContinue} className="flex-1 gap-1.5">
+                        Continue
+                        <ArrowRightIcon className="size-4" />
+                    </Button>
+                )}
             </div>
         </div>
     );
 }
 
-export function QuizContent({ quiz, onComplete, isCompleted }: QuizContentProps) {
+export function QuizContent({ quiz, onComplete, onMarkComplete, isCompleted }: QuizContentProps) {
     const [currentIndex, setCurrentIndex] = useState(0);
     const [answers, setAnswers] = useState<AnswerMap>({});
     const [quizView, setQuizView] = useState<QuizView>("questions");
@@ -330,7 +333,23 @@ export function QuizContent({ quiz, onComplete, isCompleted }: QuizContentProps)
     };
 
     const handleContinue = () => {
-        onComplete();
+        // Only mark complete if user passed the quiz
+        const totalQuestions = quiz.questions.length;
+        const correctCount = quiz.questions.filter((q) => {
+            const selected = new Set(answers[q.id] ?? []);
+            return (
+                q.correctOptionIds.length === selected.size &&
+                q.correctOptionIds.every((id) => selected.has(id))
+            );
+        }).length;
+        const score = Math.round((correctCount / totalQuestions) * 100);
+        if (score >= quiz.passingScore) {
+            // Trigger PATCH COMPLETED on the server + update local state
+            if (onMarkComplete) {
+                onMarkComplete();
+            }
+            onComplete();
+        }
     };
 
     if (quizView === "results") {

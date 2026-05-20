@@ -16,16 +16,15 @@ export function FeaturesSection() {
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 {/* Header */}
                 <div className="text-center max-w-2xl mx-auto mb-16 space-y-4 reveal-up">
-                    <Badge variant="secondary" className="text-xs">
-                        Platform Features
+                    <Badge variant="secondary" className="text-sm">
+                        Tính năng nổi bật
                     </Badge>
                     <h2 className="text-4xl sm:text-5xl font-bold tracking-tight">
-                        Everything you need to{" "}
-                        <span className="text-gradient">become a problem solver</span>
+                        Mọi thứ bạn cần để{" "}
+                        <span className="text-gradient">trở thành problem solver</span>
                     </h2>
-                    <p className="text-muted-foreground text-lg">
-                        A thoughtfully designed learning system that keeps you focused, challenged, and supported at
-                        every step.
+                    <p className="text-muted-foreground text-lg sm:text-xl leading-relaxed">
+                        Hệ thống học tập được thiết kế giúp bạn tập trung, thử thách, và được hỗ trợ ở mọi bước.
                     </p>
                 </div>
 
@@ -60,7 +59,7 @@ export function FeaturesSection() {
                                             <Icon className={cn("size-6", feature.colorToken)}/>
                                         </div>
                                         <h3 className="font-semibold text-lg">{feature.title}</h3>
-                                        <p className="text-sm text-muted-foreground leading-relaxed">
+                                        <p className="text-[0.9rem] text-muted-foreground leading-relaxed">
                                             {feature.description}
                                         </p>
                                     </CardContent>

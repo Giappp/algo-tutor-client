@@ -33,10 +33,8 @@ const languages = [
 
 const monacoLanguages: Record<string, string> = {
   python: "python",
-  javascript: "javascript",
   java: "java",
-  cpp: "cpp",
-  go: "go",
+  cpp: "cpp"
 };
 
 interface TestResult {

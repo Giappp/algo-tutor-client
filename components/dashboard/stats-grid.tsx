@@ -3,25 +3,25 @@ import { BookOpenIcon, TrendingUpIcon, FlameIcon, TrophyIcon } from "lucide-reac
 
 const stats = [
   {
-    label: "Problems Solved",
+    label: "Bài đã giải",
     value: "42",
     icon: BookOpenIcon,
     color: "oklch(0.6 0.18 180)",
   },
   {
-    label: "Total XP",
+    label: "Tổng XP",
     value: "1,250",
     icon: TrendingUpIcon,
     color: "oklch(0.7 0.18 195)",
   },
   {
-    label: "Day Streak",
+    label: "Chuỗi ngày",
     value: "5",
     icon: FlameIcon,
     color: "oklch(0.65 0.2 145)",
   },
   {
-    label: "Leaderboard Rank",
+    label: "Xếp hạng",
     value: "#3",
     icon: TrophyIcon,
     color: "oklch(0.65 0.15 340)",
@@ -41,8 +41,8 @@ export function StatsGrid() {
               <stat.icon className="size-5" style={{ color: stat.color }} />
             </div>
             <div className="min-w-0">
-              <p className="text-xl font-bold tabular-nums">{stat.value}</p>
-              <p className="text-xs text-muted-foreground">{stat.label}</p>
+              <p className="text-2xl font-bold tabular-nums">{stat.value}</p>
+              <p className="text-sm text-muted-foreground">{stat.label}</p>
             </div>
           </CardContent>
         </Card>

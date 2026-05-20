@@ -47,7 +47,7 @@ export default function RoadMapPage() {
                 <div className="max-w-7xl mx-auto px-6 py-8 space-y-8">
                     {/* Hero Section */}
                     <div
-                        className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[oklch(0.15_0.015_260)] via-[oklch(0.17_0.02_250)] to-[oklch(0.15_0.015_260)] p-8 text-primary-foreground">
+                        className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[oklch(0.15_0.015_260)] via-[oklch(0.17_0.02_250)] to-[oklch(0.15_0.015_260)] p-8 sm:p-10 text-primary-foreground">
                         {/* Background pattern */}
                         <div
                             className="absolute inset-0 opacity-30"
@@ -62,23 +62,21 @@ export default function RoadMapPage() {
                         <div className="absolute -bottom-20 -left-20 size-64 rounded-full bg-primary/10 blur-3xl"/>
 
                         <div className="relative">
-                            <div className="flex items-center gap-2 mb-2">
+                            <div className="flex items-center gap-2 mb-3">
                                 <BookOpenIcon className="size-5 text-primary"/>
-                                <span className="text-xs font-semibold uppercase tracking-wider text-primary">
-                                    AlgoTutor Roadmaps
+                                <span className="text-sm font-semibold uppercase tracking-wider text-primary">
+                                    Lộ trình học tập
                                 </span>
                             </div>
-                            <h1 className="text-3xl font-bold mb-3 leading-tight">
-                                Master Algorithms
+                            <h1 className="text-3xl sm:text-4xl font-bold mb-3 leading-tight">
+                                Chinh phục thuật toán
                                 <br/>
                                 <span className="text-primary">
-                                    One Path at a Time
+                                    từng bước một
                                 </span>
                             </h1>
-                            <p className="max-w-lg leading-relaxed">
-                                Structured learning paths designed by experts to take you from
-                                fundamentals to advanced problem solving. Track your progress,
-                                practice with real interview questions.
+                            <p className="text-base sm:text-lg max-w-lg leading-relaxed opacity-90">
+                                Lộ trình học có hệ thống, từ nền tảng đến nâng cao. Theo dõi tiến độ, luyện tập với bài toán phỏng vấn thực tế.
                             </p>
 
                             {/* Quick Stats */}
@@ -86,20 +84,20 @@ export default function RoadMapPage() {
                                 <div className="flex items-center gap-2">
                                     <BookOpenIcon className="size-4 text-primary/70"/>
                                     <span className="text-sm font-medium">
-                                        {pagination.totalElements} Paths
+                                        {pagination.totalElements} lộ trình
                                     </span>
                                 </div>
                                 <div className="flex items-center gap-2">
                                     <UsersIcon className="size-4 text-primary/70"/>
                                     <span className="text-sm font-medium">
-                                        {paths.reduce((sum, p) => sum + p.enrollmentCount, 0).toLocaleString()}+ Enrolled
+                                        {paths.reduce((sum, p) => sum + p.enrollmentCount, 0).toLocaleString()}+ đã đăng ký
                                     </span>
                                 </div>
                                 <div className="flex items-center gap-2">
                                     <StarIcon
                                         className="size-4 text-[oklch(0.9_0.15_85)]/70 fill-[oklch(0.9_0.15_85)]"/>
-                                    <span className="text-base font-medium">
-                                        {paths.filter((p) => p.isPremium).length} Premium Paths
+                                    <span className="text-sm font-medium">
+                                        {paths.filter((p) => p.isPremium).length} Premium
                                     </span>
                                 </div>
                             </div>
@@ -114,10 +112,10 @@ export default function RoadMapPage() {
                                 className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none"/>
                             <input
                                 type="text"
-                                placeholder="Search paths..."
+                                placeholder="Tìm lộ trình..."
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
-                                className="w-full h-8 pl-9 pr-3 rounded-lg bg-muted/50 border-0 text-sm placeholder:text-muted-foreground focus-visible:ring-1 focus-visible:ring-ring"
+                                className="w-full h-9 pl-9 pr-3 rounded-lg bg-muted/50 border-0 text-sm placeholder:text-muted-foreground focus-visible:ring-1 focus-visible:ring-ring"
                             />
                         </div>
 
@@ -133,10 +131,10 @@ export default function RoadMapPage() {
                                         onClick={() =>
                                             setSelectedLevel(level)
                                         }
-                                        className="h-7 text-xs"
+                                        className="h-8 text-sm"
                                     >
                                         {level === "All" ? (
-                                            "All Levels"
+                                            "Tất cả"
                                         ) : (
                                             <DifficultyBadge
                                                 difficulty={level}
@@ -153,32 +151,32 @@ export default function RoadMapPage() {
                                 variant={viewMode === "grid" ? "secondary" : "ghost"}
                                 size="icon-sm"
                                 onClick={() => setViewMode("grid")}
-                                className="size-7"
+                                className="size-8"
                             >
-                                <LayoutGridIcon className="size-3.5"/>
+                                <LayoutGridIcon className="size-4"/>
                             </Button>
                             <Button
                                 variant={viewMode === "list" ? "secondary" : "ghost"}
                                 size="icon-sm"
                                 onClick={() => setViewMode("list")}
-                                className="size-7"
+                                className="size-8"
                             >
-                                <ListIcon className="size-3.5"/>
+                                <ListIcon className="size-4"/>
                             </Button>
                         </div>
                     </div>
 
                     {/* Results count */}
                     <div className="text-sm text-muted-foreground">
-                        Showing{" "}
+                        Hiển thị{" "}
                         <span className="font-medium text-foreground">
                             {isLoading ? "..." : filteredPaths.length}
                         </span>{" "}
-                        {isLoading ? "loading" : filteredPaths.length === 1 ? "path" : "paths"}
+                        {isLoading ? "" : "lộ trình"}
                         {selectedLevel !== "All" && (
                             <span>
                                 {" "}
-                                for{" "}
+                                cấp độ{" "}
                                 <span className="font-medium text-foreground capitalize">
                                     {selectedLevel}
                                 </span>
@@ -231,12 +229,11 @@ export default function RoadMapPage() {
                             <div className="size-16 rounded-full bg-muted flex items-center justify-center mb-4">
                                 <SearchIcon className="size-8 text-muted-foreground/50"/>
                             </div>
-                            <h3 className="text-base font-semibold mb-1">
-                                No paths found
+                            <h3 className="text-lg font-semibold mb-1">
+                                Không tìm thấy lộ trình
                             </h3>
                             <p className="text-sm text-muted-foreground max-w-sm">
-                                Try adjusting your search or filter to find what you&apos;re
-                                looking for.
+                                Thử thay đổi từ khóa tìm kiếm hoặc bộ lọc để tìm lộ trình phù hợp.
                             </p>
                             <Button
                                 variant="outline"
@@ -247,7 +244,7 @@ export default function RoadMapPage() {
                                 }}
                                 className="mt-4"
                             >
-                                Clear filters
+                                Xóa bộ lọc
                             </Button>
                         </div>
                     )}

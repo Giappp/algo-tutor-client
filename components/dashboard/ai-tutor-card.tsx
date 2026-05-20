@@ -9,20 +9,20 @@ export function AiTutorCard() {
       <CardContent className="p-4 space-y-3">
         <div className="flex items-center gap-2">
           <MessageSquareIcon className="size-5" />
-          <p className="text-sm font-semibold">AI Tutor</p>
+          <p className="text-base font-semibold">AI Tutor</p>
         </div>
-        <p className="text-xs opacity-90">
-          Get context-aware hints for your current problem, strictly within scope.
+        <p className="text-sm opacity-90">
+          Nhận gợi ý thông minh cho bài toán hiện tại — không spoil đáp án.
         </p>
         <Button
           size="sm"
           variant="secondary"
-          className="w-full gap-1.5 text-xs h-8 bg-primary-foreground/15 hover:bg-primary-foreground/25 border-0"
+          className="w-full gap-1.5 text-sm h-9 bg-primary-foreground/15 hover:bg-primary-foreground/25 border-0"
           asChild
         >
           <Link href="/ai-tutor">
-            Ask AI Tutor
-            <ArrowRightIcon className="size-3" />
+            Hỏi AI Tutor
+            <ArrowRightIcon className="size-3.5" />
           </Link>
         </Button>
       </CardContent>

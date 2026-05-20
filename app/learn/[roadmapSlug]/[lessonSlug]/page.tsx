@@ -7,6 +7,7 @@ import { TheoryContent } from "@/components/learn/theory-content";
 import { QuizContent } from "@/components/learn/quiz-content";
 import { CodingContent } from "@/components/learn/coding-content";
 import { useRoadmapActions } from "@/hooks/use-roadmap-actions";
+import { useAutoMarkInProgress } from "@/hooks/use-auto-mark-progress";
 import { fetcher } from "@/api/fetchers";
 import type { RoadmapDetailResponse, LessonType } from "@/lib/types/roadmap";
 import type { TheoryLesson, Quiz, CodingProblem } from "@/lib/types/lesson";
@@ -94,6 +95,10 @@ export default function LearnPage({ params }: PageProps) {
     const currentProgress = roadmap
         ? getCurrentLessonProgress(roadmap.topics, lessonSlug)
         : null;
+
+    // Auto-mark lesson as IN_PROGRESS when opened (fire-and-forget, non-blocking)
+    useAutoMarkInProgress(roadmapSlug, lessonSlug, currentProgress);
+
     const isCompleted = currentProgress === "COMPLETED" || contentCompleted;
 
     const handleContentComplete = useCallback(() => {
@@ -118,6 +123,15 @@ export default function LearnPage({ params }: PageProps) {
             <QuizContent
                 quiz={lessonData as Quiz}
                 onComplete={handleContentComplete}
+                onMarkComplete={async () => {
+                    try {
+                        await updateLessonProgress(roadmapSlug, lessonSlug, "COMPLETED");
+                        mutateRoadmap();
+                        setContentCompleted(true);
+                    } catch {
+                        // error handled by API interceptor
+                    }
+                }}
                 isCompleted={isCompleted}
             />
         );
@@ -126,6 +140,15 @@ export default function LearnPage({ params }: PageProps) {
             <CodingContent
                 problem={lessonData as CodingProblem}
                 onComplete={handleContentComplete}
+                onMarkComplete={async () => {
+                    try {
+                        await updateLessonProgress(roadmapSlug, lessonSlug, "COMPLETED");
+                        mutateRoadmap();
+                        setContentCompleted(true);
+                    } catch {
+                        // error handled by API interceptor
+                    }
+                }}
                 isCompleted={isCompleted}
             />
         );

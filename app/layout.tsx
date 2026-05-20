@@ -1,24 +1,18 @@
 import type {Metadata} from "next";
-import {Geist, Geist_Mono, Lora} from "next/font/google";
+import {Inter, JetBrains_Mono} from "next/font/google";
 import "./globals.css";
 import {ThemeProvider} from "@/components/theme-provider";
 import {Toaster} from "sonner";
 import {SWRProvider} from "@/components/providers/SWRProvider";
 
-const geistSans = Geist({
-    variable: "--font-geist-sans",
-    subsets: ["latin"],
+const inter = Inter({
+    variable: "--font-sans",
+    subsets: ["latin", "vietnamese"],
 });
 
-const geistMono = Geist_Mono({
-    variable: "--font-geist-mono",
+const jetbrainsMono = JetBrains_Mono({
+    variable: "--font-mono",
     subsets: ["latin"],
-});
-
-const lora = Lora({
-    variable: "--font-lora",
-    subsets: ["latin"],
-    style: ["normal", "italic"],
 });
 
 export const metadata: Metadata = {
@@ -40,7 +34,7 @@ export default function RootLayout({
 }>) {
     return (
         <html lang="en" suppressHydrationWarning>
-        <body className={`${geistSans.variable} ${geistMono.variable} ${lora.variable} h-full antialiased font-sans`}>
+        <body className={`${inter.variable} ${jetbrainsMono.variable} h-full antialiased font-sans`}>
         <ThemeProvider
             attribute="class"
             defaultTheme="system"
@@ -50,7 +44,7 @@ export default function RootLayout({
         >
             <SWRProvider>
                 {children}
-                <Toaster position={"top-right"}/>
+                <Toaster position={"bottom-center"}/>
             </SWRProvider>
         </ThemeProvider>
         </body>

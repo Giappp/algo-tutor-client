@@ -169,33 +169,31 @@ export function HeroSection() {
                 <div className="grid lg:grid-cols-2 gap-16 items-center">
                     {/* Left: Text content */}
                     <div className="space-y-8">
-                        <Badge variant="secondary" className="gap-1.5 text-xs px-3 py-1">
-                            <Zap className="size-3 text-primary"/>
-                            AI-Powered Learning Platform
+                        <Badge variant="secondary" className="gap-1.5 text-sm px-3 py-1">
+                            <Zap className="size-3.5 text-primary"/>
+                            Nền tảng học thuật toán thông minh
                         </Badge>
 
                         <h1 className="text-5xl sm:text-6xl lg:text-7xl font-bold tracking-tight leading-[1.05]">
-                            Master
+                            Chinh phục
                             <br/>
-                            <span className="text-gradient">Algorithms</span>
+                            <span className="text-gradient">Thuật toán</span>
                             <br/>
-                            the Smart Way
+                            cùng AI Tutor
                         </h1>
 
-                        <p className="text-lg text-muted-foreground max-w-lg leading-relaxed">
-                            Learn algorithms systematically through structured roadmaps, hands-on coding, and an AI
-                            tutor
-                            that guides you — without spoiling the answer.
+                        <p className="text-lg sm:text-xl text-muted-foreground max-w-lg leading-relaxed">
+                            Học thuật toán có hệ thống qua roadmap chi tiết, luyện code thực hành, và AI tutor hướng dẫn từng bước — không spoil đáp án.
                         </p>
 
                         <div className="flex flex-wrap items-center gap-3">
-                            <Button size="lg" className="gap-2 text-base px-6 h-11 glow-border">
-                                Start Learning Free
+                            <Button size="lg" className="gap-2 text-base px-6 h-12 glow-border">
+                                Bắt đầu miễn phí
                                 <ArrowRight className="size-4"/>
                             </Button>
-                            <Button variant="outline" size="lg" className="gap-2 text-base px-6 h-11">
+                            <Button variant="outline" size="lg" className="gap-2 text-base px-6 h-12">
                                 <PlayCircle className="size-4"/>
-                                Watch Demo
+                                Xem Demo
                             </Button>
                         </div>
 
@@ -210,13 +208,13 @@ export function HeroSection() {
                             ) : (
                                 <>
                                     {[
-                                        {value: studentCount, label: "Students"},
-                                        {value: problemCount, label: "Problems"},
-                                        {value: topicCount, label: "Topics"},
+                                        {value: studentCount, label: "Học viên"},
+                                        {value: problemCount, label: "Bài tập"},
+                                        {value: topicCount, label: "Chủ đề"},
                                     ].map((stat) => (
                                         <div key={stat.label} className="flex items-center gap-2">
-                                            <span className="text-xl font-bold text-foreground">{stat.value}</span>
-                                            <span className="text-xs text-muted-foreground">{stat.label}</span>
+                                            <span className="text-2xl font-bold text-foreground">{stat.value}</span>
+                                            <span className="text-sm text-muted-foreground">{stat.label}</span>
                                         </div>
                                     ))}
                                 </>

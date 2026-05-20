@@ -1,15 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
-import type { LessonWithProgress, LessonType } from "@/lib/types/roadmap";
-import {
-    ArrowLeftIcon,
-    ArrowRightIcon,
-    CheckCircle2Icon,
-    Loader2Icon,
-} from "lucide-react";
+import {cn} from "@/lib/utils";
+import {Button} from "@/components/ui/button";
+import type {LessonType, LessonWithProgress} from "@/lib/types/roadmap";
+import {ArrowLeftIcon, ArrowRightIcon, CheckCircle2Icon, Loader2Icon,} from "lucide-react";
 
 interface LessonContentAreaProps {
     lessonType: LessonType;
@@ -24,21 +19,21 @@ interface LessonContentAreaProps {
 }
 
 export function LessonContentArea({
-    lessonType,
-    lessonSlug,
-    roadmapSlug,
-    prev,
-    next,
-    onMarkComplete,
-    isUpdating,
-    isCompleted,
-    children,
-}: LessonContentAreaProps) {
+                                      lessonType,
+                                      lessonSlug,
+                                      roadmapSlug,
+                                      prev,
+                                      next,
+                                      onMarkComplete,
+                                      isUpdating,
+                                      isCompleted,
+                                      children,
+                                  }: LessonContentAreaProps) {
     return (
         <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
             {/* Sticky Action Bar — positioned at top of content */}
-            <div className="sticky top-0 z-20 shrink-0 border-b border-border bg-background/95 backdrop-blur-sm">
-                <div className="max-w-4xl mx-auto flex items-center gap-2 px-6 py-2.5">
+            <div className="sticky top-0 z-20 shrink-0 border-b border-border/50 bg-background/80 backdrop-blur-md">
+                <div className="max-w-4xl mx-auto flex items-center gap-2 px-6 py-2">
                     {/* Previous */}
                     {prev ? (
                         <Button
@@ -47,8 +42,8 @@ export function LessonContentArea({
                             asChild
                             className="gap-1.5 h-9 text-muted-foreground hover:text-foreground"
                         >
-                            <Link href={`/learn/${roadmapSlug}/${prev.slug}`}>
-                                <ArrowLeftIcon className="size-4" />
+                            <Link href={`/app/learn/${roadmapSlug}/${prev.slug}`}>
+                                <ArrowLeftIcon className="size-4"/>
                                 <span className="hidden sm:inline truncate max-w-[140px] text-xs">
                                     {prev.title}
                                 </span>
@@ -57,12 +52,12 @@ export function LessonContentArea({
                         </Button>
                     ) : (
                         <Button variant="ghost" size="sm" disabled className="gap-1.5 h-9 opacity-40">
-                            <ArrowLeftIcon className="size-4" />
+                            <ArrowLeftIcon className="size-4"/>
                             <span className="text-xs">Previous</span>
                         </Button>
                     )}
 
-                    <div className="flex-1" />
+                    <div className="flex-1"/>
 
                     {/* Mark Complete — prominent center button */}
                     <Button
@@ -77,16 +72,16 @@ export function LessonContentArea({
                         )}
                     >
                         {isUpdating ? (
-                            <Loader2Icon className="size-4 animate-spin" />
+                            <Loader2Icon className="size-4 animate-spin"/>
                         ) : (
-                            <CheckCircle2Icon className="size-4" />
+                            <CheckCircle2Icon className="size-4"/>
                         )}
                         <span className="text-xs">
                             {isCompleted ? "Completed" : "Mark Complete"}
                         </span>
                     </Button>
 
-                    <div className="flex-1" />
+                    <div className="flex-1"/>
 
                     {/* Next */}
                     {next ? (
@@ -96,19 +91,19 @@ export function LessonContentArea({
                             asChild
                             className="gap-1.5 h-9 bg-primary/90 hover:bg-primary"
                         >
-                            <Link href={`/learn/${roadmapSlug}/${next.slug}`}>
+                            <Link href={`/app/learn/${roadmapSlug}/${next.slug}`}>
                                 <span className="hidden sm:inline truncate max-w-[140px] text-xs">
                                     {next.title}
                                 </span>
                                 <span className="sm:hidden text-xs">Next</span>
-                                <ArrowRightIcon className="size-4" />
+                                <ArrowRightIcon className="size-4"/>
                             </Link>
                         </Button>
                     ) : (
                         <Button variant="outline" size="sm" asChild className="gap-1.5 h-9">
                             <Link href={`/roadmaps/${roadmapSlug}`}>
                                 <span className="text-xs">Finish Course</span>
-                                <CheckCircle2Icon className="size-4" />
+                                <CheckCircle2Icon className="size-4"/>
                             </Link>
                         </Button>
                     )}
