@@ -28,6 +28,7 @@ interface LearningLayoutProps {
     onMarkComplete: () => void;
     isUpdating?: boolean;
     isCompleted?: boolean;
+    isLocked?: boolean;
     children: React.ReactNode;
 }
 
@@ -83,6 +84,7 @@ export function LearningLayout({
     onMarkComplete,
     isUpdating = false,
     isCompleted: isCompletedProp,
+    isLocked = false,
     children,
 }: LearningLayoutProps) {
     const [navigatorOpen, setNavigatorOpen] = useState(true);
@@ -110,19 +112,26 @@ export function LearningLayout({
     const isCompleted = isCompletedProp ?? currentProgress === "COMPLETED";
 
     return (
-        <div className="flex h-full overflow-hidden">
+        <div className="flex h-full overflow-hidden noise-texture">
             {/* ─── Left: Collapsible Navigator ─── */}
             <div className="hidden md:flex shrink-0 relative">
                 <div
                     className={cn(
-                        "flex flex-col border-r border-border/50 bg-card h-full overflow-hidden transition-all duration-300 ease-in-out",
+                        "flex flex-col h-full overflow-hidden transition-all duration-300 ease-in-out",
+                        "bg-card/80 backdrop-blur-md",
                         navigatorOpen ? "w-72" : "w-0"
                     )}
                 >
+                    {/* Gradient-fading right edge divider */}
+                    {navigatorOpen && (
+                        <div className="absolute right-0 top-0 bottom-0 w-px bg-gradient-to-b from-transparent via-border/50 to-transparent z-[1]" />
+                    )}
                     {navigatorOpen && (
                         <>
                             {/* Navigator header */}
-                            <div className="flex items-center gap-3 px-4 py-3.5 border-b border-border/40 shrink-0 bg-muted/30">
+                            <div className="flex items-center gap-3 px-4 py-3.5 shrink-0 bg-muted/30 relative">
+                                {/* Gradient-fading bottom edge for header divider */}
+                                <div className="absolute bottom-0 left-4 right-4 h-px bg-gradient-to-r from-transparent via-border/40 to-transparent" />
                                 <Link
                                     href={`/roadmaps/${roadmapSlug}`}
                                     className="flex items-center gap-2 min-w-0 flex-1 group"
@@ -161,7 +170,9 @@ export function LearningLayout({
             {/* ─── Center: Content Area ─── */}
             <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
                 {/* Top bar */}
-                <div className="flex items-center gap-2 px-4 py-2 border-b border-border/50 bg-background shrink-0">
+                <div className="flex items-center gap-2 px-4 py-2 bg-background shrink-0 relative">
+                    {/* Gradient-fading bottom edge */}
+                    <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-border/50 to-transparent" />
                     {/* Mobile: Contents button */}
                     <Button
                         variant="ghost"
@@ -198,18 +209,24 @@ export function LearningLayout({
                 </div>
 
                 {/* Lesson content with action bar */}
-                <LessonContentArea
-                    lessonType={lessonType}
-                    lessonSlug={lessonSlug}
-                    roadmapSlug={roadmapSlug}
-                    prev={prev}
-                    next={next}
-                    onMarkComplete={onMarkComplete}
-                    isUpdating={isUpdating}
-                    isCompleted={isCompleted}
-                >
-                    {children}
-                </LessonContentArea>
+                {isLocked ? (
+                    <div className="flex-1 overflow-y-auto bg-background/50 backdrop-blur-sm">
+                        {children}
+                    </div>
+                ) : (
+                    <LessonContentArea
+                        lessonType={lessonType}
+                        lessonSlug={lessonSlug}
+                        roadmapSlug={roadmapSlug}
+                        prev={prev}
+                        next={next}
+                        onMarkComplete={onMarkComplete}
+                        isUpdating={isUpdating}
+                        isCompleted={isCompleted}
+                    >
+                        {children}
+                    </LessonContentArea>
+                )}
             </div>
 
             {/* ─── Mobile Navigator Sheet ─── */}
@@ -234,7 +251,9 @@ export function LearningLayout({
 
             {/* ─── AI Tutor Panel (desktop) ─── */}
             {aiOpen && (
-                <div className="hidden lg:flex w-80 shrink-0 flex-col border-l border-border/50">
+                <div className="hidden lg:flex w-80 shrink-0 flex-col relative">
+                    {/* Gradient-fading left edge divider */}
+                    <div className="absolute left-0 top-0 bottom-0 w-px bg-gradient-to-b from-transparent via-border/50 to-transparent" />
                     <AITutorPanel context={lessonContext} />
                 </div>
             )}

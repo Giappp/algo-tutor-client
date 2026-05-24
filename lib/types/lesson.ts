@@ -94,3 +94,46 @@ export interface ChatMessage {
     content: string;
     timestamp: Date;
 }
+
+// Quiz Attempt types
+
+export interface QuizAttemptAnswer {
+    questionId: number;
+    selectedOptionIds: string[];
+}
+
+export interface QuizAttemptRequest {
+    answers: QuizAttemptAnswer[];
+    startedAt: string;
+    completedAt: string;
+    timeSpentSeconds: number;
+}
+
+export interface QuizQuestionResult {
+    questionId: number;
+    isCorrect: boolean;
+    correctOptionIds: string[];
+}
+
+export interface QuizAttemptResponse {
+    id: string;
+    score: number;
+    passed: boolean;
+    correctCount: number;
+    totalQuestions: number;
+    attemptNumber: number;
+    completedAt: string;
+    questionResults: QuizQuestionResult[];
+    lessonProgressUpdated: boolean;
+}
+
+export interface QuizAttemptSummary {
+    id: string;
+    attemptNumber: number;
+    score: number;
+    passed: boolean;
+    correctCount: number;
+    totalQuestions: number;
+    completedAt: string;
+    timeSpentSeconds: number;
+}

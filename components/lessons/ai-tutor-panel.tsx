@@ -253,7 +253,7 @@ export function AITutorPanel({ context }: { context: LessonContext }) {
     return (
         <div className="flex flex-col h-full bg-background">
             {/* Header */}
-            <div className="flex items-center justify-between px-4 py-3 border-b border-border/50 bg-muted/30">
+            <div className="flex items-center justify-between px-4 py-3 border-b border-border/50 bg-muted/30 backdrop-blur-md bg-background/70">
                 <div className="flex items-center gap-3">
                     <div className="size-8 rounded-full bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center shrink-0">
                         <SparklesIcon className="size-4 text-primary-foreground" />

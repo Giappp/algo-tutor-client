@@ -1,16 +1,16 @@
 import type {Metadata} from "next";
-import {Inter, JetBrains_Mono} from "next/font/google";
+import {Geist, Geist_Mono} from "next/font/google";
 import "./globals.css";
 import {ThemeProvider} from "@/components/theme-provider";
 import {Toaster} from "sonner";
 import {SWRProvider} from "@/components/providers/SWRProvider";
 
-const inter = Inter({
+const geistSans = Geist({
     variable: "--font-sans",
-    subsets: ["latin", "vietnamese"],
+    subsets: ["latin", "latin-ext"],
 });
 
-const jetbrainsMono = JetBrains_Mono({
+const geistMono = Geist_Mono({
     variable: "--font-mono",
     subsets: ["latin"],
 });
@@ -34,7 +34,7 @@ export default function RootLayout({
 }>) {
     return (
         <html lang="en" suppressHydrationWarning>
-        <body className={`${inter.variable} ${jetbrainsMono.variable} h-full antialiased font-sans`}>
+        <body className={`${geistSans.variable} ${geistMono.variable} h-full antialiased font-sans`}>
         <ThemeProvider
             attribute="class"
             defaultTheme="system"

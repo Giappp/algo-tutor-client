@@ -75,7 +75,6 @@ export interface HowItWorksStep {
 export interface LandingPageData {
     stats: PlatformStats;
     features: Feature[];
-    roadmaps: RoadmapTopic[];
     testimonials: Testimonial[];
     faqs: FaqItem[];
     howItWorks: HowItWorksStep[];

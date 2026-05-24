@@ -87,6 +87,10 @@
   --difficulty-easy: oklch(0.65 0.2 145);
   --difficulty-medium: oklch(0.7 0.18 85);
   --difficulty-hard: oklch(0.6 0.22 25);
+  --lesson-accent: var(--primary);
+  --lesson-accent-muted: oklch(0.55 0.2 250 / 10%);
+  --lesson-accent-border: oklch(0.55 0.2 250 / 30%);
+  --lesson-accent-glow: oklch(0.55 0.2 250 / 20%);
 }
 
 .dark {
@@ -124,6 +128,10 @@
   --difficulty-easy: oklch(0.72 0.18 145);
   --difficulty-medium: oklch(0.75 0.16 80);
   --difficulty-hard: oklch(0.65 0.2 25);
+  --lesson-accent: var(--primary);
+  --lesson-accent-muted: oklch(0.7 0.18 195 / 10%);
+  --lesson-accent-border: oklch(0.7 0.18 195 / 30%);
+  --lesson-accent-glow: oklch(0.7 0.18 195 / 20%);
 }
 
 @layer base {
@@ -153,6 +161,33 @@ main {
    ============================================ */
 
 @layer utilities {
+  /* Subtle noise texture overlay for visual richness */
+  .noise-texture {
+    position: relative;
+  }
+  .noise-texture::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    opacity: 0.03;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+    background-repeat: repeat;
+    background-size: 200px 200px;
+    z-index: 0;
+    border-radius: inherit;
+  }
+
+  /* Gradient-fading divider utilities */
+  .divider-fade-x {
+    height: 1px;
+    background: linear-gradient(to right, transparent, var(--border) 20%, var(--border) 80%, transparent);
+  }
+  .divider-fade-y {
+    width: 1px;
+    background: linear-gradient(to bottom, transparent, var(--border) 20%, var(--border) 80%, transparent);
+  }
+
   /* Dot-grid background pattern */
   .bg-dotgrid {
     background-image: radial-gradient(circle, var(--muted-foreground) 1px, transparent 1px);

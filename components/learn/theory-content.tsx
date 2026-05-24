@@ -4,12 +4,14 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import rehypeRaw from "rehype-raw";
+import { motion } from "framer-motion";
 import type { TheoryLesson } from "@/lib/types/lesson";
 import { LessonTypeIcon } from "@/components/roadmap/lesson-type-icon";
 import { DifficultyBadge } from "@/components/roadmap/difficulty-badge";
-import { Progress } from "@/components/ui/progress";
 import { ClockIcon } from "lucide-react";
 import { useSectionVisibility } from "@/hooks/use-section-visibility";
+import { springs } from "@/lib/motion";
+import { cn } from "@/lib/utils";
 
 interface TheoryContentProps {
     lesson: TheoryLesson;
@@ -46,7 +48,13 @@ export function TheoryContent({ lesson, onComplete, isCompleted }: TheoryContent
             {!autoCompleted && !isCompleted && progressPercent > 0 && !dismissedBanner && (
                 <div className="shrink-0 px-6 py-2 border-b border-border/40 bg-muted/20">
                     <div className="max-w-[680px] mx-auto flex items-center gap-3">
-                        <Progress value={progressPercent} className="h-1 flex-1" />
+                        <div className={cn("h-1 flex-1 rounded-full bg-muted overflow-hidden")}>
+                            <motion.div
+                                className="h-full rounded-full bg-[var(--lesson-accent)]"
+                                animate={{ width: `${progressPercent}%` }}
+                                transition={springs.gentle}
+                            />
+                        </div>
                         <span className="text-[10px] text-muted-foreground whitespace-nowrap">
                             {progressPercent}%
                         </span>

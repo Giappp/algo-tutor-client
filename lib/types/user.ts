@@ -12,4 +12,5 @@ export interface EnrollmentListItem {
   completionPercentage: number; // 0-100 integer
   nextLessonSlug: string | null;
   nextLessonTitle: string | null;
+  thumbnailUrl: string | null;
 }

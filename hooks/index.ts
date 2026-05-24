@@ -5,3 +5,6 @@
 export {useApiData, usePaginatedData} from "./use-api-data";
 export {useScrollReveal} from "./use-scroll-reveal";
 export {useRoadmapActions} from "./use-roadmap-actions";
+export {useReducedMotion} from "./use-reduced-motion";
+export {useEnrollments} from "./use-enrollments";
+

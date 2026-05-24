@@ -42,18 +42,18 @@ export function LessonContentArea({
                             asChild
                             className="gap-1.5 h-9 text-muted-foreground hover:text-foreground"
                         >
-                            <Link href={`/app/learn/${roadmapSlug}/${prev.slug}`}>
+                            <Link href={`/learn/${roadmapSlug}/${prev.slug}`}>
                                 <ArrowLeftIcon className="size-4"/>
-                                <span className="hidden sm:inline truncate max-w-[140px] text-xs">
+                                <span className="hidden sm:inline truncate max-w-[140px] text-sm">
                                     {prev.title}
                                 </span>
-                                <span className="sm:hidden text-xs">Prev</span>
+                                <span className="sm:hidden text-sm">Prev</span>
                             </Link>
                         </Button>
                     ) : (
                         <Button variant="ghost" size="sm" disabled className="gap-1.5 h-9 opacity-40">
                             <ArrowLeftIcon className="size-4"/>
-                            <span className="text-xs">Previous</span>
+                            <span className="text-sm">Previous</span>
                         </Button>
                     )}
 
@@ -76,7 +76,7 @@ export function LessonContentArea({
                         ) : (
                             <CheckCircle2Icon className="size-4"/>
                         )}
-                        <span className="text-xs">
+                        <span className="text-sm">
                             {isCompleted ? "Completed" : "Mark Complete"}
                         </span>
                     </Button>
@@ -91,18 +91,18 @@ export function LessonContentArea({
                             asChild
                             className="gap-1.5 h-9 bg-primary/90 hover:bg-primary"
                         >
-                            <Link href={`/app/learn/${roadmapSlug}/${next.slug}`}>
-                                <span className="hidden sm:inline truncate max-w-[140px] text-xs">
+                            <Link href={`/learn/${roadmapSlug}/${next.slug}`}>
+                                <span className="hidden sm:inline truncate max-w-[140px] text-sm">
                                     {next.title}
                                 </span>
-                                <span className="sm:hidden text-xs">Next</span>
+                                <span className="sm:hidden text-sm">Next</span>
                                 <ArrowRightIcon className="size-4"/>
                             </Link>
                         </Button>
                     ) : (
                         <Button variant="outline" size="sm" asChild className="gap-1.5 h-9">
                             <Link href={`/roadmaps/${roadmapSlug}`}>
-                                <span className="text-xs">Finish Course</span>
+                                <span className="text-sm">Finish Course</span>
                                 <CheckCircle2Icon className="size-4"/>
                             </Link>
                         </Button>

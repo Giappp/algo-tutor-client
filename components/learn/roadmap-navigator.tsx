@@ -1,10 +1,12 @@
 "use client";
 
+import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { LessonTypeIcon } from "@/components/roadmap/lesson-type-icon";
 import { DifficultyBadge } from "@/components/roadmap/difficulty-badge";
+import { springs } from "@/lib/motion";
 import type {
     RoadmapDetailResponse,
     TopicWithLessons,
@@ -69,9 +71,10 @@ export function RoadmapNavigator({
                                     </div>
                                     <div className="ml-[38px]">
                                         <div className="h-1.5 rounded-full bg-background/80 overflow-hidden">
-                                            <div
-                                                className="h-full rounded-full bg-primary/80 transition-all"
-                                                style={{ width: `${progress}%` }}
+                                            <motion.div
+                                                className="h-full rounded-full bg-primary/80"
+                                                animate={{ width: `${progress}%` }}
+                                                transition={springs.gentle}
                                             />
                                         </div>
                                         <span className="text-xs text-muted-foreground/80 mt-1 inline-block">
@@ -94,7 +97,7 @@ export function RoadmapNavigator({
                                                 className={cn(
                                                     "w-full flex items-center gap-2.5 rounded-md px-3 py-2 text-left transition-all",
                                                     isActive
-                                                        ? "bg-primary/10 border border-primary/25 text-primary"
+                                                        ? "bg-[var(--lesson-accent-muted)] border border-[var(--lesson-accent-border)] text-[var(--lesson-accent)]"
                                                         : isLocked
                                                         ? "opacity-40 cursor-not-allowed text-muted-foreground"
                                                         : "hover:bg-muted/40 text-foreground/70 hover:text-foreground"

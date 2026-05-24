@@ -1,10 +1,15 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
-export function useTimer() {
+interface UseTimerOptions {
+    /** If true, timer starts paused and must be started manually via `start()`. Default: false */
+    startPaused?: boolean;
+}
+
+export function useTimer({ startPaused = false }: UseTimerOptions = {}) {
     const [seconds, setSeconds] = useState(0);
-    const [isRunning, setIsRunning] = useState(true);
+    const [isRunning, setIsRunning] = useState(!startPaused);
     const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
     useEffect(() => {
@@ -16,8 +21,16 @@ export function useTimer() {
         };
     }, [isRunning]);
 
+    const start = useCallback(() => setIsRunning(true), []);
+    const stop = useCallback(() => setIsRunning(false), []);
+    const toggle = useCallback(() => setIsRunning((r) => !r), []);
+    const reset = useCallback(() => {
+        setSeconds(0);
+        setIsRunning(!startPaused);
+    }, [startPaused]);
+
     const fmt = (s: number) =>
         `${Math.floor(s / 60).toString().padStart(2, "0")}:${(s % 60).toString().padStart(2, "0")}`;
 
-    return { formatted: fmt(seconds), toggle: () => setIsRunning((r) => !r), isRunning };
+    return { seconds, formatted: fmt(seconds), isRunning, start, stop, toggle, reset };
 }

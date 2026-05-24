@@ -1,6 +1,6 @@
 import axios from "axios";
-import {toast} from "sonner";
-import {getMockResponse, mockEnroll, mockUpdateProgress} from "@/lib/mock/mock-api";
+import { toast } from "sonner";
+import { getMockResponse, mockEnroll, mockUpdateProgress } from "@/lib/mock/mock-api";
 
 const NETWORK_ERROR_TOAST_ID = "NETWORK_ERROR_TOAST";
 const USE_MOCK_FALLBACK = process.env.NEXT_PUBLIC_USE_MOCK === "true";
@@ -62,6 +62,10 @@ apiClient.interceptors.response.use(
         const hasFieldErrors = error.response?.data?.errors;
 
         if (status === 401 && url?.includes("/iam/me")) {
+            return Promise.reject(error);
+        }
+
+        if (status === 403) {
             return Promise.reject(error);
         }
 

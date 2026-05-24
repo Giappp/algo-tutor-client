@@ -77,65 +77,6 @@ export const MOCK_FEATURES: Feature[] = [
     },
 ];
 
-export const MOCK_ROADMAPS: RoadmapTopic[] = [
-    {
-        id: "arrays-strings",
-        name: "Arrays & Strings",
-        iconKey: "Braces",
-        problemCount: 142,
-        difficultyBreakdown: {easy: 48, medium: 62, hard: 32},
-    },
-    {
-        id: "linked-lists",
-        name: "Linked Lists",
-        iconKey: "ListOrdered",
-        problemCount: 68,
-        difficultyBreakdown: {easy: 22, medium: 30, hard: 16},
-    },
-    {
-        id: "trees",
-        name: "Trees",
-        iconKey: "Network",
-        problemCount: 96,
-        difficultyBreakdown: {easy: 28, medium: 44, hard: 24},
-    },
-    {
-        id: "graphs",
-        name: "Graphs",
-        iconKey: "Network",
-        problemCount: 84,
-        difficultyBreakdown: {easy: 20, medium: 38, hard: 26},
-    },
-    {
-        id: "dynamic-programming",
-        name: "Dynamic Programming",
-        iconKey: "TrendingUp",
-        problemCount: 120,
-        difficultyBreakdown: {easy: 30, medium: 54, hard: 36},
-    },
-    {
-        id: "sorting-searching",
-        name: "Sorting & Searching",
-        iconKey: "Layers",
-        problemCount: 78,
-        difficultyBreakdown: {easy: 24, medium: 36, hard: 18},
-    },
-    {
-        id: "stacks-queues",
-        name: "Stacks & Queues",
-        iconKey: "Cpu",
-        problemCount: 54,
-        difficultyBreakdown: {easy: 18, medium: 24, hard: 12},
-    },
-    {
-        id: "hash-tables",
-        name: "Hash Tables",
-        iconKey: "Map",
-        problemCount: 62,
-        difficultyBreakdown: {easy: 22, medium: 28, hard: 12},
-    },
-];
-
 export const MOCK_TESTIMONIALS: Testimonial[] = [
     {
         id: "testi-1",
@@ -248,7 +189,6 @@ export const MOCK_HOW_IT_WORKS: HowItWorksStep[] = [
 export const MOCK_LANDING_DATA: LandingPageData = {
     stats: MOCK_STATS,
     features: MOCK_FEATURES,
-    roadmaps: MOCK_ROADMAPS,
     testimonials: MOCK_TESTIMONIALS,
     faqs: MOCK_FAQS,
     howItWorks: MOCK_HOW_IT_WORKS,

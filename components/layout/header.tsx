@@ -47,10 +47,6 @@ export function Header({title, description}: HeaderProps) {
                         />
                     </div>
                 )}
-                <Button size="sm" className="hidden sm:inline-flex gap-1.5 text-xs h-7">
-                    <PlusIcon className="size-3.5"/>
-                    New Problem
-                </Button>
                 <ThemeToggle/>
                 <Button variant="ghost" size="icon" className="size-9 relative">
                     <BellIcon className="size-5 text-muted-foreground"/>
