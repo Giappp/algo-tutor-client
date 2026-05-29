@@ -8,6 +8,7 @@ import { useTimer } from "@/components/learn/coding/use-timer";
 import { Button } from "@/components/ui/button";
 import { springs, slideVariants } from "@/lib/motion";
 import { useReducedMotion } from "@/hooks/use-reduced-motion";
+import { cn } from "@/lib/utils";
 import {
     ArrowLeftIcon,
     ArrowRightIcon,
@@ -250,50 +251,38 @@ export function QuizContent({
     const hasAnswered = (answers[currentQuestion.id] ?? []).length > 0;
 
     return (
-        <div className="flex-1 overflow-y-auto">
-            <div className="max-w-2xl mx-auto px-6 py-8 space-y-6">
-                <div className="space-y-2">
-                    <div className="flex items-center justify-between text-xs text-muted-foreground">
-                        <span className="font-sans">{quiz.title}</span>
-                        <span className="flex items-center gap-2">
-                            {hasStartedRef.current && (
-                                <span className="font-mono">{timer.formatted}</span>
-                            )}
-                            <span>
-                                {currentIndex + 1} / {totalQuestions}
-                            </span>
-                        </span>
-                    </div>
-                    <div className="h-2 rounded-full bg-muted overflow-hidden">
-                        <motion.div
-                            className="h-full rounded-full bg-[var(--lesson-accent)]"
-                            animate={{ width: `${progress}%` }}
-                            transition={springs.gentle}
-                        />
-                    </div>
-                </div>
+        <div className="flex-1 overflow-y-auto bg-background/30">
+            <div className="max-w-5xl mx-auto px-6 py-6 sm:py-8">
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+                    
+                    {/* Left Column: Active Question Card & Navigation */}
+                    <div className="lg:col-span-8 space-y-6">
+                        
+                        {/* Mobile Header / Progress Bar */}
+                        <div className="space-y-2 lg:hidden">
+                            <div className="flex items-center justify-between text-xs text-muted-foreground">
+                                <span className="font-sans truncate max-w-[200px]">{quiz.title}</span>
+                                <span className="flex items-center gap-2">
+                                    {hasStartedRef.current && (
+                                        <span className="font-mono bg-muted px-2 py-0.5 rounded text-[10px]">{timer.formatted}</span>
+                                    )}
+                                    <span className="font-medium">
+                                        {currentIndex + 1} / {totalQuestions}
+                                    </span>
+                                </span>
+                            </div>
+                            <div className="h-1.5 rounded-full bg-muted overflow-hidden">
+                                <motion.div
+                                    className="h-full rounded-full bg-[var(--lesson-accent)]"
+                                    animate={{ width: `${progress}%` }}
+                                    transition={springs.gentle}
+                                />
+                            </div>
+                        </div>
 
-                <div className="rounded-2xl border border-border bg-card p-6">
-                    {reducedMotion ? (
-                        <QuestionCard
-                            question={currentQuestion}
-                            questionNumber={currentIndex + 1}
-                            totalQuestions={totalQuestions}
-                            selectedIds={answers[currentQuestion.id] ?? []}
-                            showResult={false}
-                            onAnswer={handleAnswer}
-                        />
-                    ) : (
-                        <AnimatePresence mode="wait" custom={direction}>
-                            <motion.div
-                                key={currentIndex}
-                                custom={direction}
-                                variants={slideVariants}
-                                initial="enter"
-                                animate="center"
-                                exit="exit"
-                                transition={springs.snappy}
-                            >
+                        {/* Question Card */}
+                        <div className="rounded-2xl border border-border bg-card p-6 shadow-sm relative">
+                            {reducedMotion ? (
                                 <QuestionCard
                                     question={currentQuestion}
                                     questionNumber={currentIndex + 1}
@@ -302,43 +291,143 @@ export function QuizContent({
                                     showResult={false}
                                     onAnswer={handleAnswer}
                                 />
-                            </motion.div>
-                        </AnimatePresence>
-                    )}
+                            ) : (
+                                <AnimatePresence mode="wait" custom={direction}>
+                                    <motion.div
+                                        key={currentIndex}
+                                        custom={direction}
+                                        variants={slideVariants}
+                                        initial="enter"
+                                        animate="center"
+                                        exit="exit"
+                                        transition={springs.snappy}
+                                    >
+                                        <QuestionCard
+                                            question={currentQuestion}
+                                            questionNumber={currentIndex + 1}
+                                            totalQuestions={totalQuestions}
+                                            selectedIds={answers[currentQuestion.id] ?? []}
+                                            showResult={false}
+                                            onAnswer={handleAnswer}
+                                        />
+                                    </motion.div>
+                                </AnimatePresence>
+                            )}
+                        </div>
+
+                        {/* Navigation Buttons */}
+                        <div className="flex items-center gap-3">
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={handlePrev}
+                                disabled={currentIndex === 0}
+                                className="gap-1.5 h-10 px-4 rounded-xl text-xs font-semibold"
+                            >
+                                <ArrowLeftIcon className="size-3.5" />
+                                Quay lại
+                            </Button>
+
+                            <div className="flex-1" />
+
+                            <Button
+                                size="sm"
+                                onClick={handleNext}
+                                disabled={!hasAnswered || isSubmitting}
+                                className="gap-1.5 h-10 px-5 rounded-xl text-xs font-semibold shadow-md shadow-primary/10"
+                            >
+                                {isSubmitting && <Loader2Icon className="size-3.5 animate-spin" />}
+                                {currentIndex === totalQuestions - 1 ? "Nộp bài Quiz" : "Câu tiếp theo"}
+                                {!isSubmitting && <ArrowRightIcon className="size-3.5" />}
+                            </Button>
+                        </div>
+
+                        {/* Mobile Progress Dots */}
+                        <div className="block lg:hidden pt-2">
+                            <QuizProgressDots
+                                questions={quiz.questions}
+                                answers={answers}
+                                currentIndex={currentIndex}
+                                onNavigate={handleNavigate}
+                            />
+                        </div>
+                    </div>
+
+                    {/* Right Column: Sticky Quiz Progress, Navigation Grid & Timer */}
+                    <div className="lg:col-span-4 space-y-6 lg:sticky lg:top-0">
+                        
+                        {/* Timer Card */}
+                        <div className="rounded-2xl border border-border bg-card p-5 space-y-3.5 shadow-sm text-center">
+                            <h4 className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
+                                Thời gian làm bài
+                            </h4>
+                            <div className="flex items-center justify-center gap-2 text-2xl font-bold font-mono tracking-tight text-foreground">
+                                <span className="size-2 rounded-full bg-emerald-500 animate-pulse" />
+                                {hasStartedRef.current ? timer.formatted : "00:00"}
+                            </div>
+                        </div>
+
+                        {/* Interactive Questions Navigator Grid */}
+                        <div className="rounded-2xl border border-border bg-card p-5 space-y-4 shadow-sm">
+                            <div className="flex items-center justify-between border-b border-border/50 pb-3">
+                                <h4 className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
+                                    Bản đồ câu hỏi
+                                </h4>
+                                <span className="text-[10px] font-medium text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
+                                    Đã trả lời: {Object.keys(answers).filter(k => answers[Number(k)]?.length > 0).length}/{totalQuestions}
+                                </span>
+                            </div>
+
+                            {/* Responsive Squares Grid */}
+                            <div className="grid grid-cols-5 gap-2">
+                                {quiz.questions.map((q, i) => {
+                                    const isCurrent = i === currentIndex;
+                                    const isAnswered = (answers[q.id] ?? []).length > 0;
+                                    return (
+                                        <button
+                                            key={q.id}
+                                            onClick={() => handleNavigate(i)}
+                                            className={cn(
+                                                "size-9 rounded-xl border font-mono text-xs font-bold flex items-center justify-center transition-all",
+                                                isCurrent
+                                                    ? "border-[var(--lesson-accent)] bg-[var(--lesson-accent)]/10 text-[var(--lesson-accent)] shadow-sm scale-105"
+                                                    : isAnswered
+                                                    ? "border-emerald-500/30 bg-emerald-500/5 text-emerald-600 dark:text-emerald-400"
+                                                    : "border-border bg-muted/20 text-muted-foreground hover:bg-muted/40 hover:text-foreground"
+                                            )}
+                                        >
+                                            {i + 1}
+                                        </button>
+                                    );
+                                })}
+                            </div>
+
+                            {/* Grid Legend */}
+                            <div className="flex justify-between items-center text-[10px] text-muted-foreground/80 pt-1 border-t border-border/40">
+                                <div className="flex items-center gap-1">
+                                    <span className="size-2 rounded bg-emerald-500/10 border border-emerald-500/20" />
+                                    <span>Đã làm</span>
+                                </div>
+                                <div className="flex items-center gap-1">
+                                    <span className="size-2 rounded bg-[var(--lesson-accent)]/10 border border-[var(--lesson-accent)]" />
+                                    <span>Đang xem</span>
+                                </div>
+                                <div className="flex items-center gap-1">
+                                    <span className="size-2 rounded bg-muted/20 border border-border" />
+                                    <span>Chưa làm</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Quiz Summary Requirement */}
+                        <div className="rounded-2xl border border-border bg-card p-4 space-y-2.5 shadow-sm text-xs text-muted-foreground leading-relaxed">
+                            <p>
+                                <strong>Mục tiêu:</strong> Trả lời chính xác ít nhất <strong>{quiz.passingScore}%</strong> ({Math.ceil(totalQuestions * quiz.passingScore / 100)}/{totalQuestions} câu) để được tính là hoàn thành.
+                            </p>
+                        </div>
+                    </div>
+                    
                 </div>
-
-                <div className="flex items-center gap-3">
-                    <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={handlePrev}
-                        disabled={currentIndex === 0}
-                        className="gap-1.5"
-                    >
-                        <ArrowLeftIcon className="size-3.5" />
-                        Previous
-                    </Button>
-
-                    <div className="flex-1" />
-
-                    <Button
-                        size="sm"
-                        onClick={handleNext}
-                        disabled={!hasAnswered || isSubmitting}
-                        className="gap-1.5"
-                    >
-                        {isSubmitting && <Loader2Icon className="size-3.5 animate-spin" />}
-                        {currentIndex === totalQuestions - 1 ? "Submit Quiz" : "Next Question"}
-                        {!isSubmitting && <ArrowRightIcon className="size-3.5" />}
-                    </Button>
-                </div>
-
-                <QuizProgressDots
-                    questions={quiz.questions}
-                    answers={answers}
-                    currentIndex={currentIndex}
-                    onNavigate={handleNavigate}
-                />
             </div>
         </div>
     );

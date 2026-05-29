@@ -14,3 +14,18 @@ export interface EnrollmentListItem {
   nextLessonTitle: string | null;
   thumbnailUrl: string | null;
 }
+
+export interface UserProfile {
+  username: string;
+  fullName?: string;
+  avatarUrl?: string;
+  level: number;
+  currentXp: number;
+  nextLevelXp: number;
+  title?: string;
+  joinedDate?: string | Date;
+  location?: string;
+  streakCount: number;
+  nextStreakGoal: number;
+}
+

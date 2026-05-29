@@ -63,6 +63,7 @@ export interface LessonContext {
     lessonSlug: string;
     lessonTitle: string;
     lessonType: "THEORY" | "QUIZ" | "CODING";
+    lessonId?: number;
     problemDescription?: string;
 }
 

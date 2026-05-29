@@ -9,6 +9,10 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { useUser } from "@/hooks/use-user";
+import useSWR from "swr";
+import { fetcher } from "@/api/fetchers";
+import { Skeleton } from "@/components/ui/skeleton";
 
 // ─── API Description ────────────────────────────────────────────────────────
 // GET /api/users/me/activity-heatmap?year=2025
@@ -90,16 +94,144 @@ function getIntensityClass(count: number): string {
   return "bg-[oklch(0.45_0.2_145)]";
 }
 
+function calculateStreaks(contributions: Record<string, number>) {
+  const dates = Object.keys(contributions)
+    .filter((dateStr) => contributions[dateStr] > 0)
+    .map((dateStr) => new Date(dateStr))
+    .sort((a, b) => a.getTime() - b.getTime());
+
+  if (dates.length === 0) {
+    return { currentStreak: 0, longestStreak: 0 };
+  }
+
+  let longest = 0;
+  let prevDate: Date | null = null;
+  let tempStreak = 0;
+
+  for (const d of dates) {
+    if (prevDate === null) {
+      tempStreak = 1;
+    } else {
+      const diffTime = d.getTime() - prevDate.getTime();
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      if (diffDays === 1) {
+        tempStreak++;
+      } else if (diffDays > 1) {
+        if (tempStreak > longest) {
+          longest = tempStreak;
+        }
+        tempStreak = 1;
+      }
+    }
+    prevDate = d;
+  }
+  if (tempStreak > longest) {
+    longest = tempStreak;
+  }
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const yesterday = new Date(today);
+  yesterday.setDate(yesterday.getDate() - 1);
+
+  const activeDateStrings = new Set(
+    Object.keys(contributions).filter((dateStr) => contributions[dateStr] > 0)
+  );
+
+  const todayStr = today.toISOString().split("T")[0];
+  const yesterdayStr = yesterday.toISOString().split("T")[0];
+  let current = 0;
+
+  if (activeDateStrings.has(todayStr) || activeDateStrings.has(yesterdayStr)) {
+    let checkDate = activeDateStrings.has(todayStr) ? today : yesterday;
+    let count = 0;
+    while (true) {
+      const checkStr = checkDate.toISOString().split("T")[0];
+      if (activeDateStrings.has(checkStr)) {
+        count++;
+        checkDate.setDate(checkDate.getDate() - 1);
+      } else {
+        break;
+      }
+    }
+    current = count;
+  }
+
+  return { currentStreak: current, longestStreak: Math.max(longest, current) };
+}
+
 export function ActivityHeatmap() {
+  const { user } = useUser();
   const year = new Date().getFullYear();
 
-  // TODO: Replace with SWR fetch from API
-  // const { data } = useSWR(`/api/users/me/activity-heatmap?year=${year}`, fetcher);
-  const heatmapData = useMemo(() => generateMockData(year), [year]);
+  const { data: heatmapDataResponse, isLoading } = useSWR<Record<string, number>>(
+    user ? `/users/me/activity-heatmap?year=${year}` : null,
+    fetcher
+  );
+
+  const heatmapData = useMemo(() => {
+    const rawData = heatmapDataResponse || {};
+    const dataArray: ActivityDay[] = Object.entries(rawData).map(([date, count]) => ({
+      date,
+      count: Number(count),
+    }));
+
+    const totalLessons = dataArray.reduce((sum, d) => sum + d.count, 0);
+    const streaks = calculateStreaks(rawData);
+
+    return {
+      year,
+      data: dataArray,
+      totalLessons,
+      currentStreak: user?.currentStreak ?? streaks.currentStreak ?? 0,
+      longestStreak: user?.maxStreak ?? streaks.longestStreak ?? 0,
+    };
+  }, [heatmapDataResponse, year, user]);
 
   const { grid, monthLabels } = useMemo(() => {
     return buildGrid(year, heatmapData.data);
   }, [year, heatmapData.data]);
+
+  if (isLoading) {
+    return (
+      <Card className="animate-pulse">
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between">
+            <Skeleton className="h-6 w-36 rounded-md" />
+            <div className="flex items-center gap-4">
+              <Skeleton className="h-5 w-24 rounded-full" />
+              <Skeleton className="h-5 w-32 rounded-full" />
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            <div className="flex gap-1 mb-2 ml-8">
+              {Array.from({ length: 12 }).map((_, i) => (
+                <Skeleton key={i} className="h-4 w-8 rounded" />
+              ))}
+            </div>
+            <div className="flex gap-2">
+              <div className="flex flex-col gap-1.5 w-7 shrink-0">
+                {Array.from({ length: 7 }).map((_, i) => (
+                  <Skeleton key={i} className="h-3 w-5 rounded" />
+                ))}
+              </div>
+              <div className="flex gap-[3px] flex-1 overflow-hidden">
+                {Array.from({ length: 53 }).map((_, i) => (
+                  <div key={i} className="flex flex-col gap-[3px]">
+                    {Array.from({ length: 7 }).map((_, j) => (
+                      <Skeleton key={j} className="size-[12px] rounded-[2px] shrink-0" />
+                    ))}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card>

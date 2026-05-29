@@ -198,20 +198,60 @@ export function QuizOverview({
     const hasAttempts = !!attempts && attempts.length > 0;
 
     return (
-        <div className="flex-1 overflow-y-auto">
-            <div className="max-w-2xl mx-auto px-6 py-8 space-y-6">
-                {/* Quiz info */}
-                <QuizInfoCard quiz={quiz} />
+        <div className="flex-1 overflow-y-auto bg-background/30">
+            <div className="max-w-5xl mx-auto px-6 py-6 sm:py-10">
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+                    
+                    {/* Left Panel: Quiz details & entry */}
+                    <div className="lg:col-span-7 space-y-6">
+                        <div className="space-y-2">
+                            <h2 className="text-sm font-semibold text-[var(--lesson-accent)] tracking-wider uppercase">
+                                Lesson Quiz
+                            </h2>
+                            <p className="text-xs text-muted-foreground">
+                                Đánh giá mức độ hiểu biết của bạn để đánh dấu hoàn thành bài học này.
+                            </p>
+                        </div>
 
-                {/* Start / Retry button */}
-                <StartButton hasAttempts={hasAttempts} onStart={onStart} />
+                        {/* Quiz stats & info */}
+                        <QuizInfoCard quiz={quiz} />
 
-                {/* History section */}
-                <QuizAttemptsHistory
-                    roadmapSlug={roadmapSlug}
-                    lessonSlug={lessonSlug}
-                    passingScore={quiz.passingScore}
-                />
+                        {/* Instructions / Tips */}
+                        <div className="rounded-2xl border border-border bg-card/60 p-5 space-y-3.5 relative overflow-hidden">
+                            <div className="absolute right-0 top-0 size-24 bg-primary/5 blur-2xl rounded-full" />
+                            <h4 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                                <ZapIcon className="size-4 text-amber-500 fill-amber-500" />
+                                Hướng dẫn làm bài
+                            </h4>
+                            <ul className="text-xs text-muted-foreground space-y-2 list-disc pl-4 leading-relaxed">
+                                <li><strong>Điểm tối thiểu đạt:</strong> Bạn cần đạt ít nhất <span className="text-emerald-500 font-semibold">{quiz.passingScore}%</span> số câu trả lời chính xác để hoàn thành bài này.</li>
+                                <li><strong>Không giới hạn thời gian:</strong> Hãy suy nghĩ kỹ trước khi chọn, không có áp lực thời gian.</li>
+                                <li><strong>Hỗ trợ làm lại:</strong> Bạn có thể làm lại quiz này bao nhiêu lần tùy thích để ôn tập và cải thiện điểm số.</li>
+                                <li><strong>Học cùng AI:</strong> Nếu gặp câu khó, bạn luôn có thể bật bảng <strong>AI Tutor</strong> ở góc trên bên phải để được hướng dẫn!</li>
+                            </ul>
+                        </div>
+
+                        {/* Start action */}
+                        <div className="pt-2">
+                            <StartButton hasAttempts={hasAttempts} onStart={onStart} />
+                        </div>
+                    </div>
+
+                    {/* Right Panel: Attempts History */}
+                    <div className="lg:col-span-5 space-y-6">
+                        <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">
+                            <h3 className="text-sm font-bold text-foreground mb-4 uppercase tracking-wider">
+                                Lịch sử làm bài
+                            </h3>
+                            <QuizAttemptsHistory
+                                roadmapSlug={roadmapSlug}
+                                lessonSlug={lessonSlug}
+                                passingScore={quiz.passingScore}
+                            />
+                        </div>
+                    </div>
+                    
+                </div>
             </div>
         </div>
     );

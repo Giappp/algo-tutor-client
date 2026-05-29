@@ -82,7 +82,7 @@ function LockedLessonContent({
         <div className="flex flex-col items-center justify-center h-full max-w-md mx-auto px-6 py-20 text-center space-y-6">
             <div className="relative">
                 {/* Decorative background glow */}
-                <div className="absolute -inset-1 rounded-full bg-gradient-to-r from-purple-600 via-violet-600 to-fuchsia-600 opacity-70 blur-lg animate-pulse" />
+                <div className="absolute -inset-1 rounded-full bg-linear-to-r from-purple-600 via-violet-600 to-fuchsia-600 opacity-70 blur-lg animate-pulse" />
                 <div className="relative size-16 rounded-full bg-background border border-border flex items-center justify-center shadow-lg">
                     <LockIcon className="size-7 text-purple-500" />
                 </div>
@@ -102,7 +102,7 @@ function LockedLessonContent({
                 <button
                     onClick={onEnroll}
                     disabled={isEnrolling}
-                    className="flex items-center justify-center gap-2 h-11 w-full rounded-xl bg-gradient-to-r from-purple-600 via-violet-600 to-fuchsia-600 px-6 text-sm font-semibold text-white shadow-lg shadow-purple-600/35 transition-all duration-200 hover:scale-[1.02] hover:shadow-xl hover:shadow-purple-600/45 active:scale-[0.98] disabled:opacity-75 disabled:cursor-not-allowed"
+                    className="flex items-center justify-center gap-2 h-11 w-full rounded-xl bg-linear-to-r from-purple-600 via-violet-600 to-fuchsia-600 px-6 text-sm font-semibold text-white shadow-lg shadow-purple-600/35 transition-all duration-200 hover:scale-[1.02] hover:shadow-xl hover:shadow-purple-600/45 active:scale-[0.98] disabled:opacity-75 disabled:cursor-not-allowed"
                 >
                     {isEnrolling ? (
                         <>
@@ -114,7 +114,7 @@ function LockedLessonContent({
                     )}
                 </button>
             </div>
-            
+
             <Link
                 href={`/roadmaps/${roadmapSlug}`}
                 className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors font-medium"
@@ -240,27 +240,5 @@ export default function LearnPage({ params }: PageProps) {
         content = <NotFoundContent lessonSlug={lessonSlug} />;
     }
 
-    return (
-        <LessonThemeProvider lessonType={lessonType}>
-            <LearningLayout
-                roadmapSlug={roadmapSlug}
-                lessonSlug={lessonSlug}
-                lessonType={lessonType}
-                roadmapData={roadmap}
-                isUpdating={isUpdatingProgress}
-                isLocked={isLocked}
-                onMarkComplete={async () => {
-                    try {
-                        await updateLessonProgress(roadmapSlug, lessonSlug, "COMPLETED");
-                        mutateRoadmap();
-                        setContentCompleted(true);
-                    } catch {
-                        // error handled by API interceptor
-                    }
-                }}
-            >
-                {content}
-            </LearningLayout>
-        </LessonThemeProvider>
-    );
+    return <>{content}</>;
 }

@@ -48,7 +48,7 @@ export function ContinueLessonCard() {
     if (!enrollments || enrollments.length === 0) {
         return (
             <div className="rounded-xl border border-border bg-card p-8 text-center space-y-4 relative overflow-hidden group">
-                <div className="absolute inset-0 bg-gradient-to-tr from-primary/5 via-transparent to-transparent opacity-50 pointer-events-none" />
+                <div className="absolute inset-0 bg-linear-to-tr from-primary/5 via-transparent to-transparent opacity-50 pointer-events-none" />
                 <div className="size-12 rounded-full bg-muted flex items-center justify-center mx-auto shadow-inner">
                     <BookOpenIcon className="size-5 text-muted-foreground/70" />
                 </div>
@@ -79,9 +79,13 @@ export function ContinueLessonCard() {
                         Lộ trình đang học
                     </h3>
                 </div>
-                <span className="text-xs text-muted-foreground font-medium bg-muted px-2 py-0.5 rounded-full">
-                    {enrollments.length} Lộ trình
-                </span>
+                <Link
+                    href="/my-roadmaps"
+                    className="text-xs text-primary hover:text-primary/80 font-bold transition-colors flex items-center gap-1 group/link"
+                >
+                    Xem tất cả ({enrollments.length})
+                    <span className="transition-transform duration-200 group-hover/link:translate-x-0.5">&rarr;</span>
+                </Link>
             </div>
 
             <div className="p-5 space-y-4">
@@ -104,10 +108,11 @@ export function ContinueLessonCard() {
                                             src={item.thumbnailUrl}
                                             alt={item.roadmapName}
                                             fill
-                                            className="object-cover"
+                                            className="object-cover transition-transform duration-700 ease-out group-hover:scale-105"
+                                            sizes="(max-width: 640px) 48px, 56px"
                                         />
                                     ) : (
-                                        <div className="size-full flex items-center justify-center bg-gradient-to-br from-purple-500/10 to-indigo-500/10 text-purple-500">
+                                        <div className="size-full flex items-center justify-center bg-linear-to-br from-purple-500/10 to-indigo-500/10 text-purple-500">
                                             <BookOpenIcon className="size-5 sm:size-6" />
                                         </div>
                                     )}
@@ -142,7 +147,7 @@ export function ContinueLessonCard() {
                                     </div>
                                     <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden shadow-inner">
                                         <div
-                                            className="h-full rounded-full bg-gradient-to-r from-purple-500 to-indigo-500 transition-all duration-500 group-hover:from-purple-600 group-hover:to-indigo-600"
+                                            className="h-full rounded-full bg-linear-to-r from-purple-500 to-indigo-500 transition-all duration-500 group-hover:from-purple-600 group-hover:to-indigo-600"
                                             style={{ width: `${item.completionPercentage}%` }}
                                         />
                                     </div>
@@ -154,8 +159,8 @@ export function ContinueLessonCard() {
                                         size="sm"
                                         variant={isCompleted ? "outline" : "default"}
                                         className={`w-full sm:w-auto h-9 px-4 font-semibold rounded-lg shadow-sm whitespace-nowrap transition-all duration-200 active:scale-95 ${isCompleted
-                                                ? "hover:bg-muted"
-                                                : "bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white shadow-purple-500/10 hover:shadow-md hover:shadow-purple-500/20"
+                                            ? "hover:bg-muted"
+                                            : "bg-linear-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white shadow-purple-500/10 hover:shadow-md hover:shadow-purple-500/20"
                                             }`}
                                     >
                                         {isCompleted ? (

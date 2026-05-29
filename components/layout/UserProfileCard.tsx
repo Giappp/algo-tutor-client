@@ -1,35 +1,73 @@
-import React from 'react'
+import React, { useState } from 'react'
 import {Avatar, AvatarFallback, AvatarImage} from "@/components/ui/avatar";
 import {cn} from "@/lib/utils";
 import {AVATAR_GRADIENTS} from "@/lib/icon-map";
 import {Progress} from "@/components/ui/progress";
 import {useUser} from "@/hooks/use-user";
+import {LogOutIcon, Loader2} from "lucide-react";
+import {logout} from "@/api/auth";
+import {useRouter} from "next/navigation";
+import {toast} from "sonner";
+import Link from "next/link";
 
 const UserProfileCard = () => {
-    const {user} = useUser();
+    const {user, mutate} = useUser();
+    const router = useRouter();
+    const [isLoggingOut, setIsLoggingOut] = useState(false);
+
+    const handleLogout = async () => {
+        setIsLoggingOut(true);
+        try {
+            await logout();
+            await mutate(undefined, false);
+            toast.success("Đăng xuất thành công!");
+            router.push("/auth?tab=signin");
+            router.refresh();
+        } catch {
+            toast.error("Không thể đăng xuất. Vui lòng thử lại.");
+        } finally {
+            setIsLoggingOut(false);
+        }
+    };
+
     return (
         <div
-            className="rounded-xl bg-gradient-to-br from-sidebar-accent to-sidebar p-3.5 ring-1 ring-sidebar-border/50 mb-3">
-            <div className="flex items-center gap-3 mb-2.5">
-                <Avatar size="sm" className="shrink-0">
-                    <AvatarImage src="" alt="User avatar"/>
-                    <AvatarFallback
-                        className={cn("bg-gradient-to-br text-primary-foreground font-semibold", AVATAR_GRADIENTS[0])}>
-                        U
-                    </AvatarFallback>
-                </Avatar>
-                <div className="min-w-0">
-                    <p className="text-sm font-semibold truncate text-sidebar-foreground">{user?.username}</p>
-                    <p className="text-xs text-muted-foreground truncate">Level 5 &middot; 1,250
-                        XP</p>
-                </div>
+            className="rounded-xl bg-gradient-to-br from-sidebar-accent to-sidebar p-3.5 ring-1 ring-sidebar-border/50 mb-3 group relative">
+            <div className="flex items-center justify-between gap-2 mb-2.5">
+                <Link href="/profile" className="flex items-center gap-3 min-w-0 hover:opacity-85 transition-opacity flex-1">
+                    <Avatar size="lg" className="shrink-0">
+                        <AvatarImage src={user?.avatar || ""} alt="User avatar"/>
+                        <AvatarFallback
+                            className={cn("bg-gradient-to-br text-primary-foreground font-semibold uppercase", AVATAR_GRADIENTS[0])}>
+                            {user?.username?.substring(0, 2) || "U"}
+                        </AvatarFallback>
+                    </Avatar>
+                    <div className="min-w-0">
+                        <p className="text-sm font-semibold truncate text-sidebar-foreground">{user?.username || "Guest"}</p>
+                        <p className="text-[10px] text-muted-foreground truncate">Học viên Premium</p>
+                    </div>
+                </Link>
+                
+                <button
+                    onClick={handleLogout}
+                    disabled={isLoggingOut}
+                    className="p-1.5 rounded-lg text-muted-foreground hover:bg-sidebar-accent hover:text-destructive transition-colors shrink-0"
+                    title="Đăng xuất"
+                >
+                    {isLoggingOut ? (
+                        <Loader2 className="size-4 animate-spin" />
+                    ) : (
+                        <LogOutIcon className="size-4" />
+                    )}
+                </button>
             </div>
+            
             <div className="space-y-1.5">
-                <div className="flex items-center justify-between text-xs text-muted-foreground">
-                    <span>Tiến độ</span>
-                    <span className="font-medium text-sidebar-foreground">42%</span>
+                <div className="flex items-center justify-between text-[10px] text-muted-foreground">
+                    <span>Tiến trình cấp</span>
+                    <span className="font-medium text-sidebar-foreground">Lv. 5 &middot; 42%</span>
                 </div>
-                <Progress value={42} className="h-1.5"/>
+                <Progress value={42} className="h-1"/>
             </div>
         </div>
     )

@@ -34,24 +34,24 @@ export function ProblemDescription({
             <div className="p-5 space-y-5">
                 {/* Title + meta */}
                 <div className="space-y-2">
-                    <div className="flex items-center justify-center gap-2 flex-wrap">
-                        <h2 className="text-3xl font-bold text-foreground">
+                    <div className="flex items-center justify-start gap-2 flex-wrap">
+                        <h2 className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight">
                             {problem.title}
                         </h2>
                         {isSolved && (
-                            <Badge className="bg-emerald-500/15 text-emerald-500 border-emerald-500/30 text-base">
+                            <Badge className="bg-emerald-500/10 text-emerald-500 border-emerald-500/20 text-xs py-0.5 px-2">
                                 <CheckCircleIcon className="size-3 mr-1" />
                                 Solved
                             </Badge>
                         )}
                     </div>
-                    <div className="flex items-center justify-center gap-3 text-sm text-muted-foreground">
-                        <span className="flex items-center gap-1">
-                            <ClockIcon className="size-3" />
+                    <div className="flex items-center justify-start gap-3 text-xs text-muted-foreground">
+                        <span className="flex items-center gap-1 bg-muted px-2 py-0.5 rounded font-medium">
+                            <ClockIcon className="size-3 text-primary" />
                             {problem.timeLimit}ms
                         </span>
-                        <span className="flex items-center gap-1">
-                            <CpuIcon className="size-3" />
+                        <span className="flex items-center gap-1 bg-muted px-2 py-0.5 rounded font-medium">
+                            <CpuIcon className="size-3 text-primary" />
                             {problem.memoryLimit}MB
                         </span>
                     </div>

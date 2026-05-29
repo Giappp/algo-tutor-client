@@ -4,10 +4,7 @@ import {
   WelcomeSection,
   StatsGrid,
   ActivityHeatmap,
-  RecentProblemsCard,
   LeaderboardCard,
-  AiTutorCard,
-  DailyQuizCard,
   ContinueLessonCard,
 } from "@/components/dashboard";
 
@@ -25,13 +22,10 @@ function DashboardContent() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-6">
           <ContinueLessonCard />
-          <RecentProblemsCard />
         </div>
 
         <div className="space-y-6">
           <LeaderboardCard />
-          <AiTutorCard />
-          <DailyQuizCard />
         </div>
       </div>
     </div>

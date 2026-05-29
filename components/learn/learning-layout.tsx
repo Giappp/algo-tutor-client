@@ -62,6 +62,7 @@ function buildLessonContext(
         lessonSlug: current.slug,
         lessonTitle: current.title,
         lessonType: lessonType,
+        lessonId: current.id,
     };
 }
 
@@ -124,14 +125,14 @@ export function LearningLayout({
                 >
                     {/* Gradient-fading right edge divider */}
                     {navigatorOpen && (
-                        <div className="absolute right-0 top-0 bottom-0 w-px bg-gradient-to-b from-transparent via-border/50 to-transparent z-[1]" />
+                        <div className="absolute right-0 top-0 bottom-0 w-px bg-linear-to-b from-transparent via-border/50 to-transparent z-1" />
                     )}
                     {navigatorOpen && (
                         <>
                             {/* Navigator header */}
                             <div className="flex items-center gap-3 px-4 py-3.5 shrink-0 bg-muted/30 relative">
                                 {/* Gradient-fading bottom edge for header divider */}
-                                <div className="absolute bottom-0 left-4 right-4 h-px bg-gradient-to-r from-transparent via-border/40 to-transparent" />
+                                <div className="absolute bottom-0 left-4 right-4 h-px bg-linear-to-r from-transparent via-border/40 to-transparent" />
                                 <Link
                                     href={`/roadmaps/${roadmapSlug}`}
                                     className="flex items-center gap-2 min-w-0 flex-1 group"
@@ -172,7 +173,7 @@ export function LearningLayout({
                 {/* Top bar */}
                 <div className="flex items-center gap-2 px-4 py-2 bg-background shrink-0 relative">
                     {/* Gradient-fading bottom edge */}
-                    <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-border/50 to-transparent" />
+                    <div className="absolute bottom-0 left-0 right-0 h-px bg-linear-to-r from-transparent via-border/50 to-transparent" />
                     {/* Mobile: Contents button */}
                     <Button
                         variant="ghost"
@@ -253,7 +254,7 @@ export function LearningLayout({
             {aiOpen && (
                 <div className="hidden lg:flex w-80 shrink-0 flex-col relative">
                     {/* Gradient-fading left edge divider */}
-                    <div className="absolute left-0 top-0 bottom-0 w-px bg-gradient-to-b from-transparent via-border/50 to-transparent" />
+                    <div className="absolute left-0 top-0 bottom-0 w-px bg-linear-to-b from-transparent via-border/50 to-transparent" />
                     <AITutorPanel context={lessonContext} />
                 </div>
             )}

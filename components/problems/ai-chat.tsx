@@ -19,17 +19,26 @@ import {
     UserIcon,
     ZapIcon,
 } from "lucide-react";
-import {ChatMessage, Difficulty, Problem} from "@/lib/types";
+import {ChatMessage, Difficulty} from "@/lib/types";
 import {cn} from "@/lib/utils";
+
+export interface Problem {
+    id: number | string;
+    title: string;
+    slug: string;
+    difficulty: Difficulty;
+    tags: string[];
+    description: string;
+}
 
 interface AIChatProps {
     problem?: Problem;
 }
 
 const difficultyColors: Record<Difficulty, string> = {
-    Easy: "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400",
-    Medium: "bg-amber-500/15 text-amber-600 dark:text-amber-400",
-    Hard: "bg-rose-500/15 text-rose-600 dark:text-rose-400",
+    EASY: "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400",
+    MEDIUM: "bg-amber-500/15 text-amber-600 dark:text-amber-400",
+    HARD: "bg-rose-500/15 text-rose-600 dark:text-rose-400",
 };
 
 function getInitialMessages(problem?: Problem) {
@@ -286,7 +295,7 @@ Do you have specific code you'd like me to review?`,
                             <div className="flex flex-col gap-1 max-w-[85%]">
                                 <div
                                     className={cn(
-                                        "rounded-2xl px-4 py-3 text-sm",
+                                        "rounded-2xl px-4 py-3 text-base",
                                         message.role === "assistant"
                                             ? "bg-muted text-foreground rounded-tl-sm"
                                             : "bg-primary text-primary-foreground rounded-tr-sm"

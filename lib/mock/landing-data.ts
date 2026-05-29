@@ -4,7 +4,6 @@ import type {
     HowItWorksStep,
     LandingPageData,
     PlatformStats,
-    RoadmapTopic,
     Testimonial,
 } from "@/lib/types/landing";
 

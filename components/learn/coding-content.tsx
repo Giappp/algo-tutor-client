@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { CodingProblem, Submission } from "@/lib/types/lesson";
 import { judgeApi } from "@/api/judge";
 import { Badge } from "@/components/ui/badge";
@@ -66,6 +66,18 @@ export function CodingContent({
     });
 
     const isSolved = hasCompleted || isCompleted;
+
+    useEffect(() => {
+        if (typeof window !== "undefined") {
+            sessionStorage.setItem(`active-code-${problem.slug}`, code);
+            sessionStorage.setItem(`active-lang-${problem.slug}`, language);
+            if (judgeResult) {
+                sessionStorage.setItem(`active-judge-result-${problem.slug}`, JSON.stringify(judgeResult));
+            } else {
+                sessionStorage.removeItem(`active-judge-result-${problem.slug}`);
+            }
+        }
+    }, [code, language, judgeResult, problem.slug]);
 
     // ─── Handlers ─────────────────────────────────────────────────────────────
 
@@ -198,7 +210,7 @@ export function CodingContent({
                 onComplete();
 
                 if (response.lessonProgressUpdated && onMarkComplete) {
-                    onMarkComplete().catch(() => {});
+                    onMarkComplete().catch(() => { });
                 }
             }
         } catch {
