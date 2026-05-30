@@ -198,6 +198,15 @@ function parseSseChunk(
     }
 }
 
+class RateLimitError extends Error {
+    retryAfter: number;
+    constructor(retryAfter: number) {
+        super(`Bạn đã gửi yêu cầu quá nhanh. Vui lòng thử lại sau ${retryAfter} giây.`);
+        this.name = "RateLimitError";
+        this.retryAfter = retryAfter;
+    }
+}
+
 async function streamGeneralChat({
     requestBody,
     assistantMessageId,
@@ -219,6 +228,11 @@ async function streamGeneralChat({
     });
 
     if (!response.ok) {
+        if (response.status === 429) {
+            const retryAfterHeader = response.headers.get("Retry-After");
+            const seconds = retryAfterHeader ? parseInt(retryAfterHeader, 10) : 60;
+            throw new RateLimitError(isNaN(seconds) ? 60 : seconds);
+        }
         throw new Error(`Streaming endpoint failed with status ${response.status}`);
     }
 
@@ -284,16 +298,32 @@ async function syncGeneralChat({
     assistantMessageId,
     onSuccess,
 }: SyncChatOptions): Promise<boolean> {
-    const response = await apiClient.post<{
-        data?: SyncChatResponse;
-    }>("/ai/general/chat", requestBody);
+    try {
+        const response = await apiClient.post<{
+            data?: SyncChatResponse;
+        }>("/ai/general/chat", requestBody);
 
-    const responseData = response.data?.data;
-    if (!responseData) return false;
+        const responseData = response.data?.data;
+        if (!responseData) return false;
 
-    onSuccess(responseData, assistantMessageId);
+        onSuccess(responseData, assistantMessageId);
 
-    return true;
+        return true;
+    } catch (error) {
+        interface AxiosErrorWithResponse {
+            response?: {
+                status?: number;
+                headers?: Record<string, string>;
+            };
+        }
+        const err = error as AxiosErrorWithResponse;
+        if (err.response?.status === 429) {
+            const retryAfterHeader = err.response.headers?.["retry-after"] || err.response.headers?.["Retry-After"];
+            const seconds = retryAfterHeader ? parseInt(retryAfterHeader, 10) : 60;
+            throw new RateLimitError(isNaN(seconds) ? 60 : seconds);
+        }
+        throw error;
+    }
 }
 
 export function useGeneralAIChat(isOpen: boolean) {
@@ -301,6 +331,7 @@ export function useGeneralAIChat(isOpen: boolean) {
     const [input, setInput] = useState("");
     const [isLoading, setIsLoading] = useState(false);
     const [conversationId, setConversationId] = useState<string | null>(null);
+    const [rateLimitCountdown, setRateLimitCountdown] = useState<number | null>(null);
 
     const isLoadingRef = useRef(false);
     const abortControllerRef = useRef<AbortController | null>(null);
@@ -311,14 +342,17 @@ export function useGeneralAIChat(isOpen: boolean) {
         const storedMessages = loadGeneralChatHistory();
         const storedConversationId = loadConversationId();
 
-        if (storedMessages.length > 0) {
-            setMessages(storedMessages);
-            setConversationId(storedConversationId);
-            return;
-        }
+        const timer = setTimeout(() => {
+            if (storedMessages.length > 0) {
+                setMessages(storedMessages);
+                setConversationId(storedConversationId);
+            } else {
+                setMessages([createWelcomeMessage()]);
+                setConversationId(null);
+            }
+        }, 0);
 
-        setMessages([createWelcomeMessage()]);
-        setConversationId(null);
+        return () => clearTimeout(timer);
     }, [isOpen]);
 
     useEffect(() => {
@@ -335,6 +369,23 @@ export function useGeneralAIChat(isOpen: boolean) {
         abortControllerRef.current?.abort();
         abortControllerRef.current = null;
     }, [isOpen]);
+
+    // Handle rate limit countdown ticking
+    useEffect(() => {
+        if (rateLimitCountdown === null || rateLimitCountdown <= 0) return;
+
+        const interval = setInterval(() => {
+            setRateLimitCountdown((prev) => {
+                if (prev === null || prev <= 1) {
+                    clearInterval(interval);
+                    return null;
+                }
+                return prev - 1;
+            });
+        }, 1000);
+
+        return () => clearInterval(interval);
+    }, [rateLimitCountdown]);
 
     const updateAssistantContent = useCallback((messageId: string, content: string) => {
         setMessages((prev) =>
@@ -413,6 +464,7 @@ export function useGeneralAIChat(isOpen: boolean) {
             const trimmedText = text.trim();
 
             if (!trimmedText || isLoadingRef.current) return;
+            if (rateLimitCountdown !== null && rateLimitCountdown > 0) return;
 
             isLoadingRef.current = true;
             setIsLoading(true);
@@ -448,6 +500,13 @@ export function useGeneralAIChat(isOpen: boolean) {
                 } catch (error) {
                     if (abortController.signal.aborted) return;
 
+                    if (error instanceof RateLimitError) {
+                        setRateLimitCountdown(error.retryAfter);
+                        toast.error(`Bạn đang thao tác quá nhanh. AI cần nghỉ ngơi một chút. Vui lòng thử lại sau ${error.retryAfter} giây.`);
+                        setMessages((prev) => prev.filter((m) => m.id !== assistantMessage.id));
+                        return;
+                    }
+
                     console.warn(
                         "General streaming chat failed. Attempting synchronous fallback.",
                         error
@@ -468,6 +527,13 @@ export function useGeneralAIChat(isOpen: boolean) {
             } catch (error) {
                 if (abortController.signal.aborted) return;
 
+                if (error instanceof RateLimitError) {
+                    setRateLimitCountdown(error.retryAfter);
+                    toast.error(`Bạn đang thao tác quá nhanh. AI cần nghỉ ngơi một chút. Vui lòng thử lại sau ${error.retryAfter} giây.`);
+                    setMessages((prev) => prev.filter((m) => m.id !== assistantMessage.id));
+                    return;
+                }
+
                 console.error("General AI chat failed.", error);
                 toast.error(
                     "Không thể kết nối với máy chủ AI. Vui lòng kiểm tra lại kết nối mạng!"
@@ -484,6 +550,7 @@ export function useGeneralAIChat(isOpen: boolean) {
         },
         [
             conversationId,
+            rateLimitCountdown,
             setAssistantError,
             updateAssistantContent,
             updateAssistantFromSyncResponse,
@@ -500,6 +567,7 @@ export function useGeneralAIChat(isOpen: boolean) {
         setInput("");
         setIsLoading(false);
         isLoadingRef.current = false;
+        setRateLimitCountdown(null);
 
         localStorage.removeItem(GENERAL_STORAGE_KEY);
         localStorage.removeItem(CONVERSATION_ID_KEY);
@@ -524,5 +592,7 @@ export function useGeneralAIChat(isOpen: boolean) {
         sendMessage,
         clearChat,
         handleCopy,
+        rateLimitCountdown,
+        setRateLimitCountdown,
     };
 }

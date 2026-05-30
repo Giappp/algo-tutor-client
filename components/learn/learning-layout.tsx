@@ -1,6 +1,4 @@
-"use client";
-
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -93,7 +91,32 @@ export function LearningLayout({
     const [mobileNavigatorOpen, setMobileNavigatorOpen] = useState(false);
     const router = useRouter();
 
-    const handleLessonSelect = (selectedSlug: string, _type: LessonType) => {
+    // Auto-open AI Tutor on desktop size by default, and register custom events
+    useEffect(() => {
+        const handleOpen = () => setAiOpen(true);
+        const handleClose = () => setAiOpen(false);
+        const handleToggle = () => setAiOpen((prev) => !prev);
+
+        let timer: NodeJS.Timeout;
+
+        if (typeof window !== "undefined") {
+            const isDesktop = window.innerWidth >= 1024;
+            timer = setTimeout(() => setAiOpen(isDesktop), 0);
+
+            window.addEventListener("ai-tutor-open", handleOpen);
+            window.addEventListener("ai-tutor-close", handleClose);
+            window.addEventListener("ai-tutor-toggle", handleToggle);
+        }
+
+        return () => {
+            if (timer) clearTimeout(timer);
+            window.removeEventListener("ai-tutor-open", handleOpen);
+            window.removeEventListener("ai-tutor-close", handleClose);
+            window.removeEventListener("ai-tutor-toggle", handleToggle);
+        };
+    }, []);
+
+    const handleLessonSelect = (selectedSlug: string) => {
         router.push(`/learn/${roadmapSlug}/${selectedSlug}`);
     };
 
@@ -202,10 +225,19 @@ export function LearningLayout({
                         variant={aiOpen ? "default" : "ghost"}
                         size="sm"
                         onClick={() => setAiOpen(!aiOpen)}
-                        className="gap-1.5 h-8 text-xs"
+                        className={cn(
+                            "gap-1.5 h-8 text-xs relative overflow-hidden transition-all duration-300 font-bold",
+                            aiOpen 
+                                ? "bg-gradient-to-r from-primary to-indigo-600 text-primary-foreground shadow-sm shadow-primary/25 border-none"
+                                : "text-muted-foreground hover:text-foreground"
+                        )}
                     >
-                        <MessageSquareIcon className="size-3.5" />
+                        <MessageSquareIcon className={cn("size-3.5", aiOpen ? "text-primary-foreground" : "text-primary")} />
                         <span className="hidden sm:inline">AI Tutor</span>
+                        <span className="relative flex size-1.5">
+                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                            <span className="relative inline-flex rounded-full size-1.5 bg-emerald-500"></span>
+                        </span>
                     </Button>
                 </div>
 
@@ -241,8 +273,8 @@ export function LearningLayout({
                         roadmap={roadmap}
                         currentLessonSlug={lessonSlug}
                         roadmapSlug={roadmapSlug}
-                        onLessonSelect={(slug, type) => {
-                            handleLessonSelect(slug, type);
+                        onLessonSelect={(slug) => {
+                            handleLessonSelect(slug);
                             setMobileNavigatorOpen(false);
                         }}
                         panelVariant="mobile"

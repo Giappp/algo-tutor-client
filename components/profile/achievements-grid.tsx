@@ -21,7 +21,7 @@ export function AchievementsGrid({ achievements }: AchievementsGridProps) {
 
     // Helper to resolve dynamic Lucide icons
     const renderIcon = (iconName: string, className: string) => {
-        const IconComponent = (LucideIcons as any)[iconName];
+        const IconComponent = (LucideIcons as unknown as Record<string, React.ComponentType<{ className?: string }>>)[iconName];
         if (!IconComponent) return <LucideIcons.AwardIcon className={className} />;
         return <IconComponent className={className} />;
     };

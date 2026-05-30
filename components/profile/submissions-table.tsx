@@ -36,10 +36,7 @@ export function SubmissionsTable({ submissions }: SubmissionsTableProps) {
     // Paginate items
     const totalPages = Math.max(1, Math.ceil(filteredSubmissions.length / itemsPerPage));
     
-    // Reset page if filter shrinks data
-    useMemo(() => {
-        setCurrentPage(1);
-    }, [searchQuery]);
+
 
     const paginatedSubmissions = useMemo(() => {
         const start = (currentPage - 1) * itemsPerPage;
@@ -100,7 +97,10 @@ export function SubmissionsTable({ submissions }: SubmissionsTableProps) {
                         type="text"
                         placeholder="Tìm kiếm bài tập..."
                         value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
+                        onChange={(e) => {
+                            setSearchQuery(e.target.value);
+                            setCurrentPage(1);
+                        }}
                         className="w-full bg-background border border-border rounded-lg pl-9 pr-4 py-1.5 text-sm focus:outline-hidden focus:ring-1 focus:ring-primary shadow-xs"
                     />
                 </div>

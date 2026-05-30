@@ -1,7 +1,6 @@
 "use client";
 
-import { FlameIcon, MapPinIcon, CalendarIcon, AwardIcon } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { FlameIcon, CalendarIcon, AwardIcon } from "lucide-react";
 import { UserProfile } from "@/lib/types";
 
 interface ProfileSidebarProps {

@@ -5,7 +5,6 @@ import type { TestResult } from "@/lib/types/lesson";
 import {
     CheckCircleIcon,
     XCircleIcon,
-    AlertTriangleIcon,
     BugIcon,
     EyeOffIcon,
 } from "lucide-react";

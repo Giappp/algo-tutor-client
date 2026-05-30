@@ -1,6 +1,6 @@
 "use client";
 
-import { memo, useEffect, useRef, useState } from "react";
+import { memo, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -62,6 +62,46 @@ const QUICK_ACTIONS: QuickAction[] = [
     },
 ];
 
+function normalizeText(content: string) {
+    return content
+        .replace(/\r\n/g, "\n")
+        .replace(/[ \t]+\n/g, "\n")
+        .replace(/\n{3,}/g, "\n\n")
+        .trim();
+}
+
+function normalizeAssistantContent(content: string) {
+    const normalized = normalizeText(content);
+
+    // Defensive cleanup only. Backend should still guarantee one final answer per assistant message.
+    const repeatedGreetingBlocks = normalized
+        .split(/\n(?=(?:Chào bạn|Xin chào)[!,]?\s)/g)
+        .map((part) => part.trim())
+        .filter(Boolean);
+
+    if (repeatedGreetingBlocks.length <= 1) {
+        return normalized;
+    }
+
+    return repeatedGreetingBlocks[repeatedGreetingBlocks.length - 1];
+}
+
+function isPoorDescription(description?: string | null) {
+    if (!description) return true;
+
+    const value = description.trim();
+
+    return value.length < 12 || /^(\d+|test|demo|abc|123)+$/i.test(value);
+}
+
+function getRoadmapDescription(roadmap: RoadmapRecommendation) {
+    if (isPoorDescription(roadmap.description)) {
+        return "Lộ trình phù hợp với mục tiêu học tập hiện tại của bạn.";
+    }
+
+    return roadmap.description;
+}
+
 export function AIChatWidget() {
     const [isOpen, setIsOpen] = useState(false);
     const [copiedId, setCopiedId] = useState<string | null>(null);
@@ -78,6 +118,7 @@ export function AIChatWidget() {
         sendMessage,
         clearChat,
         handleCopy,
+        rateLimitCountdown,
     } = useGeneralAIChat(isOpen);
 
     useEffect(() => {
@@ -96,18 +137,24 @@ export function AIChatWidget() {
     }, []);
 
     useEffect(() => {
-        const handleOpenChat = (e: Event) => {
-            const customEvent = e as CustomEvent<{ prompt?: string }>;
-            setIsOpen(true);
+        const handleOpenChat = (event: Event) => {
+            const customEvent = event as CustomEvent<{ prompt?: string }>;
             const prompt = customEvent.detail?.prompt;
+
+            setIsOpen(true);
+
             if (prompt) {
-                setTimeout(() => {
+                window.setTimeout(() => {
                     sendMessage(prompt);
                 }, 150);
             }
         };
+
         window.addEventListener("open-ai-chat", handleOpenChat);
-        return () => window.removeEventListener("open-ai-chat", handleOpenChat);
+
+        return () => {
+            window.removeEventListener("open-ai-chat", handleOpenChat);
+        };
     }, [sendMessage]);
 
     const handleSend = () => {
@@ -131,7 +178,7 @@ export function AIChatWidget() {
     };
 
     const triggerCopy = async (content: string, id: string) => {
-        await handleCopy(content);
+        await handleCopy(normalizeAssistantContent(content));
 
         setCopiedId(id);
 
@@ -160,6 +207,7 @@ export function AIChatWidget() {
                     onClearChat={handleClearChat}
                     onClose={() => setIsOpen(false)}
                     onQuickAction={handleQuickAction}
+                    rateLimitCountdown={rateLimitCountdown}
                 />
             )}
 
@@ -184,6 +232,7 @@ interface ChatPanelProps {
     onClearChat: () => void;
     onClose: () => void;
     onQuickAction: (prompt: string) => void;
+    rateLimitCountdown: number | null;
 }
 
 function ChatPanel({
@@ -199,6 +248,7 @@ function ChatPanel({
     onClearChat,
     onClose,
     onQuickAction,
+    rateLimitCountdown,
 }: ChatPanelProps) {
     const shouldShowQuickActions = messages.length <= 1 && !isLoading;
 
@@ -206,9 +256,11 @@ function ChatPanel({
         <section
             role="dialog"
             aria-label="AI Assistant"
-            className="mb-4 flex h-[min(540px,calc(100vh-7rem))] w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-2xl backdrop-blur-md animate-in slide-in-from-bottom-5 duration-300 sm:w-[380px]"
+            className="mb-4 flex h-[min(560px,calc(100vh-7rem))] w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-2xl backdrop-blur-md animate-in slide-in-from-bottom-5 duration-300 sm:w-[400px]"
         >
             <ChatHeader onClearChat={onClearChat} onClose={onClose} />
+
+            <RateLimitBanner rateLimitCountdown={rateLimitCountdown} />
 
             <div ref={scrollRef} className="flex-1 overflow-y-auto bg-background/40 p-4">
                 <ChatMessages
@@ -229,8 +281,25 @@ function ChatPanel({
                 isLoading={isLoading}
                 onInputChange={onInputChange}
                 onSend={onSend}
+                rateLimitCountdown={rateLimitCountdown}
             />
         </section>
+    );
+}
+
+function RateLimitBanner({ rateLimitCountdown }: { rateLimitCountdown: number | null }) {
+    if (rateLimitCountdown === null || rateLimitCountdown <= 0) {
+        return null;
+    }
+
+    return (
+        <div className="flex shrink-0 items-center gap-2 border-b border-destructive/20 bg-destructive/15 px-4 py-2 text-xs font-semibold text-destructive animate-in fade-in duration-200">
+            <span className="relative flex size-2 shrink-0">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-75" />
+                <span className="relative inline-flex size-2 rounded-full bg-red-500" />
+            </span>
+            <span>Bạn thao tác quá nhanh. Hãy thử lại sau {rateLimitCountdown}s.</span>
+        </div>
     );
 }
 
@@ -309,27 +378,38 @@ function ChatMessages({
     onCopy,
 }: ChatMessagesProps) {
     const lastMessage = messages[messages.length - 1];
+
     const shouldShowThinking =
-        isLoading && lastMessage?.role === "assistant" && lastMessage.content === "";
+        isLoading &&
+        lastMessage?.role === "assistant" &&
+        lastMessage.content.trim() === "";
+
+    const isAssistantStreaming =
+        isLoading &&
+        lastMessage?.role === "assistant" &&
+        lastMessage.content.trim() !== "";
 
     return (
         <div className="space-y-4 pb-2">
-            {messages.map((message) => (
-                <ChatMessageBubble
-                    key={message.id}
-                    message={message}
-                    copiedId={copiedId}
-                    onCopy={onCopy}
-                />
-            ))}
+            {messages.map((message, index) => {
+                const isLast = index === messages.length - 1;
+                const isLastAndStreaming =
+                    isLast &&
+                    isAssistantStreaming &&
+                    message.role === "assistant";
+
+                return (
+                    <ChatMessageBubble
+                        key={message.id}
+                        message={message}
+                        copiedId={copiedId}
+                        onCopy={onCopy}
+                        isStreaming={isLastAndStreaming}
+                    />
+                );
+            })}
 
             {shouldShowThinking && <ThinkingIndicator />}
-
-            {isLoading && !shouldShowThinking && (
-                <p className="px-1 text-[10px] font-medium text-muted-foreground">
-                    AI đang trả lời...
-                </p>
-            )}
 
             <div ref={bottomRef} />
         </div>
@@ -340,16 +420,21 @@ interface ChatMessageBubbleProps {
     message: ChatMessage;
     copiedId: string | null;
     onCopy: (content: string, id: string) => void;
+    isStreaming?: boolean;
 }
 
 const ChatMessageBubble = memo(function ChatMessageBubble({
     message,
     copiedId,
     onCopy,
+    isStreaming,
 }: ChatMessageBubbleProps) {
     const isAssistant = message.role === "assistant";
     const hasRoadmaps = isAssistant && Boolean(message.roadmaps?.length);
-    const canCopy = isAssistant && Boolean(message.content.trim());
+    const normalizedContent = isAssistant
+        ? normalizeAssistantContent(message.content)
+        : normalizeText(message.content);
+    const canCopy = isAssistant && Boolean(normalizedContent);
 
     return (
         <article
@@ -360,23 +445,33 @@ const ChatMessageBubble = memo(function ChatMessageBubble({
         >
             <MessageAvatar role={message.role} />
 
-            <div className="flex max-w-[80%] flex-col gap-1.5">
-                <div
-                    className={cn(
-                        "overflow-hidden rounded-2xl px-3.5 py-2.5 text-base leading-relaxed shadow-xs",
-                        isAssistant
-                            ? "rounded-tl-sm border border-border/20 bg-muted text-foreground"
-                            : "rounded-tr-sm bg-primary text-primary-foreground"
-                    )}
-                >
-                    {isAssistant ? (
-                        <MarkdownContent content={message.content} />
-                    ) : (
-                        <div className="whitespace-pre-wrap break-words">
-                            {message.content}
-                        </div>
-                    )}
-                </div>
+            <div
+                className={cn(
+                    "flex flex-col gap-1.5",
+                    isAssistant ? "max-w-[88%]" : "max-w-[80%]"
+                )}
+            >
+                {normalizedContent && (
+                    <div
+                        className={cn(
+                            "overflow-hidden rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed shadow-xs",
+                            isAssistant
+                                ? "rounded-tl-sm border border-border/20 bg-muted text-foreground"
+                                : "rounded-tr-sm bg-primary text-primary-foreground"
+                        )}
+                    >
+                        {isAssistant ? (
+                            <MarkdownContent
+                                content={normalizedContent}
+                                isStreaming={isStreaming}
+                            />
+                        ) : (
+                            <div className="whitespace-pre-wrap break-words">
+                                {normalizedContent}
+                            </div>
+                        )}
+                    </div>
+                )}
 
                 {hasRoadmaps && (
                     <RoadmapRecommendations roadmaps={message.roadmaps ?? []} />
@@ -414,23 +509,43 @@ function MessageAvatar({ role }: { role: ChatMessage["role"] }) {
     );
 }
 
-function MarkdownContent({ content }: { content: string }) {
+function MarkdownContent({
+    content,
+    isStreaming,
+}: {
+    content: string;
+    isStreaming?: boolean;
+}) {
+    const normalizedContent = useMemo(() => normalizeAssistantContent(content), [content]);
+
+    if (!normalizedContent) {
+        return null;
+    }
+
     return (
-        <div className="prose max-w-none whitespace-pre-wrap break-words leading-relaxed dark:prose-invert text-[16px]">
+        <div
+            className={cn(
+                "prose prose-sm max-w-none break-words leading-relaxed dark:prose-invert",
+                "prose-p:my-1.5 prose-ul:my-1.5 prose-ol:my-1.5 prose-li:my-0.5",
+                "prose-pre:my-2 prose-code:break-words",
+                isStreaming &&
+                "after:ml-0.5 after:inline-block after:h-4 after:w-1.5 after:animate-pulse after:rounded-sm after:bg-primary/70"
+            )}
+        >
             <ReactMarkdown
                 remarkPlugins={[remarkGfm]}
                 components={{
                     p: ({ children }) => (
-                        <p className="mb-2 last:mb-0">{children}</p>
+                        <p className="my-1.5 last:mb-0">{children}</p>
                     ),
                     ul: ({ children }) => (
-                        <ul className="mb-2 list-disc pl-4 last:mb-0">{children}</ul>
+                        <ul className="my-1.5 list-disc pl-4 last:mb-0">{children}</ul>
                     ),
                     ol: ({ children }) => (
-                        <ol className="mb-2 list-decimal pl-4 last:mb-0">{children}</ol>
+                        <ol className="my-1.5 list-decimal pl-4 last:mb-0">{children}</ol>
                     ),
                     li: ({ children }) => (
-                        <li className="mb-1 last:mb-0">{children}</li>
+                        <li className="my-0.5 pl-0.5">{children}</li>
                     ),
                     a: ({ href, children }) => (
                         <a
@@ -445,7 +560,7 @@ function MarkdownContent({ content }: { content: string }) {
                     code: ({ className, children }) => (
                         <code
                             className={cn(
-                                "rounded bg-background px-1.5 py-0.5 text-[13px]",
+                                "rounded bg-background px-1.5 py-0.5 text-[12px]",
                                 className
                             )}
                         >
@@ -453,7 +568,7 @@ function MarkdownContent({ content }: { content: string }) {
                         </code>
                     ),
                     pre: ({ children }) => (
-                        <pre className="my-2 overflow-x-auto rounded-lg bg-background p-2.5 text-[13px]">
+                        <pre className="my-2 overflow-x-auto rounded-lg bg-background p-2.5 text-[12px] leading-relaxed">
                             {children}
                         </pre>
                     ),
@@ -476,7 +591,7 @@ function MarkdownContent({ content }: { content: string }) {
                     ),
                 }}
             >
-                {content}
+                {normalizedContent}
             </ReactMarkdown>
         </div>
     );
@@ -487,11 +602,15 @@ interface RoadmapRecommendationsProps {
 }
 
 function RoadmapRecommendations({ roadmaps }: RoadmapRecommendationsProps) {
+    if (!roadmaps.length) {
+        return null;
+    }
+
     return (
         <div className="mt-2.5 space-y-2.5">
             <p className="flex items-center gap-1 px-1 text-[10px] font-bold text-muted-foreground">
                 <SparklesIcon className="size-3 animate-pulse fill-purple-500 text-purple-500" />
-                Lộ trình đề xuất riêng cho bạn:
+                Lộ trình đề xuất riêng cho bạn
             </p>
 
             <div className="flex flex-col gap-2">
@@ -574,9 +693,9 @@ interface QuickActionsProps {
 function QuickActions({ onSelect }: QuickActionsProps) {
     return (
         <div className="mt-6 space-y-2.5 animate-in fade-in slide-in-from-bottom-2 duration-300">
-            <p className="flex items-center gap-1 text-[10px] font-semibold text-muted-foreground">
+            <p className="flex items-center gap-1 text-sm font-semibold text-muted-foreground">
                 <SparklesIcon className="size-3 fill-amber-500 text-amber-500" />
-                Gợi ý chủ đề nhanh:
+                Gợi ý chủ đề nhanh
             </p>
 
             <div className="grid grid-cols-2 gap-1.5">
@@ -586,7 +705,7 @@ function QuickActions({ onSelect }: QuickActionsProps) {
                         type="button"
                         variant="outline"
                         size="sm"
-                        className="h-auto justify-start rounded-xl border-border/60 px-2 py-1.5 text-left text-[10px] leading-normal transition-all duration-200 hover:bg-muted/80 hover:text-primary active:scale-95"
+                        className="h-auto justify-start rounded-xl border-border/60 px-2 py-1.5 text-left text-xs leading-normal transition-all duration-200 hover:bg-muted/80 hover:text-primary active:scale-95"
                         onClick={() => onSelect(action.prompt)}
                     >
                         <action.icon className="mr-1.5 size-3 shrink-0 text-muted-foreground" />
@@ -603,6 +722,7 @@ interface ChatComposerProps {
     isLoading: boolean;
     onInputChange: (value: string) => void;
     onSend: () => void;
+    rateLimitCountdown: number | null;
 }
 
 function ChatComposer({
@@ -610,14 +730,18 @@ function ChatComposer({
     isLoading,
     onInputChange,
     onSend,
+    rateLimitCountdown,
 }: ChatComposerProps) {
+    const isRateLimited = rateLimitCountdown !== null && rateLimitCountdown > 0;
+    const isComposerDisabled = isLoading || isRateLimited;
+
     return (
         <footer className="relative z-10 shrink-0 border-t border-border/40 bg-muted/20 p-3">
             <div className="flex gap-1.5">
                 <Input
-                    placeholder="Hỏi AI bất cứ điều gì..."
+                    placeholder={isRateLimited ? "Vui lòng chờ đếm ngược..." : "Hỏi AI bất cứ điều gì..."}
                     value={input}
-                    disabled={isLoading}
+                    disabled={isComposerDisabled}
                     onChange={(event) => onInputChange(event.target.value)}
                     onKeyDown={(event) => {
                         if (event.key === "Enter" && !event.shiftKey) {
@@ -632,11 +756,15 @@ function ChatComposer({
                     type="button"
                     size="icon"
                     aria-label="Gửi tin nhắn"
-                    disabled={!input.trim() || isLoading}
+                    disabled={!input.trim() || isComposerDisabled}
                     onClick={onSend}
                     className="size-9 shrink-0 cursor-pointer rounded-xl bg-primary text-primary-foreground shadow transition-all hover:bg-primary/95 active:scale-90"
                 >
-                    <SendIcon className="size-3.5" />
+                    {isLoading ? (
+                        <Loader2Icon className="size-3.5 animate-spin" />
+                    ) : (
+                        <SendIcon className="size-3.5" />
+                    )}
                 </Button>
             </div>
         </footer>
@@ -686,11 +814,13 @@ const RoadmapAdvisoryCard = memo(function RoadmapAdvisoryCard({
         ADVANCED: "border-red-500/20 bg-red-500/10 text-red-500",
     };
 
+    const description = getRoadmapDescription(roadmap);
+
     return (
-        <div className="group relative flex flex-col gap-1.5 overflow-hidden rounded-xl border border-border/50 bg-background/50 p-3 shadow-xs backdrop-blur-xs transition-all duration-300 animate-in fade-in hover:border-primary/30 hover:bg-background/80 hover:shadow-md">
+        <div className="group relative flex flex-col gap-2 overflow-hidden rounded-xl border border-border/50 bg-background/50 p-3 shadow-xs backdrop-blur-xs transition-all duration-300 animate-in fade-in hover:border-primary/30 hover:bg-background/80 hover:shadow-md">
             <div className="flex items-start justify-between gap-2">
-                <h4 className="line-clamp-1 text-[11px] font-bold text-foreground transition-colors group-hover:text-primary">
-                    {roadmap.name}
+                <h4 className="line-clamp-1 text-xs font-bold text-foreground transition-colors group-hover:text-primary">
+                    {roadmap.name || "Lộ trình học tập"}
                 </h4>
 
                 <Badge
@@ -705,14 +835,14 @@ const RoadmapAdvisoryCard = memo(function RoadmapAdvisoryCard({
                 </Badge>
             </div>
 
-            <p className="line-clamp-2 text-[10px] leading-relaxed text-muted-foreground">
-                {roadmap.description}
+            <p className="line-clamp-3 text-xs leading-relaxed text-muted-foreground">
+                {description}
             </p>
 
-            <div className="mt-0.5 flex items-center justify-between border-t border-border/30 pt-1.5 text-[9px] text-muted-foreground">
-                <div className="flex items-center gap-1">
-                    <BookOpenIcon className="size-3 text-primary" />
-                    <span>
+            <div className="flex items-center justify-between border-t border-border/30 pt-2 text-xs text-muted-foreground">
+                <div className="flex min-w-0 items-center gap-1">
+                    <BookOpenIcon className="size-3 shrink-0 text-primary" />
+                    <span className="truncate">
                         {roadmap.lessonCount} bài ({roadmap.topicCount} chủ đề)
                     </span>
                 </div>
@@ -724,7 +854,7 @@ const RoadmapAdvisoryCard = memo(function RoadmapAdvisoryCard({
                 )}
             </div>
 
-            <Link href={`/roadmaps/${roadmap.slug}`} className="mt-1 block w-full">
+            <Link href={`/roadmaps/${roadmap.slug}`} className="block w-full">
                 <Button className="flex h-7 w-full cursor-pointer items-center justify-center gap-1 rounded-lg bg-primary text-[9px] font-bold text-primary-foreground shadow-xs transition-all duration-200 hover:bg-primary/95 active:scale-95">
                     <span>Học ngay</span>
                     <ArrowRightIcon className="size-2.5 transition-transform group-hover:translate-x-0.5" />

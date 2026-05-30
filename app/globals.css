@@ -271,3 +271,30 @@ main {
   border: 1px solid oklch(100% 0 0 / 0.1);
   background: linear-gradient(135deg, oklch(0.15 0.015 260) 0%, oklch(0.18 0.02 260) 100%);
 }
+
+/* Blinking animation for AI streaming cursor */
+.typing-cursor {
+  display: inline-block;
+  width: 6px;
+  height: 15px;
+  background-color: var(--primary);
+  margin-left: 4px;
+  animation: blink 1s step-start infinite;
+  vertical-align: middle;
+}
+
+@keyframes blink {
+  50% { opacity: 0; }
+}
+
+/* Streaming paragraph cursor selector */
+.is-streaming p:last-child::after {
+  content: '';
+  display: inline-block;
+  width: 6px;
+  height: 15px;
+  background-color: var(--primary);
+  margin-left: 4px;
+  animation: blink 1s step-start infinite;
+  vertical-align: middle;
+}

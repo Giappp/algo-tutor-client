@@ -7,7 +7,7 @@ import { motion } from "framer-motion";
 import type { TheoryLesson } from "@/lib/types/lesson";
 import { LessonTypeIcon } from "@/components/roadmap/lesson-type-icon";
 import { DifficultyBadge } from "@/components/roadmap/difficulty-badge";
-import { ClockIcon, ListIcon, BookOpenIcon } from "lucide-react";
+import { ClockIcon, ListIcon, BookOpenIcon, SparklesIcon, LightbulbIcon, MessageSquareIcon } from "lucide-react";
 import { useSectionVisibility } from "@/hooks/use-section-visibility";
 import { springs } from "@/lib/motion";
 import { cn } from "@/lib/utils";
@@ -31,14 +31,15 @@ export function TheoryContent({ lesson, onComplete, isCompleted }: TheoryContent
         }
     }, [autoCompleted, isCompleted, onComplete]);
 
-    const { visibleSectionCount, totalSectionCount, percentVisible } =
+    const { percentVisible } =
         useSectionVisibility(contentRef, "h1, h2, h3, h4, p, pre, table, blockquote, ul, ol, li", 0.9, handleAutoComplete);
 
     const progressPercent = Math.round(percentVisible * 100);
 
     useEffect(() => {
         if (isCompleted) {
-            setAutoCompleted(true);
+            const timer = setTimeout(() => setAutoCompleted(true), 0);
+            return () => clearTimeout(timer);
         }
     }, [isCompleted]);
 
@@ -142,10 +143,10 @@ export function TheoryContent({ lesson, onComplete, isCompleted }: TheoryContent
             {/* Main responsive grid layout */}
             <div className="flex-1 overflow-hidden">
                 <div className="h-full lg:grid lg:grid-cols-[1fr_260px] lg:gap-8 max-w-[1040px] mx-auto px-6 py-6 sm:py-8">
-                    
+
                     {/* Left Column: Scrollable Reading Pane */}
-                    <div 
-                        ref={contentRef} 
+                    <div
+                        ref={contentRef}
                         className="h-full overflow-y-auto pr-0 lg:pr-6 scrollbar-thin scroll-smooth"
                         style={{ contentVisibility: "auto" }}
                     >
@@ -191,8 +192,8 @@ export function TheoryContent({ lesson, onComplete, isCompleted }: TheoryContent
                             prose-hr:border-border/60 prose-hr:my-8
                             prose-img:rounded-xl prose-img:shadow-md
                         ">
-                            <ReactMarkdown 
-                                remarkPlugins={[remarkGfm]} 
+                            <ReactMarkdown
+                                remarkPlugins={[remarkGfm]}
                                 rehypePlugins={[rehypeRaw]}
                                 components={{
                                     h2: ({ children }) => {
@@ -211,20 +212,80 @@ export function TheoryContent({ lesson, onComplete, isCompleted }: TheoryContent
                             </ReactMarkdown>
                         </article>
 
+                        {/* AI Tutor Quick Explainer Card */}
+                        <div className="mt-10 p-5 rounded-2xl border border-primary/20 bg-linear-to-br from-primary/5 via-transparent to-purple-500/5 shadow-2xs space-y-4">
+                            <div className="flex items-center gap-3">
+                                <div className="size-9 rounded-xl bg-gradient-to-br from-primary to-purple-600 flex items-center justify-center text-primary-foreground shadow-sm shrink-0">
+                                    <SparklesIcon className="size-4.5" />
+                                </div>
+                                <div>
+                                    <h4 className="font-bold text-sm text-foreground">Bạn cần AI giảng giải thêm về bài học?</h4>
+                                    <p className="text-xs text-muted-foreground">AI Tutor đã sẵn sàng đồng hành cùng bạn học tập.</p>
+                                </div>
+                            </div>
+                            <div className="flex flex-wrap gap-2.5">
+                                <button
+                                    onClick={() => {
+                                        window.dispatchEvent(new CustomEvent("ai-tutor-open"));
+                                        window.dispatchEvent(new CustomEvent("ai-tutor-ask", {
+                                            detail: {
+                                                message: `Tôi đang đọc bài học "${lesson.title}". Hãy tóm tắt giúp tôi những kiến thức cốt lõi và quan trọng nhất dưới dạng các gạch đầu dòng ngắn gọn, dễ nhớ!`,
+                                                mode: "EXPLAIN"
+                                            }
+                                        }));
+                                    }}
+                                    className="text-xs font-bold px-3.5 py-2 rounded-xl bg-primary text-primary-foreground hover:bg-primary/95 transition-all shadow-xs flex items-center gap-1.5 cursor-pointer active:scale-95"
+                                >
+                                    <SparklesIcon className="size-3.5" />
+                                    Tóm tắt kiến thức trọng tâm
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        window.dispatchEvent(new CustomEvent("ai-tutor-open"));
+                                        window.dispatchEvent(new CustomEvent("ai-tutor-ask", {
+                                            detail: {
+                                                message: `Hãy lấy cho tôi các ví dụ thực tế trực quan hoặc các hình ảnh ẩn dụ sinh động liên quan đến nội dung bài học "${lesson.title}" để tôi ghi nhớ tốt hơn!`,
+                                                mode: "EXPLAIN"
+                                            }
+                                        }));
+                                    }}
+                                    className="text-xs font-bold px-3.5 py-2 rounded-xl bg-background hover:bg-muted text-foreground border border-border/60 transition-all flex items-center gap-1.5 cursor-pointer active:scale-95"
+                                >
+                                    <LightbulbIcon className="size-3.5 text-amber-500" />
+                                    Cho ví dụ thực tế trực quan
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        window.dispatchEvent(new CustomEvent("ai-tutor-open"));
+                                        window.dispatchEvent(new CustomEvent("ai-tutor-ask", {
+                                            detail: {
+                                                message: `Hãy kiểm tra kiến thức của tôi về bài học "${lesson.title}" bằng cách đặt cho tôi 2-3 câu hỏi ngắn (kèm đáp án gợi ý ở phần sau) để tôi tự ôn luyện!`,
+                                                mode: "EXPLAIN"
+                                            }
+                                        }));
+                                    }}
+                                    className="text-xs font-bold px-3.5 py-2 rounded-xl bg-background hover:bg-muted text-foreground border border-border/60 transition-all flex items-center gap-1.5 cursor-pointer active:scale-95"
+                                >
+                                    <MessageSquareIcon className="size-3.5 text-primary" />
+                                    Đố vui ôn tập kiến thức
+                                </button>
+                            </div>
+                        </div>
+
                         {/* Footer spacer */}
                         <div className="h-16" />
                     </div>
 
                     {/* Right Column: Sticky Table of Contents & Stats */}
                     <aside className="hidden lg:flex shrink-0 h-full flex-col sticky top-0 py-1 border-l border-border/40 pl-6 space-y-6">
-                        
+
                         {/* Section: Table of Contents */}
                         <div className="flex-1 flex flex-col min-h-0">
                             <h3 className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-1.5 mb-4">
                                 <ListIcon className="size-3 text-primary" />
                                 Table of Contents
                             </h3>
-                            
+
                             {headings.length > 0 ? (
                                 <div className="flex-1 overflow-y-auto space-y-1.5 pr-2 scrollbar-thin max-h-[70vh]">
                                     {headings.map((heading) => {
@@ -236,13 +297,13 @@ export function TheoryContent({ lesson, onComplete, isCompleted }: TheoryContent
                                                 className={cn(
                                                     "w-full text-left py-1 text-xs transition-all relative rounded-md pl-3 block",
                                                     heading.depth === 3 ? "text-muted-foreground/80 hover:text-foreground font-normal pl-6" : "font-medium",
-                                                    isActive 
-                                                        ? "text-[var(--lesson-accent)] font-semibold bg-[var(--lesson-accent)]/5" 
+                                                    isActive
+                                                        ? "text-[var(--lesson-accent)] font-semibold bg-[var(--lesson-accent)]/5"
                                                         : "text-muted-foreground hover:text-foreground hover:bg-muted/40"
                                                 )}
                                             >
                                                 {isActive && (
-                                                    <span 
+                                                    <span
                                                         className="absolute left-0 top-1 bottom-1 w-0.5 rounded-full bg-[var(--lesson-accent)]"
                                                         style={{ content: "''" }}
                                                     />
@@ -279,8 +340,8 @@ export function TheoryContent({ lesson, onComplete, isCompleted }: TheoryContent
                                             <span>{progressPercent}%</span>
                                         </div>
                                         <div className="h-1 rounded-full bg-muted overflow-hidden">
-                                            <div 
-                                                className="h-full bg-[var(--lesson-accent)]" 
+                                            <div
+                                                className="h-full bg-[var(--lesson-accent)]"
                                                 style={{ width: `${progressPercent}%` }}
                                             />
                                         </div>
@@ -289,7 +350,7 @@ export function TheoryContent({ lesson, onComplete, isCompleted }: TheoryContent
                             </div>
                         </div>
                     </aside>
-                    
+
                 </div>
             </div>
         </div>

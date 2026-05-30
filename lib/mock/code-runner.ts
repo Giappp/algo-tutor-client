@@ -102,7 +102,7 @@ const PROBLEM_SOLUTIONS: Record<string, (input: string) => string> = {
  * Attempts to run JavaScript code and evaluate it against test cases.
  * Uses Function constructor for sandboxed execution.
  */
-function executeJavaScript(code: string, testCase: TestCase, problemSlug: string, timeLimit: number): TestResult {
+function executeJavaScript(code: string, testCase: TestCase, problemSlug: string): TestResult {
     const startTime = performance.now();
 
     try {
@@ -252,7 +252,7 @@ export async function runCode(options: RunCodeOptions): Promise<RunCodeResult> {
         let result: TestResult;
 
         if (language === "javascript") {
-            result = executeJavaScript(code, tc, problemSlug, timeLimit);
+            result = executeJavaScript(code, tc, problemSlug);
         } else {
             result = simulateExecution(code, tc, problemSlug, language);
         }

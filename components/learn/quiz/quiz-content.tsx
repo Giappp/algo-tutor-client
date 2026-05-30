@@ -14,6 +14,7 @@ import {
     ArrowRightIcon,
     CheckCircleIcon,
     Loader2Icon,
+    SparklesIcon,
 } from "lucide-react";
 import {
     QuestionCard,
@@ -60,7 +61,7 @@ export function QuizContent({
 
     // Timer starts paused — only begins when user answers the first question
     const timer = useTimer({ startPaused: true });
-    const hasStartedRef = useRef(false);
+    const [hasStarted, setHasStarted] = useState(false);
     const startedAtRef = useRef<string>("");
 
     const handleStartQuiz = () => {
@@ -70,14 +71,14 @@ export function QuizContent({
     const handleAnswer = useCallback(
         (ids: string[]) => {
             // Start timer on first interaction
-            if (!hasStartedRef.current) {
-                hasStartedRef.current = true;
+            if (!hasStarted) {
+                setHasStarted(true);
                 startedAtRef.current = new Date().toISOString();
                 timer.start();
             }
             setAnswers((prev) => ({ ...prev, [quiz.questions[currentIndex].id]: ids }));
         },
-        [quiz, currentIndex, timer]
+        [quiz, currentIndex, timer, hasStarted]
     );
 
     const handleSubmit = async () => {
@@ -163,7 +164,7 @@ export function QuizContent({
         setCurrentIndex(0);
         setQuizView("questions");
         setAttemptResult(null);
-        hasStartedRef.current = false;
+        setHasStarted(false);
         startedAtRef.current = "";
         timer.reset();
     };
@@ -178,7 +179,7 @@ export function QuizContent({
         setCurrentIndex(0);
         setQuizView("overview");
         setAttemptResult(null);
-        hasStartedRef.current = false;
+        setHasStarted(false);
         startedAtRef.current = "";
         timer.reset();
     };
@@ -263,7 +264,7 @@ export function QuizContent({
                             <div className="flex items-center justify-between text-xs text-muted-foreground">
                                 <span className="font-sans truncate max-w-[200px]">{quiz.title}</span>
                                 <span className="flex items-center gap-2">
-                                    {hasStartedRef.current && (
+                                    {hasStarted && (
                                         <span className="font-mono bg-muted px-2 py-0.5 rounded text-[10px]">{timer.formatted}</span>
                                     )}
                                     <span className="font-medium">
@@ -363,7 +364,7 @@ export function QuizContent({
                             </h4>
                             <div className="flex items-center justify-center gap-2 text-2xl font-bold font-mono tracking-tight text-foreground">
                                 <span className="size-2 rounded-full bg-emerald-500 animate-pulse" />
-                                {hasStartedRef.current ? timer.formatted : "00:00"}
+                                {hasStarted ? timer.formatted : "00:00"}
                             </div>
                         </div>
 
@@ -424,6 +425,51 @@ export function QuizContent({
                             <p>
                                 <strong>Mục tiêu:</strong> Trả lời chính xác ít nhất <strong>{quiz.passingScore}%</strong> ({Math.ceil(totalQuestions * quiz.passingScore / 100)}/{totalQuestions} câu) để được tính là hoàn thành.
                             </p>
+                        </div>
+
+                        {/* AI Tutor Quiz Guide */}
+                        <div className="rounded-2xl border border-primary/25 bg-linear-to-br from-primary/5 via-indigo-500/5 to-purple-500/5 p-4.5 space-y-3 shadow-sm animate-in fade-in duration-300">
+                            <div className="flex gap-2.5">
+                                <div className="size-8 rounded-lg bg-gradient-to-br from-primary to-purple-600 flex items-center justify-center text-primary-foreground shrink-0 shadow-xs">
+                                    <SparklesIcon className="size-4" />
+                                </div>
+                                <div>
+                                    <h5 className="font-bold text-xs text-foreground">Cần AI Tutor giảng giải?</h5>
+                                    <p className="text-[10px] text-muted-foreground leading-normal">
+                                        Hãy nhờ AI Tutor tóm tắt lý thuyết trọng tâm hoặc chia sẻ mẹo tránh bẫy khi làm các câu hỏi thuộc chủ đề này.
+                                    </p>
+                                </div>
+                            </div>
+                            <div className="flex flex-col gap-2">
+                                <button
+                                    onClick={() => {
+                                        window.dispatchEvent(new CustomEvent("ai-tutor-open"));
+                                        window.dispatchEvent(new CustomEvent("ai-tutor-ask", {
+                                            detail: {
+                                                message: `Tôi đang làm bài kiểm tra trắc nghiệm "${quiz.title}". Bạn có thể tóm tắt ngắn gọn các chủ điểm lý thuyết chính liên quan mật thiết đến bộ câu hỏi trắc nghiệm này để tôi làm bài tốt hơn không?`,
+                                                mode: "EXPLAIN"
+                                            }
+                                        }));
+                                    }}
+                                    className="w-full text-[10px] font-bold py-2 rounded-xl bg-primary text-primary-foreground hover:bg-primary/95 transition-all shadow-xs flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 whitespace-nowrap"
+                                >
+                                    ⚡ Trọng tâm kiến thức bài thi
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        window.dispatchEvent(new CustomEvent("ai-tutor-open"));
+                                        window.dispatchEvent(new CustomEvent("ai-tutor-ask", {
+                                            detail: {
+                                                message: `Hãy chia sẻ cho tôi một vài mẹo hoặc lưu ý quan trọng để tránh bị bẫy khi làm các câu hỏi trắc nghiệm thuộc chủ đề của bài thi "${quiz.title}" này!`,
+                                                mode: "EXPLAIN"
+                                            }
+                                        }));
+                                    }}
+                                    className="w-full text-[10px] font-bold py-2 rounded-xl bg-background hover:bg-muted text-foreground border border-border/60 transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 whitespace-nowrap"
+                                >
+                                    🎯 Mẹo tránh bẫy trắc nghiệm
+                                </button>
+                            </div>
                         </div>
                     </div>
                     

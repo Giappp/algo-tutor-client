@@ -2,37 +2,27 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { apiClient } from "@/api/api-client";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import type { ChatMessage, LessonContext } from "@/lib/types/lesson";
 import { toast } from "sonner";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
-import { motion, AnimatePresence } from "framer-motion";
 import {
+    LightbulbIcon,
+    SparklesIcon,
+    TrendingUpIcon,
+    ZapIcon,
+    MessageSquareIcon,
+    SlidersIcon,
     BotIcon,
     CheckIcon,
-    CopyIcon,
-    LightbulbIcon,
-    Loader2Icon,
-    MessageSquareIcon,
-    SendIcon,
-    SparklesIcon,
-    TrashIcon,
-    TrendingUpIcon,
-    UserIcon,
-    ZapIcon,
-    SlidersIcon,
-    TerminalIcon,
-    GraduationCapIcon,
-    InfoIcon,
-    ArrowRightIcon,
     Code2Icon,
-    AlertCircleIcon,
-    PlayIcon,
 } from "lucide-react";
+
+// Subcomponents import
+import { ChatHeader } from "./ai-tutor/chat-header";
+import { WorkspaceStatus } from "./ai-tutor/workspace-status";
+import { WelcomeDashboard } from "./ai-tutor/welcome-dashboard";
+import { ChatMessagesList } from "./ai-tutor/chat-messages-list";
+import { ChatInput } from "./ai-tutor/chat-input";
 
 const STORAGE_KEY_PREFIX = "ai-tutor-chat-";
 
@@ -73,7 +63,6 @@ export function AITutorPanel({ context }: { context: LessonContext }) {
     const [messages, setMessages] = useState<ChatMessage[]>([]);
     const [input, setInput] = useState("");
     const [isLoading, setIsLoading] = useState(false);
-    const [copiedId, setCopiedId] = useState<string | null>(null);
     const scrollRef = useRef<HTMLDivElement>(null);
     const isLoadingRef = useRef(false);
 
@@ -87,6 +76,26 @@ export function AITutorPanel({ context }: { context: LessonContext }) {
 
     // Socratic Persona Toggle
     const [isSocratic, setIsSocratic] = useState<boolean>(true);
+
+    // Rate Limit State
+    const [rateLimitCountdown, setRateLimitCountdown] = useState<number | null>(null);
+
+    // Handle rate limit countdown ticking
+    useEffect(() => {
+        if (rateLimitCountdown === null || rateLimitCountdown <= 0) return;
+
+        const interval = setInterval(() => {
+            setRateLimitCountdown((prev) => {
+                if (prev === null || prev <= 1) {
+                    clearInterval(interval);
+                    return null;
+                }
+                return prev - 1;
+            });
+        }, 1000);
+
+        return () => clearInterval(interval);
+    }, [rateLimitCountdown]);
 
     // Active Code Editor Watcher State
     const [workspace, setWorkspace] = useState<{
@@ -106,7 +115,7 @@ export function AITutorPanel({ context }: { context: LessonContext }) {
                 const activeCode = sessionStorage.getItem(`active-code-${context.lessonSlug}`) || "";
                 const activeLang = sessionStorage.getItem(`active-lang-${context.lessonSlug}`) || "PYTHON";
                 const storedResult = sessionStorage.getItem(`active-judge-result-${context.lessonSlug}`);
-                
+
                 let verdict: string | undefined;
                 let errorMessage: string | undefined;
                 let failedCount = 0;
@@ -115,10 +124,10 @@ export function AITutorPanel({ context }: { context: LessonContext }) {
                 if (storedResult) {
                     const parsed = JSON.parse(storedResult);
                     verdict = parsed.verdict;
-                    errorMessage = parsed.compilationError || parsed.results?.find((r: any) => !r.passed)?.error || "";
+                    errorMessage = parsed.compilationError || parsed.results?.find((r: { passed?: boolean; error?: string }) => !r.passed)?.error || "";
                     if (parsed.results && Array.isArray(parsed.results)) {
                         totalCount = parsed.results.length;
-                        failedCount = parsed.results.filter((r: any) => !r.passed).length;
+                        failedCount = parsed.results.filter((r: { passed?: boolean; error?: string }) => !r.passed).length;
                     }
                 }
 
@@ -136,16 +145,22 @@ export function AITutorPanel({ context }: { context: LessonContext }) {
         };
 
         updateWorkspaceState();
-        // Check sessionStorage periodically for edits/submits
         const interval = setInterval(updateWorkspaceState, 1500);
         return () => clearInterval(interval);
     }, [context.lessonSlug]);
 
-    // Bootstrap chat session from server API or setup clean fallback welcome message
+    // Bootstrap chat session
     const triggerBootstrap = useCallback(async (activeRef?: { current: boolean }) => {
         setIsLoading(true);
         try {
-            const response = await apiClient.get<any>(
+            const response = await apiClient.get<{
+                data: {
+                    conversationId: string;
+                    canAskNextHint?: boolean;
+                    quickActions?: QuickAction[];
+                    answer?: string;
+                };
+            }>(
                 `/ai/chat/bootstrap`,
                 { params: { lessonSlug: context.lessonSlug } }
             );
@@ -162,7 +177,6 @@ export function AITutorPanel({ context }: { context: LessonContext }) {
                     setCanAskNextHint(resData.canAskNextHint);
                 }
 
-                // Set dynamic quick actions from server
                 if (resData.quickActions && resData.quickActions.length > 0) {
                     setServerQuickActions(resData.quickActions);
                 } else {
@@ -186,7 +200,6 @@ export function AITutorPanel({ context }: { context: LessonContext }) {
 
         if (activeRef && !activeRef.current) return;
 
-        // Fallback to a clean default welcome message when bootstrap API fails
         setConversationId(null);
         setCanAskNextHint(true);
         setServerQuickActions(null);
@@ -276,7 +289,6 @@ Hãy chọn chế độ chat phù hợp hoặc sử dụng các hành động nh
                 },
             ];
         }
-        // QUIZ
         return [
             {
                 label: "⚡ Trọng tâm kiến thức bài kiểm tra",
@@ -305,7 +317,7 @@ Hãy chọn chế độ chat phù hợp hoặc sử dụng các hành động nh
         ];
     }, [context.lessonType]);
 
-    // Available chat modes depending on lesson type
+    // Available chat modes
     const getAvailableModes = useCallback(() => {
         if (context.lessonType === "CODING") {
             return [
@@ -322,32 +334,37 @@ Hãy chọn chế độ chat phù hợp hoặc sử dụng các hành động nh
         ];
     }, [context.lessonType]);
 
-    // Initialize or load chat context
+    // Initialize or load chat history
     useEffect(() => {
         const stored = loadChatHistory(context.lessonSlug);
-        setSelectedMode(context.lessonType === "CODING" ? "HINT" : "EXPLAIN");
+        const active = { current: true };
 
-        if (stored.length > 0) {
-            setMessages(stored);
-            setServerQuickActions(null);
+        const timer = setTimeout(() => {
+            if (!active.current) return;
+            setSelectedMode(context.lessonType === "CODING" ? "HINT" : "EXPLAIN");
 
-            // Try loading stored conversationId if any
-            const lastMsg = stored[stored.length - 1];
-            if (lastMsg && typeof window !== "undefined") {
-                const cachedConvId = localStorage.getItem(`ai-conversation-id-${context.lessonSlug}`);
-                if (cachedConvId) setConversationId(cachedConvId);
+            if (stored.length > 0) {
+                setMessages(stored);
+                setServerQuickActions(null);
+
+                const lastMsg = stored[stored.length - 1];
+                if (lastMsg && typeof window !== "undefined") {
+                    const cachedConvId = localStorage.getItem(`ai-conversation-id-${context.lessonSlug}`);
+                    if (cachedConvId) setConversationId(cachedConvId);
+                }
+            } else {
+                setMessages([]);
+                triggerBootstrap(active);
             }
-        } else {
-            setMessages([]);
-            const active = { current: true };
-            triggerBootstrap(active);
-            return () => {
-                active.current = false;
-            };
-        }
+        }, 0);
+
+        return () => {
+            active.current = false;
+            clearTimeout(timer);
+        };
     }, [context.lessonSlug, context.lessonType, triggerBootstrap]);
 
-    // Persist messages & conversationId to localStorage
+    // Persist messages
     useEffect(() => {
         if (messages.length > 0) {
             saveChatHistory(context.lessonSlug, messages);
@@ -367,24 +384,22 @@ Hãy chọn chế độ chat phù hợp hoặc sử dụng các hành động nh
     const sendMessage = useCallback(
         async (text: string, overrideMode?: string) => {
             if (!text.trim() || isLoading || isLoadingRef.current) return;
+            if (rateLimitCountdown !== null && rateLimitCountdown > 0) return;
             isLoadingRef.current = true;
 
             const modeToSend = overrideMode || selectedMode;
 
-            // 1. Check Hints Limits on Front-End
             if (modeToSend === "HINT" && !canAskNextHint) {
                 toast.error("Bạn đã hết lượt xin gợi ý cho bài tập này! Hãy thử sức tự giải quyết nhé.");
                 isLoadingRef.current = false;
                 return;
             }
 
-            // Apply Socratic prompt suffix to strictly guide user instead of spoiling solutions
             let finalPromptText = text;
             if (isSocratic && (modeToSend === "HINT" || modeToSend === "DEBUG" || modeToSend === "EXPLAIN")) {
                 finalPromptText = `${text}\n\n[System Directive: Please reply as an expert Socratic Coding Tutor. DO NOT output completed code solutions or complete rewrites. Instead, analyze the student's code, point out the logical error conceptually, provide progressive tips, and ask guided questions to help them code the solution themselves.]`;
             }
 
-            // 2. Add User Message
             const userMsg: ChatMessage = {
                 id: Date.now().toString(),
                 role: "user",
@@ -396,7 +411,6 @@ Hãy chọn chế độ chat phù hợp hoặc sử dụng các hành động nh
             setInput("");
             setIsLoading(true);
 
-            // 3. Add Placeholder assistant message for streaming
             const tempAiMsgId = (Date.now() + 1).toString();
             setMessages((prev) => [
                 ...prev,
@@ -408,7 +422,6 @@ Hãy chọn chế độ chat phù hợp hoặc sử dụng các hành động nh
                 }
             ]);
 
-            // 4. Retrieve Active Workspace from sessionStorage
             const activeCode = sessionStorage.getItem(`active-code-${context.lessonSlug}`) || "";
             const activeLang = (sessionStorage.getItem(`active-lang-${context.lessonSlug}`) || "PYTHON").toUpperCase();
 
@@ -421,16 +434,15 @@ Hãy chọn chế độ chat phù hợp hoặc sử dụng các hành động nh
                 if (storedResult) {
                     const parsed = JSON.parse(storedResult);
                     verdict = parsed.verdict;
-                    errorMessage = parsed.compilationError || parsed.results?.find((r: any) => !r.passed)?.error || "";
+                    errorMessage = parsed.compilationError || parsed.results?.find((r: { passed?: boolean; error?: string }) => !r.passed)?.error || "";
                     failedTestCases = parsed.results
-                        ?.map((r: any, i: number) => (!r.passed ? `test_case_${i + 1}` : null))
-                        .filter((v: any): v is string => v !== null) || [];
+                        ?.map((r: { passed?: boolean; error?: string }, i: number) => (!r.passed ? `test_case_${i + 1}` : null))
+                        .filter((v: string | null): v is string => v !== null) || [];
                 }
             } catch (e) {
                 console.error("Error reading judge result", e);
             }
 
-            // 5. Structure payload
             const requestBody = {
                 conversationId: conversationId || undefined,
                 lessonId: context.lessonId,
@@ -448,7 +460,6 @@ Hãy chọn chế độ chat phù hợp hoặc sử dụng các hành động nh
             let streamSuccess = false;
             let fullResponseText = "";
 
-            // 6. Attempt Streaming SSE Chat
             try {
                 const response = await fetch(`${baseUrl}/ai/chat/stream`, {
                     method: "POST",
@@ -461,6 +472,18 @@ Hãy chọn chế độ chat phù hợp hoặc sử dụng các hành động nh
                 });
 
                 if (!response.ok) {
+                    if (response.status === 429) {
+                        const retryAfterHeader = response.headers.get("Retry-After");
+                        const seconds = retryAfterHeader ? parseInt(retryAfterHeader, 10) : 60;
+                        const retrySec = isNaN(seconds) ? 60 : seconds;
+
+                        setRateLimitCountdown(retrySec);
+                        toast.error(`Bạn đang thao tác quá nhanh. AI cần nghỉ ngơi một chút. Vui lòng thử lại sau ${retrySec} giây.`);
+                        setMessages((prev) => prev.filter((m) => m.id !== tempAiMsgId));
+                        setIsLoading(false);
+                        isLoadingRef.current = false;
+                        return;
+                    }
                     if (response.status === 400) {
                         const errData = await response.json().catch(() => ({}));
                         if (errData.errorCode === "NO_MORE_HINTS") {
@@ -530,13 +553,19 @@ Hãy chọn chế độ chat phù hợp hoặc sử dụng các hành động nh
                 console.warn("Streaming chat failed, falling back to sync chat.", err);
             }
 
-            // 7. Fallback: Synchronous API
             if (!streamSuccess) {
                 try {
-                    const response = await apiClient.post<any>("/ai/chat", requestBody);
+                    const response = await apiClient.post<{
+                        data: {
+                            conversationId?: string;
+                            canAskNextHint?: boolean;
+                            quickActions?: QuickAction[];
+                            answer?: string;
+                        };
+                    }>("/ai/chat", requestBody);
                     const resData = response.data?.data;
                     if (resData) {
-                        setConversationId(resData.conversationId);
+                        setConversationId(resData.conversationId ?? null);
                         if (resData.canAskNextHint !== null && resData.canAskNextHint !== undefined) {
                             setCanAskNextHint(resData.canAskNextHint);
                         }
@@ -554,10 +583,23 @@ Hãy chọn chế độ chat phù hợp hoặc sử dụng các hành động nh
                         isLoadingRef.current = false;
                         return;
                     }
-                } catch (err) {
+                } catch (err: any) {
                     console.warn("Synchronous chat failed.", err);
 
-                    if (err && (err as any).response?.data?.errorCode === "NO_MORE_HINTS") {
+                    if (err?.response?.status === 429) {
+                        const retryAfterHeader = err.response.headers?.["retry-after"] || err.response.headers?.["Retry-After"];
+                        const seconds = retryAfterHeader ? parseInt(retryAfterHeader, 10) : 60;
+                        const retrySec = isNaN(seconds) ? 60 : seconds;
+
+                        setRateLimitCountdown(retrySec);
+                        toast.error(`Bạn đang thao tác quá nhanh. AI cần nghỉ ngơi một chút. Vui lòng thử lại sau ${retrySec} giây.`);
+                        setMessages((prev) => prev.filter((m) => m.id !== tempAiMsgId));
+                        setIsLoading(false);
+                        isLoadingRef.current = false;
+                        return;
+                    }
+
+                    if (err && err.response?.data?.errorCode === "NO_MORE_HINTS") {
                         toast.error("Bạn đã hết lượt xin gợi ý cho bài tập này!");
                         setCanAskNextHint(false);
                         setMessages((prev) => prev.filter((m) => m.id !== tempAiMsgId));
@@ -566,18 +608,6 @@ Hãy chọn chế độ chat phù hợp hoặc sử dụng các hành động nh
                         return;
                     }
                 }
-
-                toast.error("Không thể kết nối với máy chủ AI. Vui lòng kiểm tra lại kết nối mạng!");
-                setMessages((prev) =>
-                    prev.map((m) =>
-                        m.id === tempAiMsgId
-                            ? {
-                                ...m,
-                                content: "⚠️ **Lỗi kết nối:** Không thể kết nối tới máy chủ trợ lý AI. Vui lòng thử lại sau ít phút hoặc kiểm tra lại kết nối mạng của bạn!",
-                            }
-                            : m
-                    )
-                );
             }
 
             setIsLoading(false);
@@ -585,6 +615,25 @@ Hãy chọn chế độ chat phù hợp hoặc sử dụng các hành động nh
         },
         [isLoading, context, conversationId, selectedMode, canAskNextHint, isSocratic]
     );
+
+    // Handle external ask events from inline buttons
+    useEffect(() => {
+        const handleExternalAsk = (e: Event) => {
+            const customEvent = e as CustomEvent<{ message: string; mode?: string }>;
+            if (customEvent.detail && customEvent.detail.message) {
+                const { message, mode } = customEvent.detail;
+                if (mode) {
+                    setSelectedMode(mode);
+                }
+                sendMessage(message, mode);
+            }
+        };
+
+        window.addEventListener("ai-tutor-ask", handleExternalAsk);
+        return () => {
+            window.removeEventListener("ai-tutor-ask", handleExternalAsk);
+        };
+    }, [sendMessage]);
 
     const handleSend = () => sendMessage(input);
 
@@ -603,184 +652,10 @@ Hãy chọn chế độ chat phù hợp hoặc sử dụng các hành động nh
         localStorage.removeItem(getStorageKey(context.lessonSlug));
         localStorage.removeItem(`ai-conversation-id-${context.lessonSlug}`);
 
-        // Re-bootstrap chat session
         await triggerBootstrap();
     };
 
-    const handleCopyMessage = (content: string, id: string) => {
-        navigator.clipboard.writeText(content);
-        setCopiedId(id);
-        setTimeout(() => setCopiedId(null), 2000);
-    };
-
-    const quickActions = serverQuickActions || getQuickActions();
-
-    const typeColors: Record<string, string> = {
-        THEORY: "bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20",
-        QUIZ: "bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20",
-        CODING: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20",
-    };
-
-    // Render active workspace widget
-    const renderWorkspaceStatus = () => {
-        if (context.lessonType !== "CODING" || !workspace) return null;
-
-        const hasCode = workspace.code.trim().length > 0;
-        const hasVerdict = !!workspace.verdict;
-
-        return (
-            <div className="mx-4 mt-3 p-3 rounded-xl border border-border/40 bg-muted/15 backdrop-blur-xs flex flex-col gap-2 shrink-0 animate-in fade-in duration-200">
-                <div className="flex items-center justify-between text-[11px]">
-                    <div className="flex items-center gap-1.5 text-muted-foreground font-medium">
-                        <TerminalIcon className="size-3.5 text-primary" />
-                        <span className="font-bold">Trình biên dịch:</span>
-                        <Badge variant="outline" className="text-[9px] px-1 rounded-sm bg-background border-border/40 font-mono font-extrabold text-foreground">
-                            {workspace.language}
-                        </Badge>
-                    </div>
-                    {hasCode ? (
-                        <span className="text-[10px] text-emerald-500 font-bold flex items-center gap-1">
-                            <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                            Đã liên kết code ({workspace.code.length} ký tự)
-                        </span>
-                    ) : (
-                        <span className="text-[10px] text-amber-500 font-bold flex items-center gap-1">
-                            <span className="size-1.5 rounded-full bg-amber-500 animate-pulse" />
-                            Chưa viết code
-                        </span>
-                    )}
-                </div>
-
-                {hasVerdict && (
-                    <div className="flex items-center justify-between border-t border-border/20 pt-2 text-[11px] mt-1">
-                        <div className="flex items-center gap-1">
-                            <span className="font-bold text-muted-foreground">Kết quả:</span>
-                            {workspace.verdict === "ACCEPTED" ? (
-                                <Badge className="text-[8px] bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20 font-extrabold uppercase rounded px-1 py-0">
-                                    SUCCESS (AC)
-                                </Badge>
-                            ) : (
-                                <Badge className="text-[8px] bg-destructive/10 text-destructive border-destructive/20 font-extrabold uppercase rounded px-1 py-0">
-                                    {workspace.verdict} ({workspace.failedCount}/{workspace.totalCount} lỗi)
-                                </Badge>
-                            )}
-                        </div>
-
-                        {workspace.verdict !== "ACCEPTED" && (
-                            <button
-                                onClick={() => {
-                                    setSelectedMode("DEBUG");
-                                    sendMessage(
-                                        `Tôi đang chạy thử bài làm của mình trên Editor và gặp lỗi [${workspace.verdict}]. Hãy phân tích lỗi này giúp tôi và hướng dẫn tôi các bước debug cụ thể.`,
-                                        "DEBUG"
-                                    );
-                                }}
-                                className="text-[10px] font-extrabold text-primary hover:text-primary/80 transition-colors flex items-center gap-1 cursor-pointer underline underline-offset-2"
-                            >
-                                <SparklesIcon className="size-3 text-amber-500 animate-pulse" />
-                                Nhờ AI sửa lỗi
-                            </button>
-                        )}
-                    </div>
-                )}
-            </div>
-        );
-    };
-
-    // Render interactive blank state / dashboard
-    const renderWelcomeDashboard = () => {
-        const localQuickActions = getQuickActions();
-        
-        return (
-            <div className="flex-1 overflow-y-auto px-4 py-6 flex flex-col gap-6 scrollbar-thin">
-                {/* Glowing Welcome Card */}
-                <motion.div
-                    initial={{ opacity: 0, y: 15 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.4 }}
-                    className="relative overflow-hidden rounded-2xl border border-primary/20 bg-gradient-to-br from-primary/5 via-transparent to-purple-500/5 p-4 shadow-sm"
-                >
-                    <div className="absolute -top-12 -right-12 w-24 h-24 rounded-full bg-primary/10 blur-xl pointer-events-none" />
-                    <div className="flex gap-3">
-                        <div className="size-10 rounded-full bg-gradient-to-br from-primary to-purple-600 flex items-center justify-center shrink-0 shadow-md">
-                            <GraduationCapIcon className="size-5 text-primary-foreground" />
-                        </div>
-                        <div className="flex flex-col gap-1">
-                            <h4 className="font-bold text-sm text-foreground">AlgoTutor AI Co-pilot</h4>
-                            <p className="text-xs text-muted-foreground leading-relaxed">
-                                Xin chào! Mình là trợ lý học tập cá nhân của bạn cho bài học <strong className="text-foreground">{context.lessonTitle}</strong>. 
-                                Mình được thiết kế để giảng giải lý thuyết, gợi ý giải thuật và cùng bạn dò lỗi, giúp bạn phát triển tư duy lập trình tối đa!
-                            </p>
-                        </div>
-                    </div>
-                </motion.div>
-
-                {/* Main Action Grid */}
-                <div className="flex flex-col gap-3">
-                    <h5 className="text-[10px] font-extrabold uppercase tracking-wider text-muted-foreground px-1">
-                        ⚡ Bạn muốn trợ lý hỗ trợ gì ngay?
-                    </h5>
-                    
-                    <div className="grid grid-cols-1 gap-2.5">
-                        {localQuickActions.map((action, idx) => {
-                            const ActionIcon = action.icon || SparklesIcon;
-                            const isHint = action.mode === "HINT";
-                            const isHintDisabled = isHint && !canAskNextHint;
-
-                            return (
-                                <motion.button
-                                    key={idx}
-                                    initial={{ opacity: 0, y: 10 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    transition={{ duration: 0.3, delay: idx * 0.05 }}
-                                    disabled={isHintDisabled}
-                                    onClick={() => handleQuickAction(action)}
-                                    className={cn(
-                                        "group text-left p-3 rounded-xl border transition-all duration-200 relative overflow-hidden flex items-start gap-3 shadow-xs cursor-pointer",
-                                        isHintDisabled
-                                            ? "bg-muted/40 text-muted-foreground/30 border-border/20 cursor-not-allowed opacity-50"
-                                            : "bg-card hover:bg-muted/40 hover:border-primary/30 border-border/60 hover:shadow-xs active:scale-[0.99]"
-                                    )}
-                                >
-                                    <div className={cn(
-                                        "size-8 rounded-lg flex items-center justify-center shrink-0 border transition-colors",
-                                        isHintDisabled 
-                                            ? "bg-muted border-border/20 text-muted-foreground/20" 
-                                            : "bg-primary/5 group-hover:bg-primary/10 border-primary/10 text-primary"
-                                    )}>
-                                        <ActionIcon className="size-4" />
-                                    </div>
-                                    <div className="flex flex-col gap-0.5 min-w-0">
-                                        <div className="flex items-center gap-1.5">
-                                            <span className="font-bold text-xs text-foreground group-hover:text-primary transition-colors">
-                                                {action.label.substring(2)}
-                                            </span>
-                                            {isHint && (
-                                                <Badge variant="outline" className={cn("text-[8px] font-extrabold py-0 px-1 rounded-sm uppercase tracking-wide", canAskNextHint ? "text-emerald-500 border-emerald-500/20 bg-emerald-500/5" : "text-amber-500 border-amber-500/20 bg-amber-500/5")}>
-                                                    {canAskNextHint ? "Gợi ý khả dụng" : "Đã hết lượt"}
-                                                </Badge>
-                                            )}
-                                        </div>
-                                        <p className="text-[10px] text-muted-foreground leading-normal line-clamp-2">
-                                            {action.message}
-                                        </p>
-                                    </div>
-                                </motion.button>
-                            );
-                        })}
-                    </div>
-                </div>
-
-                {/* Socratic Mode Note */}
-                <div className="mt-auto p-3 rounded-xl border border-border/40 bg-muted/10 flex gap-2 items-start text-[10px] text-muted-foreground leading-relaxed">
-                    <InfoIcon className="size-3.5 text-primary shrink-0 mt-0.5" />
-                    <div>
-                        <strong className="text-foreground">Chế độ Gợi mở (Socratic) đang BẬT:</strong> AI Tutor sẽ gợi mở hướng giải và chỉ ra lỗi sai thay vì trực tiếp cho code giải, giúp bạn phát triển tư duy thuật toán vững chắc.
-                    </div>
-                </div>
-            </div>
-        );
-    };
+    const quickActionsList = serverQuickActions || getQuickActions();
 
     return (
         <div className="flex flex-col h-full bg-background relative overflow-hidden">
@@ -788,54 +663,14 @@ Hãy chọn chế độ chat phù hợp hoặc sử dụng các hành động nh
             <div className="absolute -top-10 -right-10 w-32 h-32 rounded-full bg-primary/5 blur-3xl pointer-events-none animate-pulse-slow" />
             <div className="absolute -bottom-10 -left-10 w-32 h-32 rounded-full bg-primary/5 blur-3xl pointer-events-none animate-pulse-slow" />
 
-            {/* Header */}
-            <div className="flex items-center justify-between px-4 py-3 border-b border-border/40 bg-background/80 backdrop-blur-md z-1 shrink-0 relative">
-                <div className="flex items-center gap-3">
-                    <div className="relative">
-                        <div className="absolute -inset-0.5 rounded-full bg-gradient-to-br from-primary to-purple-600 opacity-60 blur-xs animate-pulse" />
-                        <div className="relative size-8 rounded-full bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center shrink-0 shadow-md">
-                            <SparklesIcon className="size-4 text-primary-foreground fill-primary-foreground/10" />
-                        </div>
-                    </div>
-                    <div>
-                        <h3 className="font-bold text-sm bg-gradient-to-r from-foreground via-foreground/90 to-muted-foreground bg-clip-text text-transparent">AI Tutor</h3>
-                        <div className="flex items-center gap-1">
-                            <span className="relative flex size-1.5">
-                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                                <span className="relative inline-flex rounded-full size-1.5 bg-emerald-500"></span>
-                            </span>
-                            <p className="text-[10px] font-medium text-muted-foreground">Trợ lý đang trực tuyến</p>
-                        </div>
-                    </div>
-                </div>
-                <div className="flex items-center gap-1.5">
-                    <Badge variant="secondary" className={cn("text-[10px] font-bold tracking-wide uppercase px-2 py-0.5 shadow-xs rounded-md border", typeColors[context.lessonType])}>
-                        {context.lessonType}
-                    </Badge>
-                    <Button
-                        variant="ghost"
-                        size="icon"
-                        className="size-8 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 active:scale-95 transition-all duration-200 cursor-pointer"
-                        onClick={handleClearChat}
-                        title="Xóa cuộc trò chuyện và bắt đầu lại"
-                    >
-                        <TrashIcon className="size-4" />
-                    </Button>
-                </div>
-            </div>
-
-            {/* Context Banner */}
-            <div className="px-4 py-2 bg-muted/20 border-b border-border/30 z-1 shrink-0 relative flex items-center justify-between text-xs">
-                <div className="flex flex-col gap-0.5 min-w-0 max-w-[80%]">
-                    <span className="font-bold text-foreground truncate">{context.lessonTitle}</span>
-                    <span className="text-[10px] text-muted-foreground truncate">{context.roadmapName}</span>
-                </div>
-                {context.lessonType === "CODING" && (
-                    <Badge variant="outline" className={cn("text-[9px] font-bold py-0.5 rounded px-1.5 shadow-2xs bg-background border", canAskNextHint ? "text-emerald-500 border-emerald-500/20" : "text-amber-500 border-amber-500/20")}>
-                        {canAskNextHint ? "Gợi ý khả dụng" : "Đã hết gợi ý"}
-                    </Badge>
-                )}
-            </div>
+            {/* Header Component */}
+            <ChatHeader
+                lessonType={context.lessonType}
+                lessonTitle={context.lessonTitle}
+                roadmapName={context.roadmapName}
+                onClearChat={handleClearChat}
+                canAskNextHint={canAskNextHint}
+            />
 
             {/* Interactive Socratic Switcher Bar */}
             <div className="flex items-center justify-between px-4 py-2 border-b border-border/30 bg-muted/5 z-1 shrink-0 relative text-xs">
@@ -874,7 +709,7 @@ Hãy chọn chế độ chat phù hợp hoặc sử dụng các hành động nh
                             disabled={isHintDisabled}
                             onClick={() => setSelectedMode(m.id)}
                             className={cn(
-                                "flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold border transition-all duration-200 shrink-0 cursor-pointer shadow-xs",
+                                "flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold border transition-all duration-200 shrink-0 cursor-pointer shadow-xs",
                                 isActive
                                     ? "bg-primary text-primary-foreground border-primary shadow-sm shadow-primary/25 active:scale-95"
                                     : isHintDisabled
@@ -890,214 +725,62 @@ Hãy chọn chế độ chat phù hợp hoặc sử dụng các hành động nh
                 })}
             </div>
 
-            {/* Live editor workspace status */}
-            {renderWorkspaceStatus()}
+            {/* Workspace Link/Status Component */}
+            <WorkspaceStatus
+                lessonType={context.lessonType}
+                workspace={workspace}
+                onDebugRequest={() => {
+                    setSelectedMode("DEBUG");
+                    sendMessage(
+                        `Tôi đang chạy thử bài làm của mình trên Editor và gặp lỗi [${workspace?.verdict}]. Hãy phân tích lỗi này giúp tôi và hướng dẫn tôi các bước debug cụ thể.`,
+                        "DEBUG"
+                    );
+                }}
+            />
 
-            {/* Chat Content Panel */}
+            {/* Chat Messages Panel */}
             <div className="flex-1 flex flex-col min-h-0 bg-background/50">
                 {messages.length <= 1 ? (
-                    renderWelcomeDashboard()
+                    <WelcomeDashboard
+                        lessonTitle={context.lessonTitle}
+                        canAskNextHint={canAskNextHint}
+                        quickActions={quickActionsList}
+                        onQuickAction={handleQuickAction}
+                    />
                 ) : (
-                    <div ref={scrollRef} className="flex-1 p-4 overflow-y-auto">
-                        <div className="space-y-5 pb-4">
-                            <AnimatePresence initial={false}>
-                                {messages.map((message) => (
-                                    <motion.div
-                                        key={message.id}
-                                        initial={{ opacity: 0, y: 15 }}
-                                        animate={{ opacity: 1, y: 0 }}
-                                        exit={{ opacity: 0, y: -15 }}
-                                        transition={{ duration: 0.3 }}
-                                        className={cn("flex gap-3", message.role === "user" && "flex-row-reverse")}
-                                    >
-                                        <div
-                                            className={cn(
-                                                "size-8 rounded-full flex items-center justify-center shrink-0 shadow-xs border",
-                                                message.role === "assistant"
-                                                    ? "bg-primary/10 text-primary border-primary/10"
-                                                    : "bg-muted text-muted-foreground border-border/50"
-                                            )}
-                                        >
-                                            {message.role === "assistant" ? (
-                                                <BotIcon className="size-4" />
-                                            ) : (
-                                                <UserIcon className="size-4" />
-                                            )}
-                                        </div>
-                                        <div className="flex flex-col gap-1.5 max-w-[85%] relative group/bubble">
-                                            <div
-                                                className={cn(
-                                                    "rounded-2xl px-4 py-3 text-base shadow-xs leading-relaxed overflow-hidden relative border",
-                                                    message.role === "assistant"
-                                                        ? "bg-card text-foreground rounded-tl-xs border-border/30 backdrop-blur-xs"
-                                                        : "bg-gradient-to-br from-primary to-indigo-600 text-primary-foreground rounded-tr-xs border-primary/20"
-                                                )}
-                                            >
-                                                {/* Left Accent Bar for assistant message */}
-                                                {message.role === "assistant" && (
-                                                    <div className="absolute top-0 left-0 bottom-0 w-1 bg-gradient-to-b from-primary to-purple-600" />
-                                                )}
-                                                
-                                                {message.role === "assistant" ? (
-                                                    <div className="whitespace-pre-wrap prose dark:prose-invert max-w-none break-words leading-relaxed pl-1 text-[16px]">
-                                                        <ReactMarkdown
-                                                            remarkPlugins={[remarkGfm]}
-                                                            components={{
-                                                                code({ node, inline, className, children, ...props }: any) {
-                                                                    const match = /language-(\w+)/.exec(className || '');
-                                                                    return !inline && match ? (
-                                                                        <div className="relative my-3 rounded-lg overflow-hidden border border-border bg-zinc-950 shadow-md">
-                                                                            <div className="flex items-center justify-between px-3 py-1.5 bg-zinc-900 border-b border-zinc-800 text-[10px] font-mono text-zinc-400">
-                                                                                <span>{match[1].toUpperCase()}</span>
-                                                                                <Button
-                                                                                    variant="ghost"
-                                                                                    size="icon"
-                                                                                    className="size-5 rounded hover:bg-zinc-800 text-zinc-400 hover:text-foreground active:scale-90"
-                                                                                    onClick={() => {
-                                                                                        navigator.clipboard.writeText(String(children).replace(/\n$/, ''));
-                                                                                        toast.success("Đã sao chép mã nguồn!");
-                                                                                    }}
-                                                                                >
-                                                                                    <CopyIcon className="size-3" />
-                                                                                </Button>
-                                                                            </div>
-                                                                            <pre className="p-3 overflow-x-auto text-[13px] font-mono bg-transparent scrollbar-thin text-zinc-100">
-                                                                                <code className={className} {...props}>
-                                                                                    {children}
-                                                                                </code>
-                                                                            </pre>
-                                                                        </div>
-                                                                    ) : (
-                                                                        <code className={cn("px-1.5 py-0.5 rounded bg-muted/60 font-mono text-sm font-semibold text-primary", className)} {...props}>
-                                                                            {children}
-                                                                        </code>
-                                                                    );
-                                                                }
-                                                            }}
-                                                        >
-                                                            {message.content}
-                                                        </ReactMarkdown>
-                                                    </div>
-                                                ) : (
-                                                    <div className="whitespace-pre-wrap break-words">{message.content}</div>
-                                                )}
-                                            </div>
-                                            <div
-                                                className={cn(
-                                                    "flex items-center gap-1.5 text-[9px] font-medium text-muted-foreground px-1",
-                                                    message.role === "user" && "justify-end"
-                                                )}
-                                            >
-                                                <span>
-                                                    {message.timestamp.toLocaleTimeString([], {
-                                                        hour: "2-digit",
-                                                        minute: "2-digit",
-                                                    })}
-                                                </span>
-                                                {message.role === "assistant" && message.id !== "intro" && (
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="icon"
-                                                        className="size-4 rounded-sm text-muted-foreground/60 hover:text-foreground hover:bg-muted active:scale-90 transition-all opacity-0 group-hover/bubble:opacity-100"
-                                                        onClick={() => handleCopyMessage(message.content, message.id)}
-                                                        title="Sao chép câu trả lời"
-                                                    >
-                                                        {copiedId === message.id ? (
-                                                            <CheckIcon className="size-2.5 text-emerald-500" />
-                                                        ) : (
-                                                            <CopyIcon className="size-2.5" />
-                                                        )}
-                                                    </Button>
-                                                )}
-                                            </div>
-                                        </div>
-                                    </motion.div>
-                                ))}
-
-                                {/* AI Loading State */}
-                                {isLoading && messages[messages.length - 1]?.content === "" && (
-                                    <motion.div
-                                        initial={{ opacity: 0, y: 15 }}
-                                        animate={{ opacity: 1, y: 0 }}
-                                        className="flex gap-3 animate-pulse"
-                                    >
-                                        <div className="relative size-8 shrink-0">
-                                            <div className="absolute -inset-1 rounded-full bg-primary/20 blur-xs animate-ping" />
-                                            <div className="relative size-8 rounded-full bg-primary/10 border border-primary/20 text-primary flex items-center justify-center">
-                                                <BotIcon className="size-4 animate-bounce" />
-                                            </div>
-                                        </div>
-                                        <div className="rounded-2xl rounded-tl-xs px-4 py-3 bg-card border border-border/30 shadow-xs max-w-[85%]">
-                                            <div className="flex items-center gap-2 text-muted-foreground">
-                                                <Loader2Icon className="size-3.5 animate-spin text-primary" />
-                                                <span className="text-xs font-semibold">Tutor đang phân tích bài làm...</span>
-                                            </div>
-                                        </div>
-                                    </motion.div>
-                                )}
-                            </AnimatePresence>
-                        </div>
-                    </div>
+                    <ChatMessagesList
+                        messages={messages}
+                        isLoading={isLoading}
+                        ref={scrollRef}
+                    />
                 )}
             </div>
 
-            {/* Quick Actions Dynamically Positioned Above Input */}
-            {quickActions && quickActions.length > 0 && !isLoading && messages.length > 1 && (
-                <div className="px-4 py-2.5 flex flex-wrap gap-2 border-t border-border/30 bg-muted/10 shrink-0 max-h-32 overflow-y-auto scrollbar-none z-1 relative">
-                    {quickActions.map((action, idx) => {
-                        const isHint = action.mode === "HINT";
-                        const isHintDisabled = isHint && !canAskNextHint;
-                        return (
-                            <button
-                                key={idx}
-                                disabled={isHintDisabled}
-                                onClick={() => handleQuickAction(action)}
-                                className={cn(
-                                    "flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-bold border transition-all duration-200 cursor-pointer shadow-xs",
-                                    isHintDisabled
-                                        ? "bg-muted/50 text-muted-foreground/30 border-border/20 cursor-not-allowed opacity-50"
-                                        : "bg-background text-foreground hover:bg-primary/5 hover:text-primary hover:border-primary/30 border-border/60 active:scale-95"
-                                )}
-                                title={isHintDisabled ? "Bạn đã hết lượt xin gợi ý cho bài tập này!" : undefined}
-                            >
-                                <SparklesIcon className={cn("size-3", isHintDisabled ? "text-muted-foreground/30" : "text-amber-500")} />
-                                <span>{action.label.startsWith("💡 ") || action.label.startsWith("📖 ") || action.label.startsWith("🛠️ ") || action.label.startsWith("📈 ") ? action.label.substring(2) : action.label}</span>
-                            </button>
-                        );
-                    })}
+            {/* Rate limit warning banner */}
+            {rateLimitCountdown !== null && rateLimitCountdown > 0 && (
+                <div className="bg-destructive/15 border-y border-destructive/20 px-4 py-2.5 text-xs text-destructive font-semibold flex items-center gap-2 animate-in fade-in duration-200 shrink-0 z-1">
+                    <span className="relative flex size-2 shrink-0">
+                        <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-75" />
+                        <span className="relative inline-flex size-2 rounded-full bg-red-500" />
+                    </span>
+                    <span>
+                        Bạn đang thao tác quá nhanh. AI cần nghỉ ngơi một chút. Thử lại sau {rateLimitCountdown} giây.
+                    </span>
                 </div>
             )}
 
-            {/* Chat Input Container */}
-            <div className="p-4 border-t border-border/40 bg-muted/30 z-1 shrink-0 relative">
-                <div className="flex gap-2">
-                    <Input
-                        placeholder={
-                            selectedMode === "HINT"
-                                ? "Xin gợi ý hướng làm bài tập..."
-                                : selectedMode === "DEBUG"
-                                    ? "Hỏi cách sửa lỗi hoặc dò lỗi mã nguồn..."
-                                    : "Đặt câu hỏi học tập cho AI Tutor..."
-                        }
-                        value={input}
-                        onChange={(e) => setInput(e.target.value)}
-                        onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && handleSend()}
-                        className="flex-1 bg-background shadow-inner text-xs md:text-sm rounded-xl h-10 border-border/60 focus:border-primary/50 transition-all"
-                        disabled={isLoading}
-                    />
-                    <Button
-                        onClick={handleSend}
-                        disabled={!input.trim() || isLoading}
-                        size="icon"
-                        className="shrink-0 bg-primary hover:bg-primary/95 text-primary-foreground shadow active:scale-90 transition-all rounded-xl h-10 w-10 cursor-pointer"
-                    >
-                        <SendIcon className="size-4" />
-                    </Button>
-                </div>
-                <p className="text-[9px] text-muted-foreground mt-2 text-center leading-normal">
-                    AI trả lời mang tính gợi mở. Hãy tự thử thách tư duy giải thuật nhé!
-                </p>
-            </div>
+            {/* Chat Input Component */}
+            <ChatInput
+                input={input}
+                setInput={setInput}
+                onSend={handleSend}
+                isLoading={isLoading || (rateLimitCountdown !== null && rateLimitCountdown > 0)}
+                selectedMode={selectedMode}
+                quickActions={quickActionsList}
+                canAskNextHint={canAskNextHint}
+                onQuickAction={handleQuickAction}
+                hasMessages={messages.length > 1}
+            />
         </div>
     );
 }

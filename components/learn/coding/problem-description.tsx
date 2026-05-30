@@ -12,6 +12,7 @@ import {
     ClockIcon,
     CpuIcon,
     LightbulbIcon,
+    SparklesIcon,
 } from "lucide-react";
 
 interface ProblemDescriptionProps {
@@ -75,12 +76,12 @@ export function ProblemDescription({
                                 key={i}
                                 className="rounded-lg border border-border p-3 space-y-2"
                             >
-                                <span className="text-sm font-semibold text-foreground">
+                                <span className="text-base font-semibold text-foreground">
                                     Example #{i + 1}
                                 </span>
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                                     <div>
-                                        <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1">
+                                        <div className="text-sm font-bold text-muted-foreground uppercase tracking-wider mb-1">
                                             Input
                                         </div>
                                         <pre className="text-sm font-mono bg-background/80 border border-border/50 rounded p-2 overflow-x-auto whitespace-pre-wrap text-foreground/80">
@@ -88,7 +89,7 @@ export function ProblemDescription({
                                         </pre>
                                     </div>
                                     <div>
-                                        <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1">
+                                        <div className="text-sm font-bold text-muted-foreground uppercase tracking-wider mb-1">
                                             Output
                                         </div>
                                         <pre className="text-sm font-mono bg-background/80 border border-border/50 rounded p-2 overflow-x-auto whitespace-pre-wrap text-foreground/80">
@@ -135,6 +136,51 @@ export function ProblemDescription({
                         ))}
                     </div>
                 )}
+
+                {/* AI Assistant Help Card in Problem Description */}
+                <div className="p-4 rounded-xl border border-primary/25 bg-linear-to-br from-primary/5 via-indigo-500/5 to-purple-500/5 space-y-3 shadow-2xs mt-6 animate-in fade-in duration-300">
+                    <div className="flex gap-2.5">
+                        <div className="size-8 rounded-lg bg-gradient-to-br from-primary to-purple-600 flex items-center justify-center text-primary-foreground shrink-0 shadow-xs">
+                            <SparklesIcon className="size-4" />
+                        </div>
+                        <div>
+                            <h5 className="font-bold text-base text-foreground">Bạn bị bí ý tưởng thuật toán?</h5>
+                            <p className="text-sm text-muted-foreground leading-normal">
+                                Hãy nhờ AI Tutor gợi mở hướng tiếp cận, phân tích độ phức tạp tối ưu để rèn luyện tư duy tốt nhất.
+                            </p>
+                        </div>
+                    </div>
+                    <div className="flex gap-2 flex-wrap">
+                        <button
+                            onClick={() => {
+                                window.dispatchEvent(new CustomEvent("ai-tutor-open"));
+                                window.dispatchEvent(new CustomEvent("ai-tutor-ask", {
+                                    detail: {
+                                        message: `Tôi đang suy nghĩ hướng giải cho bài tập "${problem.title}". Bạn có thể phân tích yêu cầu đề bài và cho tôi một số gợi ý nhỏ về cấu trúc dữ liệu hoặc giải thuật tối ưu nên dùng được không?`,
+                                        mode: "HINT"
+                                    }
+                                }));
+                            }}
+                            className="text-xs font-bold px-3 py-1.5 rounded-lg bg-primary text-primary-foreground hover:bg-primary/95 transition-all shadow-xs flex items-center gap-1 cursor-pointer active:scale-95 whitespace-nowrap"
+                        >
+                            💡 Xin gợi ý hướng giải
+                        </button>
+                        <button
+                            onClick={() => {
+                                window.dispatchEvent(new CustomEvent("ai-tutor-open"));
+                                window.dispatchEvent(new CustomEvent("ai-tutor-ask", {
+                                    detail: {
+                                        message: `Độ phức tạp thời gian và không gian tốt nhất (Best Time/Space Complexity) cho bài toán "${problem.title}" là bao nhiêu và làm thế nào để đạt được độ phức tạp đó?`,
+                                        mode: "COMPLEXITY"
+                                    }
+                                }));
+                            }}
+                            className="text-xs font-bold px-3 py-1.5 rounded-lg bg-background hover:bg-muted text-foreground border border-border/60 transition-all flex items-center gap-1 cursor-pointer active:scale-95 whitespace-nowrap"
+                        >
+                            📈 Phân tích độ phức tạp tối ưu
+                        </button>
+                    </div>
+                </div>
             </div>
         </ScrollArea>
     );

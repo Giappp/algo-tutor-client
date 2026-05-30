@@ -3,8 +3,6 @@
 import { use, useState, useCallback } from "react";
 import useSWR from "swr";
 import Link from "next/link";
-import { LearningLayout } from "@/components/learn/learning-layout";
-import { LessonThemeProvider } from "@/components/learn/lesson-theme-provider";
 import { TheoryContent } from "@/components/learn/theory-content";
 import { QuizContent } from "@/components/learn/quiz/quiz-content";
 import { CodingContent } from "@/components/learn/coding-content";
@@ -147,8 +145,7 @@ export default function LearnPage({ params }: PageProps) {
         fetcher,
         { revalidateOnFocus: false, shouldRetryOnError: false }
     );
-
-    const { enroll, isEnrolling, updateLessonProgress, isUpdatingProgress } = useRoadmapActions();
+    const { enroll, isEnrolling, updateLessonProgress } = useRoadmapActions();
     const [contentCompleted, setContentCompleted] = useState(false);
 
     const currentProgress = roadmap
