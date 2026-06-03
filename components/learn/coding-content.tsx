@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import SockJS from "sockjs-client";
-import { Client, type IMessage } from "@stomp/stompjs";
+import { Client } from "@stomp/stompjs";
 import {
     CheckCircle2Icon,
     CodeIcon,
@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 
 import { judgeApi } from "@/api/judge";
+import type { SubmitResponse, SubmissionSummary } from "@/api/judge";
 import type { CodingProblem, Submission } from "@/lib/types/lesson";
 import type { JudgeResult } from "@/components/learn/judge";
 import { Badge } from "@/components/ui/badge";
@@ -98,10 +99,10 @@ function createPendingJudgeResult(total: number): JudgeResult {
     };
 }
 
-function mapHistoryToSubmission(sub: any): Submission {
+function mapHistoryToSubmission(sub: SubmissionSummary): Submission {
     return {
         id: sub.id,
-        timestamp: new Date(sub.timestamp),
+        timestamp: new Date(sub.submittedAt),
         language: sub.language,
         status: sub.status,
         passedTestcases: sub.passedTestcases,
@@ -112,7 +113,7 @@ function mapHistoryToSubmission(sub: any): Submission {
     };
 }
 
-function mapSubmitResponseToJudgeResult(response: any): JudgeResult {
+function mapSubmitResponseToJudgeResult(response: SubmitResponse): JudgeResult {
     return {
         verdict: response.status,
         results: response.results,
@@ -125,7 +126,7 @@ function mapSubmitResponseToJudgeResult(response: any): JudgeResult {
 }
 
 function mapSubmitResponseToSubmission(
-    response: any,
+    response: SubmitResponse,
     language: string,
     code: string
 ): Submission {
@@ -142,7 +143,7 @@ function mapSubmitResponseToSubmission(
     };
 }
 
-function createStompClient(onMessage: (message: IMessage) => void): Client {
+function createStompClient(): Client {
     const endpointUrl = getWsEndpointUrl();
 
     const client = new Client({
@@ -242,23 +243,21 @@ export function CodingContent({
     );
 
     useEffect(() => {
-        setHasCompleted(isCompleted);
-    }, [isCompleted]);
+        queueMicrotask(() => {
+            setLanguage(DEFAULT_LANGUAGE);
+            setCode(getStarterCode(problem, DEFAULT_LANGUAGE));
+            setJudgeResult(null);
+            setRevealedHints(0);
 
-    useEffect(() => {
-        setLanguage(DEFAULT_LANGUAGE);
-        setCode(getStarterCode(problem, DEFAULT_LANGUAGE));
-        setJudgeResult(null);
-        setRevealedHints(0);
+            codeByLang.current = {
+                python: problem.starterCode.python || "",
+                java: problem.starterCode.java || "",
+                cpp: problem.starterCode.cpp || "",
+            };
 
-        codeByLang.current = {
-            python: problem.starterCode.python || "",
-            java: problem.starterCode.java || "",
-            cpp: problem.starterCode.cpp || "",
-        };
-
-        deactivateStompClient();
-    }, [problem.slug, problem.starterCode, deactivateStompClient]);
+            deactivateStompClient();
+        });
+    }, [problem, deactivateStompClient]);
 
     useEffect(() => {
         let isMounted = true;
@@ -548,29 +547,7 @@ export function CodingContent({
         (submissionId: string) => {
             deactivateStompClient();
 
-            const client = createStompClient((message) => {
-                if (!message.body) return;
-
-                try {
-                    const payload = JSON.parse(message.body) as SubmissionEvent;
-
-                    if (payload.type === "TEST_CASE") {
-                        updateTestCaseResult(payload);
-                        return;
-                    }
-
-                    if (payload.type === "FINAL_RESULT") {
-                        handleFinalResult(submissionId, payload.status).catch(
-                            (error) => {
-                                console.error("Failed to handle final result:", error);
-                                setIsSubmitting(false);
-                            }
-                        );
-                    }
-                } catch (error) {
-                    console.error("Failed to parse WebSocket message:", error);
-                }
-            });
+            const client = createStompClient();
 
             client.onConnect = () => {
                 console.log("[WebSocket] Connected.");
@@ -669,7 +646,7 @@ export function CodingContent({
     const desktopLeftPanel = useMemo(
         () => (
             <section
-                className="hidden h-full min-w-[320px] flex-col overflow-hidden border-r border-border/50 bg-card/40 lg:flex"
+                className="hidden h-full min-w-[320px] flex-col overflow-hidden border-r border-border/50 bg-card/55 lg:flex"
                 style={{ width: `${leftWidth}%` }}
             >
                 <Tabs
@@ -684,7 +661,7 @@ export function CodingContent({
                                 className="h-6 rounded-lg px-2.5 text-xs font-semibold data-[state=active]:bg-background data-[state=active]:shadow-sm"
                             >
                                 <CodeIcon className="mr-1.5 size-3.5" />
-                                Description
+                                Đề bài
                             </TabsTrigger>
 
                             <TabsTrigger
@@ -692,7 +669,7 @@ export function CodingContent({
                                 className="h-6 rounded-lg px-2.5 text-xs font-semibold data-[state=active]:bg-background data-[state=active]:shadow-sm"
                             >
                                 <HistoryIcon className="mr-1.5 size-3.5" />
-                                History
+                                Lịch sử
 
                                 {submitCount > 0 && (
                                     <Badge
@@ -727,14 +704,14 @@ export function CodingContent({
                         <div className="shrink-0 border-b border-emerald-500/20 bg-emerald-500/[0.06] px-4 py-2">
                             <div className="flex items-center gap-2 text-xs font-semibold text-emerald-700 dark:text-emerald-400">
                                 <CheckCircle2Icon className="size-4" />
-                                Problem solved
+                                Bài tập đã hoàn thành
                             </div>
                         </div>
                     )}
 
                     {latestSubmissionStatus && !isSolved && (
                         <div className="shrink-0 border-b border-border/50 bg-muted/30 px-4 py-2 text-xs text-muted-foreground">
-                            Latest submission:{" "}
+                            Lần nộp gần nhất:{" "}
                             <span className="font-semibold text-foreground">
                                 {latestSubmissionStatus}
                             </span>
@@ -812,14 +789,14 @@ export function CodingContent({
                                     value="description"
                                     className="h-6 flex-1 rounded-lg text-xs text-zinc-300 data-[state=active]:bg-white/10 data-[state=active]:text-white"
                                 >
-                                    Problem
+                                Đề bài
                                 </TabsTrigger>
 
                                 <TabsTrigger
                                     value="submissions"
                                     className="h-6 flex-1 rounded-lg text-xs text-zinc-300 data-[state=active]:bg-white/10 data-[state=active]:text-white"
                                 >
-                                    History
+                                Lịch sử
 
                                     {submitCount > 0 && (
                                         <span className="ml-1 rounded-full bg-white/10 px-1.5 text-[10px]">

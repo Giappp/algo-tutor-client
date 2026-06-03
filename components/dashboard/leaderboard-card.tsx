@@ -1,17 +1,13 @@
 "use client"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useLeaderboard } from "@/hooks/use-dashboard-data";
+import { AVATAR_GRADIENTS } from "@/lib/icon-map";
 import { TrophyIcon, FlameIcon } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
-
-const leaderboard = [
-  { rank: 1, name: "Alex Chen", xp: 4850, streak: 12, avatar: "A" },
-  { rank: 2, name: "Sarah Kim", xp: 4320, streak: 8, avatar: "S" },
-  { rank: 3, name: "You", xp: 1250, streak: 5, avatar: "U", isYou: true },
-  { rank: 4, name: "Mike Ross", xp: 980, streak: 3, avatar: "M" },
-  { rank: 5, name: "Emma Liu", xp: 750, streak: 2, avatar: "E" },
-];
 
 const rankColors: Record<number, string> = {
   1: "bg-[oklch(0.65_0.15_340)]/10 text-[oklch(0.65_0.15_340)]",
@@ -19,28 +15,54 @@ const rankColors: Record<number, string> = {
   3: "bg-[oklch(0.55_0.2_250)]/10 text-[oklch(0.55_0.2_250)]",
 };
 
+function getInitials(username: string) {
+  return username.slice(0, 2).toUpperCase();
+}
+
 export function LeaderboardCard() {
+  const { entries, isLoading, isError } = useLeaderboard(5);
+
   return (
     <Card>
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <CardTitle className="text-base flex items-center gap-2">
             <TrophyIcon className="size-4 text-[oklch(0.65_0.15_340)]" />
-            Leaderboard
+            Bảng xếp hạng
           </CardTitle>
           <Button variant="ghost" size="sm" className="text-xs h-7" asChild>
-            <Link href="/leaderboard">View all</Link>
+            <Link href="/leaderboard">Xem tất cả</Link>
           </Button>
         </div>
       </CardHeader>
       <CardContent className="p-0">
-        <div className="divide-y divide-border/50">
-          {leaderboard.map((user) => (
+        {isLoading ? (
+          <div className="space-y-3 px-4 pb-4">
+            {Array.from({ length: 5 }).map((_, index) => (
+              <div key={index} className="flex items-center gap-3">
+                <Skeleton className="size-6 rounded-full" />
+                <Skeleton className="size-6 rounded-full" />
+                <Skeleton className="h-4 flex-1" />
+                <Skeleton className="h-4 w-16" />
+              </div>
+            ))}
+          </div>
+        ) : isError ? (
+          <div className="px-4 pb-5 pt-1 text-sm text-muted-foreground">
+            Chưa tải được bảng xếp hạng từ máy chủ.
+          </div>
+        ) : entries.length === 0 ? (
+          <div className="px-4 pb-5 pt-1 text-sm text-muted-foreground">
+            Chưa có dữ liệu xếp hạng.
+          </div>
+        ) : (
+          <div className="divide-y divide-border/50">
+            {entries.map((user, index) => (
             <div
-              key={user.rank}
+              key={`${user.rank}-${user.userId ?? user.username}`}
               className={cn(
                 "flex items-center gap-3 px-4 py-2.5",
-                user.isYou && "bg-primary/5"
+                user.isCurrentUser && "bg-primary/5"
               )}
             >
               <div
@@ -51,15 +73,23 @@ export function LeaderboardCard() {
               >
                 {user.rank}
               </div>
-              <div className="size-6 rounded-full bg-gradient-to-br from-primary to-[oklch(0.65_0.15_340)] flex items-center justify-center text-[10px] font-bold text-primary-foreground shrink-0">
-                {user.avatar}
-              </div>
+              <Avatar size="sm" className="shrink-0">
+                <AvatarImage src={user.avatar ?? ""} alt={user.username} />
+                <AvatarFallback
+                  className={cn(
+                    "bg-gradient-to-br text-[10px] font-bold text-primary-foreground",
+                    AVATAR_GRADIENTS[index % AVATAR_GRADIENTS.length]
+                  )}
+                >
+                  {getInitials(user.username)}
+                </AvatarFallback>
+              </Avatar>
               <div className="flex-1 min-w-0">
                 <p className={cn(
                   "text-xs font-medium truncate",
-                  user.isYou && "text-primary"
+                  user.isCurrentUser && "text-primary"
                 )}>
-                  {user.name}
+                  {user.isCurrentUser ? "Bạn" : user.username}
                 </p>
               </div>
               <div className="flex items-center gap-3 shrink-0">
@@ -72,8 +102,9 @@ export function LeaderboardCard() {
                 </p>
               </div>
             </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </CardContent>
     </Card>
   );

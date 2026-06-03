@@ -1,12 +1,10 @@
 "use client";
 
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
-import rehypeRaw from "rehype-raw";
 import type { CodingProblem } from "@/lib/types/lesson";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { MarkdownRenderer } from "@/components/learn/markdown-renderer";
 import {
     CheckCircle2Icon,
     ClockIcon,
@@ -17,7 +15,6 @@ import {
     BarChart3Icon,
     TerminalIcon,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
 
 interface ProblemDescriptionProps {
     problem: CodingProblem;
@@ -48,7 +45,7 @@ function LimitBadge({
     value: string;
 }) {
     return (
-        <div className="inline-flex items-center gap-2 rounded-full border border-border/60 bg-background/70 px-3 py-1.5 text-xs font-semibold text-muted-foreground shadow-sm">
+        <div className="inline-flex items-center gap-2 rounded-lg border border-border/60 bg-background/70 px-3 py-1.5 text-xs font-semibold text-muted-foreground shadow-sm">
             <span className="text-primary">{icon}</span>
             <span>{label}</span>
             <span className="font-mono text-foreground">{value}</span>
@@ -64,7 +61,7 @@ function CodeBlock({
     value: string;
 }) {
     return (
-        <div className="min-w-0 overflow-hidden rounded-2xl border border-border/60 bg-muted/30">
+        <div className="min-w-0 overflow-hidden rounded-xl border border-border/60 bg-muted/30">
             <div className="flex items-center justify-between border-b border-border/50 bg-muted/50 px-3 py-2">
                 <div className="flex items-center gap-2 text-sm font-bold uppercase tracking-[0.14em] text-muted-foreground">
                     <TerminalIcon className="size-3.5 text-primary" />
@@ -91,23 +88,23 @@ export function ProblemDescription({
 
     return (
         <ScrollArea className="h-full">
-            <div className="mx-auto max-w-3xl space-y-6 px-4 py-5 sm:px-6">
-                <section className="rounded-3xl border border-border/60 bg-card/70 p-5 shadow-sm">
+            <div className="mx-auto flex max-w-3xl flex-col gap-6 px-4 py-5 sm:px-6">
+                <section className="rounded-2xl border border-border/60 bg-card/75 p-5 shadow-sm">
                     <div className="flex flex-col gap-4">
                         <div className="flex items-start justify-between gap-3">
                             <div className="min-w-0 flex-1">
                                 <div className="mb-3 flex flex-wrap items-center gap-2">
                                     <Badge
                                         variant="secondary"
-                                        className="rounded-full px-2.5 py-1 text-[11px] font-bold"
+                                        className="rounded-md px-2.5 py-1 text-[11px] font-bold"
                                     >
-                                        Coding Problem
+                                        Bài lập trình
                                     </Badge>
 
                                     {isSolved && (
-                                        <Badge className="rounded-full border border-emerald-500/25 bg-emerald-500/10 px-2.5 py-1 text-[11px] font-bold text-emerald-700 hover:bg-emerald-500/10 dark:text-emerald-400">
+                                        <Badge className="rounded-md border border-emerald-500/25 bg-emerald-500/10 px-2.5 py-1 text-[11px] font-bold text-emerald-700 hover:bg-emerald-500/10 dark:text-emerald-400">
                                             <CheckCircle2Icon className="mr-1 size-3.5" />
-                                            Solved
+                                            Đã giải
                                         </Badge>
                                     )}
                                 </div>
@@ -133,31 +130,11 @@ export function ProblemDescription({
                     </div>
                 </section>
 
-                <section
-                    className={cn(
-                        "prose prose-sm max-w-none dark:prose-invert sm:prose-base",
-                        "prose-headings:font-heading prose-headings:font-bold prose-headings:tracking-tight prose-headings:text-foreground",
-                        "prose-h1:text-2xl prose-h2:mt-8 prose-h2:border-b prose-h2:border-border/50 prose-h2:pb-2 prose-h2:text-xl",
-                        "prose-h3:mt-6 prose-h3:text-lg",
-                        "prose-p:leading-7 prose-p:text-foreground/90",
-                        "prose-a:text-primary prose-a:no-underline hover:prose-a:underline",
-                        "prose-strong:font-bold prose-strong:text-foreground",
-                        "prose-code:rounded-md prose-code:bg-muted prose-code:px-1.5 prose-code:py-0.5 prose-code:font-mono prose-code:text-[0.85em] prose-code:text-primary prose-code:before:content-[''] prose-code:after:content-['']",
-                        "prose-pre:rounded-2xl prose-pre:border prose-pre:border-border prose-pre:bg-zinc-950 prose-pre:p-4 prose-pre:text-sm",
-                        "prose-blockquote:rounded-r-2xl prose-blockquote:border-l-4 prose-blockquote:border-primary/60 prose-blockquote:bg-primary/5 prose-blockquote:px-4 prose-blockquote:py-2 prose-blockquote:not-italic",
-                        "prose-ul:space-y-1.5 prose-ol:space-y-1.5",
-                        "prose-li:leading-7",
-                        "prose-table:overflow-hidden prose-table:rounded-xl prose-table:text-sm",
-                        "prose-th:border prose-th:border-border prose-th:bg-muted/60 prose-th:px-3 prose-th:py-2",
-                        "prose-td:border prose-td:border-border prose-td:px-3 prose-td:py-2"
-                    )}
-                >
-                    <ReactMarkdown
-                        remarkPlugins={[remarkGfm]}
-                        rehypePlugins={[rehypeRaw]}
-                    >
-                        {problem.description}
-                    </ReactMarkdown>
+                <section className="max-w-none">
+                    <MarkdownRenderer
+                        content={problem.description}
+                        variant="problem"
+                    />
                 </section>
 
                 {visibleTestCases.length > 0 && (
@@ -168,13 +145,13 @@ export function ProblemDescription({
                                     Examples
                                 </h2>
                                 <p className="text-sm text-muted-foreground">
-                                    Sample test cases used to understand input/output format.
+                                    Một vài test mẫu để nắm rõ định dạng input/output.
                                 </p>
                             </div>
 
                             <Badge
                                 variant="outline"
-                                className="rounded-full text-xs"
+                                    className="rounded-md text-xs"
                             >
                                 {visibleTestCases.length} sample
                             </Badge>
@@ -184,7 +161,7 @@ export function ProblemDescription({
                             {visibleTestCases.map((testCase, index) => (
                                 <article
                                     key={index}
-                                    className="overflow-hidden rounded-3xl border border-border/60 bg-card/70 shadow-sm"
+                                    className="overflow-hidden rounded-2xl border border-border/60 bg-card/75 shadow-sm"
                                 >
                                     <div className="border-b border-border/50 bg-muted/40 px-4 py-3">
                                         <h3 className="text-sm font-bold text-foreground">
@@ -206,15 +183,15 @@ export function ProblemDescription({
                 )}
 
                 {hasHints && (
-                    <section className="space-y-3 rounded-3xl border border-amber-500/20 bg-amber-500/[0.04] p-4">
+                    <section className="flex flex-col gap-3 rounded-2xl border border-amber-500/20 bg-amber-500/[0.04] p-4">
                         <div className="flex items-center justify-between gap-3">
                             <div>
                                 <h2 className="flex items-center gap-2 text-base font-bold text-foreground">
                                     <LightbulbIcon className="size-4 text-amber-500" />
-                                    Hints
+                                    Gợi ý
                                 </h2>
                                 <p className="mt-0.5 text-sm text-muted-foreground">
-                                    Revealed {revealedHints}/{problem.hints.length}
+                                    Đã mở {revealedHints}/{problem.hints.length}
                                 </p>
                             </div>
 
@@ -225,7 +202,7 @@ export function ProblemDescription({
                                     onClick={onRevealHint}
                                     className="h-8 rounded-full border-amber-500/30 bg-background/80 px-3 text-xs font-bold text-amber-600 hover:bg-amber-500/10 hover:text-amber-700 dark:text-amber-400"
                                 >
-                                    Reveal hint
+                                    Mở gợi ý
                                 </Button>
                             )}
                         </div>
@@ -256,10 +233,10 @@ export function ProblemDescription({
                     </section>
                 )}
 
-                <section className="overflow-hidden rounded-3xl border border-primary/20 bg-linear-to-br from-primary/5 via-indigo-500/5 to-purple-500/5 shadow-sm">
+                <section className="overflow-hidden rounded-2xl border border-[var(--lesson-accent-border)] bg-card/75 shadow-sm">
                     <div className="p-5">
                         <div className="flex gap-3">
-                            <div className="flex size-10 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-primary to-purple-600 text-primary-foreground shadow-sm">
+                            <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-[var(--lesson-accent)] text-primary-foreground shadow-sm">
                                 <SparklesIcon className="size-5" />
                             </div>
 
@@ -282,7 +259,7 @@ export function ProblemDescription({
                                         "HINT"
                                     )
                                 }
-                                className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-3.5 py-2 text-xs font-bold text-primary-foreground shadow-sm transition-all hover:bg-primary/95 active:scale-95"
+                                className="inline-flex items-center gap-1.5 rounded-lg bg-[var(--lesson-accent)] px-3.5 py-2 text-xs font-bold text-primary-foreground shadow-sm transition-all hover:opacity-95 active:scale-95"
                             >
                                 <WandSparklesIcon className="size-3.5" />
                                 Xin gợi ý hướng giải
@@ -296,7 +273,7 @@ export function ProblemDescription({
                                         "COMPLEXITY"
                                     )
                                 }
-                                className="inline-flex items-center gap-1.5 rounded-xl border border-border/70 bg-background px-3.5 py-2 text-xs font-bold text-foreground transition-all hover:bg-muted active:scale-95"
+                                className="inline-flex items-center gap-1.5 rounded-lg border border-border/70 bg-background px-3.5 py-2 text-xs font-bold text-foreground transition-all hover:bg-muted active:scale-95"
                             >
                                 <BarChart3Icon className="size-3.5 text-primary" />
                                 Phân tích độ phức tạp

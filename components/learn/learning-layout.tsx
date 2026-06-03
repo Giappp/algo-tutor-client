@@ -19,6 +19,7 @@ import {
     ArrowLeftIcon,
     ChevronsLeftIcon,
     ChevronsRightIcon,
+    CircleIcon,
     Loader2Icon,
     MessageSquareIcon,
     PanelLeftOpenIcon,
@@ -112,6 +113,18 @@ function getCurrentLessonProgress(
     return null;
 }
 
+function getCurrentLesson(
+    topics: RoadmapDetailResponse["topics"],
+    lessonSlug: string
+): LessonWithProgress | null {
+    for (const topic of topics) {
+        const lesson = topic.lessons.find((item) => item.slug === lessonSlug);
+        if (lesson) return lesson;
+    }
+
+    return null;
+}
+
 export function LearningLayout({
     roadmapSlug,
     lessonSlug,
@@ -126,15 +139,9 @@ export function LearningLayout({
     const router = useRouter();
     const isDesktop = useIsDesktop();
 
-    const [navigatorOpen, setNavigatorOpen] = useState(false);
-    const [prevIsDesktop, setPrevIsDesktop] = useState(isDesktop);
+    const [navigatorOpen, setNavigatorOpen] = useState(true);
     const [aiOpen, setAiOpen] = useState(false);
     const [mobileNavigatorOpen, setMobileNavigatorOpen] = useState(false);
-
-    if (isDesktop !== prevIsDesktop) {
-        setPrevIsDesktop(isDesktop);
-        setAiOpen(isDesktop);
-    }
 
     useEffect(() => {
         const handleOpen = () => setAiOpen(true);
@@ -170,6 +177,7 @@ export function LearningLayout({
     const { prev, next } = buildLessonNav(roadmap.topics, lessonSlug);
     const lessonContext = buildLessonContext(roadmap, lessonSlug, lessonType);
     const currentProgress = getCurrentLessonProgress(roadmap.topics, lessonSlug);
+    const currentLesson = getCurrentLesson(roadmap.topics, lessonSlug);
     const isCompleted = isCompletedProp ?? currentProgress === "COMPLETED";
 
     return (
@@ -178,8 +186,8 @@ export function LearningLayout({
             <aside className="relative hidden shrink-0 md:flex">
                 <div
                     className={cn(
-                        "flex h-full flex-col overflow-hidden border-r border-border/50 bg-card/80 backdrop-blur-xl transition-[width] duration-300 ease-in-out",
-                        navigatorOpen ? "w-auto" : "w-0 border-r-0"
+                        "flex h-full flex-col overflow-hidden border-r border-border/50 bg-card/70 shadow-[8px_0_24px_-28px_var(--foreground)] backdrop-blur-xl transition-[width] duration-300 ease-in-out",
+                        navigatorOpen ? "w-[318px]" : "w-0 border-r-0"
                     )}
                 >
                     {navigatorOpen && (
@@ -210,11 +218,11 @@ export function LearningLayout({
                 <button
                     type="button"
                     onClick={() => setNavigatorOpen((prev) => !prev)}
-                    aria-label={navigatorOpen ? "Collapse navigator" : "Expand navigator"}
-                    title={navigatorOpen ? "Collapse navigator" : "Expand navigator"}
+                    aria-label={navigatorOpen ? "Thu gọn mục lục" : "Mở mục lục"}
+                    title={navigatorOpen ? "Thu gọn mục lục" : "Mở mục lục"}
                     className={cn(
-                        "absolute top-1/2 z-20 flex size-8 -translate-y-1/2 items-center justify-center rounded-full border border-border/70 bg-background shadow-sm transition-colors",
-                        "text-muted-foreground hover:bg-muted hover:text-foreground",
+                        "absolute top-[4.25rem] z-20 flex size-8 items-center justify-center rounded-full border border-border/70 bg-background shadow-sm transition-all",
+                        "text-muted-foreground hover:-translate-y-0.5 hover:bg-muted hover:text-foreground",
                         navigatorOpen ? "-right-4" : "-right-4"
                     )}
                 >
@@ -228,7 +236,7 @@ export function LearningLayout({
 
             {/* Main content */}
             <main className="flex min-w-0 flex-1 flex-col overflow-hidden">
-                <header className="relative flex h-12 shrink-0 items-center gap-2 border-b border-border/50 bg-background/90 px-3 backdrop-blur-xl sm:px-4">
+                <header className="relative flex h-14 shrink-0 items-center gap-3 border-b border-border/50 bg-background/90 px-3 backdrop-blur-xl sm:px-4">
                     <Button
                         variant="ghost"
                         size="sm"
@@ -236,22 +244,35 @@ export function LearningLayout({
                         className="h-8 gap-1.5 text-xs md:hidden"
                     >
                         <PanelLeftOpenIcon className="size-4" />
-                        <span>Contents</span>
+                        <span>Mục lục</span>
                     </Button>
 
-                    {!navigatorOpen && (
-                        <Link
-                            href={`/roadmaps/${roadmapSlug}`}
-                            className="hidden min-w-0 items-center gap-1.5 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground md:flex"
-                        >
-                            <ArrowLeftIcon className="size-3.5" />
-                            <span className="max-w-[240px] truncate">
-                                {roadmap.name}
-                            </span>
-                        </Link>
-                    )}
+                    <div className="hidden min-w-0 flex-1 items-center gap-3 md:flex">
+                        {!navigatorOpen && (
+                            <Link
+                                href={`/roadmaps/${roadmapSlug}`}
+                                className="inline-flex size-8 shrink-0 items-center justify-center rounded-xl border border-border/60 bg-card text-muted-foreground transition-colors hover:text-foreground"
+                                aria-label="Quay lại lộ trình"
+                            >
+                                <ArrowLeftIcon className="size-3.5" />
+                            </Link>
+                        )}
 
-                    <div className="min-w-0 flex-1" />
+                        <div className="min-w-0">
+                            <div className="flex items-center gap-2 text-[11px] font-semibold text-muted-foreground">
+                                <span className="truncate">{roadmap.name}</span>
+                                <CircleIcon className="size-1 fill-current" />
+                                <span className="capitalize">
+                                    {lessonType.toLowerCase()}
+                                </span>
+                            </div>
+                            <h1 className="truncate text-sm font-bold leading-tight text-foreground">
+                                {currentLesson?.title ?? lessonContext.lessonTitle}
+                            </h1>
+                        </div>
+                    </div>
+
+                    <div className="min-w-0 flex-1 md:hidden" />
 
                     <Button
                         variant={aiOpen ? "default" : "ghost"}
@@ -260,7 +281,7 @@ export function LearningLayout({
                         className={cn(
                             "h-8 gap-1.5 overflow-hidden text-xs font-bold transition-all duration-200",
                             aiOpen
-                                ? "border-none bg-gradient-to-r from-primary to-indigo-600 text-primary-foreground shadow-sm shadow-primary/20"
+                                ? "border-none bg-primary text-primary-foreground shadow-sm shadow-primary/20"
                                 : "text-muted-foreground hover:text-foreground"
                         )}
                     >
@@ -310,7 +331,7 @@ export function LearningLayout({
                             {roadmap.name}
                         </h3>
                         <p className="mt-0.5 text-xs text-muted-foreground">
-                            Course contents
+                            Nội dung lộ trình
                         </p>
                     </div>
 
@@ -329,7 +350,7 @@ export function LearningLayout({
 
             {/* Desktop AI panel */}
             {aiOpen && isDesktop && (
-                <aside className="hidden w-[360px] h-full shrink-0 flex-col border-l border-border/50 bg-background/95 backdrop-blur-xl lg:flex">
+                <aside className="hidden h-full w-[380px] shrink-0 flex-col border-l border-border/50 bg-card/70 shadow-[-8px_0_24px_-28px_var(--foreground)] backdrop-blur-xl lg:flex">
                     <AITutorPanel context={lessonContext} />
                 </aside>
             )}

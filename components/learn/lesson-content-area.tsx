@@ -46,7 +46,7 @@ function LessonNavButton({
             </span>
 
             <span className="text-sm sm:hidden">
-                {isPrev ? "Prev" : "Next"}
+                {isPrev ? "Trước" : "Tiếp"}
             </span>
 
             {!isPrev && <ArrowRightIcon className="size-4 shrink-0" />}
@@ -72,10 +72,10 @@ function LessonNavButton({
             size="sm"
             asChild
             className={cn(
-                "h-9 min-w-0 gap-1.5 px-2.5 sm:max-w-[180px] sm:px-3",
+                "h-9 min-w-0 gap-1.5 rounded-lg px-2.5 sm:max-w-[220px] sm:px-3",
                 isPrev
                     ? "text-muted-foreground hover:text-foreground"
-                    : "border border-border/60 bg-muted/70 hover:bg-muted"
+                    : "border border-border/60 bg-card hover:bg-muted"
             )}
         >
             <Link href={href}>{content}</Link>
@@ -95,7 +95,7 @@ export function LessonContentArea({
     return (
         <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
             <header className="sticky top-0 z-20 shrink-0 border-b border-border/50 bg-background/85 backdrop-blur-xl">
-                <div className="mx-auto flex h-13 max-w-5xl items-center gap-2 px-3 sm:px-5">
+                <div className="mx-auto flex h-13 max-w-6xl items-center gap-2 px-3 sm:px-5">
                     <div className="flex min-w-0 flex-1 justify-start">
                         <LessonNavButton
                             direction="prev"
@@ -112,7 +112,7 @@ export function LessonContentArea({
                             disabled={isUpdating || isCompleted}
                             aria-live="polite"
                             className={cn(
-                                "h-9 gap-2 rounded-full px-3.5 text-sm font-bold shadow-sm transition-all sm:px-5",
+                                "h-9 gap-2 rounded-lg px-3.5 text-sm font-bold shadow-sm transition-all sm:px-5",
                                 isCompleted
                                     ? "cursor-default border border-emerald-500/25 bg-emerald-500/10 text-emerald-700 shadow-none hover:bg-emerald-500/10 dark:text-emerald-400"
                                     : "bg-primary text-primary-foreground shadow-primary/20 hover:bg-primary/90"
@@ -131,10 +131,10 @@ export function LessonContentArea({
 
                             <span className="hidden sm:inline">
                                 {isUpdating
-                                    ? "Updating..."
+                                    ? "Đang cập nhật..."
                                     : isCompleted
-                                        ? "Completed"
-                                        : "Mark complete"}
+                                        ? "Đã hoàn thành"
+                                        : "Đánh dấu xong"}
                             </span>
 
                             <span className="sm:hidden">
@@ -155,7 +155,7 @@ export function LessonContentArea({
                                 variant="default"
                                 size="sm"
                                 asChild
-                                className="h-9 gap-1.5 rounded-full bg-gradient-to-r from-primary to-indigo-600 px-3.5 text-sm font-bold text-primary-foreground shadow-sm shadow-primary/20 hover:opacity-95"
+                                className="h-9 gap-1.5 rounded-lg bg-primary px-3.5 text-sm font-bold text-primary-foreground shadow-sm shadow-primary/20 hover:bg-primary/90"
                             >
                                 <Link href={`/roadmaps/${roadmapSlug}`}>
                                     <span className="hidden sm:inline">Hoàn thành lộ trình</span>

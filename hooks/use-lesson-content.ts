@@ -1,12 +1,15 @@
 import { useApiData } from "./use-api-data";
 import type { LessonType } from "@/lib/types/roadmap";
+import type { CodingProblem, Quiz, TheoryLesson } from "@/lib/types/lesson";
+
+type LessonContent = TheoryLesson | Quiz | CodingProblem;
 
 export function useLessonContent(lessonSlug: string | null | undefined, lessonType: LessonType | null | undefined) {
     const endpoint = lessonSlug && lessonType
         ? `/lessons/${lessonSlug}/${lessonType.toLowerCase()}`
         : null;
 
-    const { data, error, isLoading, mutate } = useApiData<any>(
+    const { data, error, isLoading, mutate } = useApiData<LessonContent>(
         endpoint,
         { revalidateOnFocus: false, shouldRetryOnError: false }
     );

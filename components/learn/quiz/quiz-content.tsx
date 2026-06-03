@@ -252,27 +252,27 @@ export function QuizContent({
     const hasAnswered = (answers[currentQuestion.id] ?? []).length > 0;
 
     return (
-        <div className="flex-1 overflow-y-auto bg-background/30">
-            <div className="max-w-5xl mx-auto px-6 py-6 sm:py-8">
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+        <div className="flex-1 overflow-y-auto bg-muted/[0.16]">
+            <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6 sm:py-8">
+                <div className="grid grid-cols-1 items-start gap-7 lg:grid-cols-12">
                     
                     {/* Left Column: Active Question Card & Navigation */}
-                    <div className="lg:col-span-8 space-y-6">
+                    <div className="flex flex-col gap-6 lg:col-span-8">
                         
                         {/* Mobile Header / Progress Bar */}
-                        <div className="space-y-2 lg:hidden">
+                        <div className="flex flex-col gap-2 lg:hidden">
                             <div className="flex items-center justify-between text-xs text-muted-foreground">
                                 <span className="font-sans truncate max-w-[200px]">{quiz.title}</span>
                                 <span className="flex items-center gap-2">
                                     {hasStarted && (
-                                        <span className="font-mono bg-muted px-2 py-0.5 rounded text-[10px]">{timer.formatted}</span>
+                                    <span className="rounded bg-muted px-2 py-0.5 font-mono text-[10px]">{timer.formatted}</span>
                                     )}
                                     <span className="font-medium">
                                         {currentIndex + 1} / {totalQuestions}
                                     </span>
                                 </span>
                             </div>
-                            <div className="h-1.5 rounded-full bg-muted overflow-hidden">
+                            <div className="h-1.5 overflow-hidden rounded-full bg-muted">
                                 <motion.div
                                     className="h-full rounded-full bg-[var(--lesson-accent)]"
                                     animate={{ width: `${progress}%` }}
@@ -282,7 +282,7 @@ export function QuizContent({
                         </div>
 
                         {/* Question Card */}
-                        <div className="rounded-2xl border border-border bg-card p-6 shadow-sm relative">
+                        <div className="relative rounded-2xl border border-border/60 bg-card/75 p-5 shadow-sm sm:p-6">
                             {reducedMotion ? (
                                 <QuestionCard
                                     question={currentQuestion}
@@ -355,10 +355,10 @@ export function QuizContent({
                     </div>
 
                     {/* Right Column: Sticky Quiz Progress, Navigation Grid & Timer */}
-                    <div className="lg:col-span-4 space-y-6 lg:sticky lg:top-0">
+                    <div className="flex flex-col gap-6 lg:sticky lg:top-0 lg:col-span-4">
                         
                         {/* Timer Card */}
-                        <div className="rounded-2xl border border-border bg-card p-5 space-y-3.5 shadow-sm text-center">
+                        <div className="flex flex-col gap-3.5 rounded-2xl border border-border/60 bg-card/75 p-5 text-center shadow-sm">
                             <h4 className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
                                 Thời gian làm bài
                             </h4>
@@ -369,7 +369,7 @@ export function QuizContent({
                         </div>
 
                         {/* Interactive Questions Navigator Grid */}
-                        <div className="rounded-2xl border border-border bg-card p-5 space-y-4 shadow-sm">
+                        <div className="flex flex-col gap-4 rounded-2xl border border-border/60 bg-card/75 p-5 shadow-sm">
                             <div className="flex items-center justify-between border-b border-border/50 pb-3">
                                 <h4 className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
                                     Bản đồ câu hỏi
@@ -389,7 +389,7 @@ export function QuizContent({
                                             key={q.id}
                                             onClick={() => handleNavigate(i)}
                                             className={cn(
-                                                "size-9 rounded-xl border font-mono text-xs font-bold flex items-center justify-center transition-all",
+                                                "flex size-9 items-center justify-center rounded-lg border font-mono text-xs font-bold transition-all",
                                                 isCurrent
                                                     ? "border-[var(--lesson-accent)] bg-[var(--lesson-accent)]/10 text-[var(--lesson-accent)] shadow-sm scale-105"
                                                     : isAnswered
@@ -421,16 +421,16 @@ export function QuizContent({
                         </div>
 
                         {/* Quiz Summary Requirement */}
-                        <div className="rounded-2xl border border-border bg-card p-4 space-y-2.5 shadow-sm text-xs text-muted-foreground leading-relaxed">
+                        <div className="flex flex-col gap-2.5 rounded-2xl border border-border/60 bg-card/75 p-4 text-xs leading-relaxed text-muted-foreground shadow-sm">
                             <p>
                                 <strong>Mục tiêu:</strong> Trả lời chính xác ít nhất <strong>{quiz.passingScore}%</strong> ({Math.ceil(totalQuestions * quiz.passingScore / 100)}/{totalQuestions} câu) để được tính là hoàn thành.
                             </p>
                         </div>
 
                         {/* AI Tutor Quiz Guide */}
-                        <div className="rounded-2xl border border-primary/25 bg-linear-to-br from-primary/5 via-indigo-500/5 to-purple-500/5 p-4.5 space-y-3 shadow-sm animate-in fade-in duration-300">
+                        <div className="flex flex-col gap-3 rounded-2xl border border-[var(--lesson-accent-border)] bg-card/75 p-4.5 shadow-sm animate-in fade-in duration-300">
                             <div className="flex gap-2.5">
-                                <div className="size-8 rounded-lg bg-gradient-to-br from-primary to-purple-600 flex items-center justify-center text-primary-foreground shrink-0 shadow-xs">
+                                <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-[var(--lesson-accent)] text-primary-foreground shadow-xs">
                                     <SparklesIcon className="size-4" />
                                 </div>
                                 <div>
@@ -451,9 +451,10 @@ export function QuizContent({
                                             }
                                         }));
                                     }}
-                                    className="w-full text-[10px] font-bold py-2 rounded-xl bg-primary text-primary-foreground hover:bg-primary/95 transition-all shadow-xs flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 whitespace-nowrap"
+                                    className="flex w-full cursor-pointer items-center justify-center gap-1.5 whitespace-nowrap rounded-lg bg-[var(--lesson-accent)] py-2 text-[10px] font-bold text-primary-foreground shadow-xs transition-all hover:opacity-95 active:scale-95"
                                 >
-                                    ⚡ Trọng tâm kiến thức bài thi
+                                    <SparklesIcon className="size-3.5" />
+                                    Trọng tâm kiến thức bài thi
                                 </button>
                                 <button
                                     onClick={() => {
@@ -465,9 +466,10 @@ export function QuizContent({
                                             }
                                         }));
                                     }}
-                                    className="w-full text-[10px] font-bold py-2 rounded-xl bg-background hover:bg-muted text-foreground border border-border/60 transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 whitespace-nowrap"
+                                    className="flex w-full cursor-pointer items-center justify-center gap-1.5 whitespace-nowrap rounded-lg border border-border/60 bg-background py-2 text-[10px] font-bold text-foreground transition-all hover:bg-muted active:scale-95"
                                 >
-                                    🎯 Mẹo tránh bẫy trắc nghiệm
+                                    <CheckCircleIcon className="size-3.5 text-[var(--lesson-accent)]" />
+                                    Mẹo tránh bẫy trắc nghiệm
                                 </button>
                             </div>
                         </div>

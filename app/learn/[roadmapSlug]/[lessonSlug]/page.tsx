@@ -41,14 +41,14 @@ function getCurrentLessonProgress(
 
 function NotFoundContent({ lessonSlug }: { lessonSlug: string }) {
     return (
-        <div className="flex flex-col items-center justify-center h-full gap-4 py-20">
-            <div className="size-16 rounded-full bg-muted flex items-center justify-center">
+        <div className="flex h-full flex-col items-center justify-center gap-4 px-6 py-20">
+            <div className="flex size-16 items-center justify-center rounded-2xl bg-muted">
                 <BookOpenIcon className="size-8 text-muted-foreground/50" />
             </div>
             <div className="text-center">
-                <h2 className="text-lg font-semibold mb-1">Lesson not found</h2>
+                <h2 className="mb-1 text-lg font-semibold">Không tìm thấy bài học</h2>
                 <p className="text-sm text-muted-foreground">
-                    No content for: <code className="bg-muted px-1.5 py-0.5 rounded text-xs">{lessonSlug}</code>
+                    Chưa có nội dung cho: <code className="rounded bg-muted px-1.5 py-0.5 text-xs">{lessonSlug}</code>
                 </p>
             </div>
         </div>
@@ -57,9 +57,9 @@ function NotFoundContent({ lessonSlug }: { lessonSlug: string }) {
 
 function LessonLoading() {
     return (
-        <div className="flex flex-col items-center justify-center h-full gap-3">
+        <div className="flex h-full flex-col items-center justify-center gap-3">
             <Loader2Icon className="size-6 animate-spin text-muted-foreground" />
-            <p className="text-sm text-muted-foreground">Loading lesson...</p>
+            <p className="text-sm text-muted-foreground">Đang tải bài học...</p>
         </div>
     );
 }
@@ -74,30 +74,29 @@ function LockedLessonContent({
     isEnrolling: boolean;
 }) {
     return (
-        <div className="flex flex-col items-center justify-center h-full max-w-md mx-auto px-6 py-20 text-center space-y-6">
+        <div className="mx-auto flex h-full max-w-md flex-col items-center justify-center gap-6 px-6 py-20 text-center">
             <div className="relative">
-                {/* Decorative background glow */}
-                <div className="absolute -inset-1 rounded-full bg-linear-to-r from-purple-600 via-violet-600 to-fuchsia-600 opacity-70 blur-lg animate-pulse" />
-                <div className="relative size-16 rounded-full bg-background border border-border flex items-center justify-center shadow-lg">
-                    <LockIcon className="size-7 text-purple-500" />
+                <div className="absolute -inset-1 animate-pulse rounded-2xl bg-[var(--lesson-accent)] opacity-35 blur-lg" />
+                <div className="relative flex size-16 items-center justify-center rounded-2xl border border-border bg-background shadow-lg">
+                    <LockIcon className="size-7 text-[var(--lesson-accent)]" />
                 </div>
             </div>
 
-            <div className="space-y-2">
-                <h2 className="text-2xl font-bold tracking-tight text-foreground flex items-center justify-center gap-2">
+            <div className="flex flex-col gap-2">
+                <h2 className="flex items-center justify-center gap-2 text-2xl font-bold tracking-tight text-foreground">
                     Nội dung giới hạn
                     <SparklesIcon className="size-5 text-amber-500 fill-amber-500" />
                 </h2>
-                <p className="text-sm text-muted-foreground leading-relaxed">
+                <p className="text-sm leading-relaxed text-muted-foreground">
                     Bạn cần đăng ký lộ trình học này để mở khóa bài học, làm các câu hỏi trắc nghiệm và thử thách lập trình.
                 </p>
             </div>
 
-            <div className="flex flex-col sm:flex-row items-center gap-3 w-full pt-2">
+            <div className="flex w-full flex-col items-center gap-3 pt-2 sm:flex-row">
                 <button
                     onClick={onEnroll}
                     disabled={isEnrolling}
-                    className="flex items-center justify-center gap-2 h-11 w-full rounded-xl bg-linear-to-r from-purple-600 via-violet-600 to-fuchsia-600 px-6 text-sm font-semibold text-white shadow-lg shadow-purple-600/35 transition-all duration-200 hover:scale-[1.02] hover:shadow-xl hover:shadow-purple-600/45 active:scale-[0.98] disabled:opacity-75 disabled:cursor-not-allowed"
+                    className="flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-primary px-6 text-sm font-semibold text-primary-foreground shadow-lg shadow-primary/20 transition-all duration-200 hover:scale-[1.01] hover:bg-primary/90 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-75"
                 >
                     {isEnrolling ? (
                         <>
@@ -112,7 +111,7 @@ function LockedLessonContent({
 
             <Link
                 href={`/roadmaps/${roadmapSlug}`}
-                className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors font-medium"
+                className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
             >
                 <ArrowLeftIcon className="size-3" />
                 Quay lại chi tiết lộ trình

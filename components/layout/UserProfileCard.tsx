@@ -2,7 +2,6 @@ import React, { useState } from 'react'
 import {Avatar, AvatarFallback, AvatarImage} from "@/components/ui/avatar";
 import {cn} from "@/lib/utils";
 import {AVATAR_GRADIENTS} from "@/lib/icon-map";
-import {Progress} from "@/components/ui/progress";
 import {useUser} from "@/hooks/use-user";
 import {LogOutIcon, Loader2} from "lucide-react";
 import {logout} from "@/api/auth";
@@ -14,6 +13,7 @@ const UserProfileCard = () => {
     const {user, mutate} = useUser();
     const router = useRouter();
     const [isLoggingOut, setIsLoggingOut] = useState(false);
+    const contributionScore = user?.contributionScore ?? user?.totalContributions ?? 0;
 
     const handleLogout = async () => {
         setIsLoggingOut(true);
@@ -44,7 +44,9 @@ const UserProfileCard = () => {
                     </Avatar>
                     <div className="min-w-0">
                         <p className="text-sm font-semibold truncate text-sidebar-foreground">{user?.username || "Guest"}</p>
-                        <p className="text-[10px] text-muted-foreground truncate">Học viên Premium</p>
+                        <p className="text-[10px] text-muted-foreground truncate">
+                            {user?.role ? `Vai trò ${user.role}` : "Đang tải hồ sơ"}
+                        </p>
                     </div>
                 </Link>
                 
@@ -62,12 +64,13 @@ const UserProfileCard = () => {
                 </button>
             </div>
             
-            <div className="space-y-1.5">
-                <div className="flex items-center justify-between text-[10px] text-muted-foreground">
-                    <span>Tiến trình cấp</span>
-                    <span className="font-medium text-sidebar-foreground">Lv. 5 &middot; 42%</span>
+            <div className="rounded-lg bg-sidebar-accent/50 px-2.5 py-2">
+                <div className="flex items-center justify-between gap-2 text-[10px] text-muted-foreground">
+                    <span>Điểm đóng góp</span>
+                    <span className="font-semibold tabular-nums text-sidebar-foreground">
+                        {contributionScore.toLocaleString("vi-VN")}
+                    </span>
                 </div>
-                <Progress value={42} className="h-1"/>
             </div>
         </div>
     )

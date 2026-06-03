@@ -33,47 +33,47 @@ function QuizInfoCard({ quiz }: { quiz: Quiz }) {
     const singleChoiceCount = quiz.questions.length - multipleChoiceCount;
 
     return (
-        <div className="relative overflow-hidden rounded-2xl border border-border bg-card">
+        <div className="relative overflow-hidden rounded-2xl border border-border/60 bg-card/75 shadow-sm">
             {/* Subtle gradient accent at top */}
-            <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-primary/60 via-primary to-primary/60" />
+            <div className="absolute inset-x-0 top-0 h-1 bg-[var(--lesson-accent)]" />
 
-            <div className="p-6 space-y-5">
+            <div className="flex flex-col gap-5 p-6">
                 {/* Title */}
-                <div className="space-y-1.5">
-                    <h1 className="text-xl font-bold text-foreground leading-tight">
+                <div className="flex flex-col gap-1.5">
+                    <h1 className="text-2xl font-bold leading-tight text-foreground">
                         {quiz.title}
                     </h1>
                     <p className="text-sm text-muted-foreground">
-                        Test your understanding with this quiz
+                        Kiểm tra nhanh mức độ hiểu bài trước khi chuyển sang phần tiếp theo.
                     </p>
                 </div>
 
                 {/* Stats grid */}
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
                     <StatItem
                         icon={<BookOpenIcon className="size-4" />}
-                        label="Questions"
+                        label="Câu hỏi"
                         value={`${quiz.questions.length}`}
                         color="text-primary"
                         bgColor="bg-primary/10"
                     />
                     <StatItem
                         icon={<TargetIcon className="size-4" />}
-                        label="Pass score"
+                        label="Điểm đạt"
                         value={`${quiz.passingScore}%`}
                         color="text-emerald-600 dark:text-emerald-400"
                         bgColor="bg-emerald-500/10"
                     />
                     <StatItem
                         icon={<ZapIcon className="size-4" />}
-                        label="Single choice"
+                        label="Một đáp án"
                         value={`${singleChoiceCount}`}
                         color="text-blue-600 dark:text-blue-400"
                         bgColor="bg-blue-500/10"
                     />
                     <StatItem
                         icon={<ClockIcon className="size-4" />}
-                        label="Multi choice"
+                        label="Nhiều đáp án"
                         value={`${multipleChoiceCount}`}
                         color="text-amber-600 dark:text-amber-400"
                         bgColor="bg-amber-500/10"
@@ -83,9 +83,9 @@ function QuizInfoCard({ quiz }: { quiz: Quiz }) {
                 {/* Question type badges */}
                 <div className="flex flex-wrap gap-2">
                     {singleChoiceCount > 0 && (
-                        <Badge variant="secondary" className="text-xs gap-1">
+                        <Badge variant="secondary" className="gap-1 text-xs">
                             <span className="size-1.5 rounded-full bg-blue-500" />
-                            {singleChoiceCount} single choice
+                            {singleChoiceCount} câu một đáp án
                         </Badge>
                     )}
                     {multipleChoiceCount > 0 && (
@@ -94,7 +94,7 @@ function QuizInfoCard({ quiz }: { quiz: Quiz }) {
                             className="text-xs gap-1 bg-amber-500/10 text-amber-700 dark:text-amber-300"
                         >
                             <span className="size-1.5 rounded-full bg-amber-500" />
-                            {multipleChoiceCount} multiple choice
+                            {multipleChoiceCount} câu nhiều đáp án
                         </Badge>
                     )}
                 </div>
@@ -155,12 +155,12 @@ function StartButton({
             {hasAttempts ? (
                 <>
                     <RefreshCwIcon className="size-4.5" />
-                    Practice Again
+                    Làm lại để luyện tập
                 </>
             ) : (
                 <>
                     <PlayIcon className="size-4.5" />
-                    Start Quiz
+                    Bắt đầu làm quiz
                 </>
             )}
         </Button>
@@ -198,15 +198,15 @@ export function QuizOverview({
     const hasAttempts = !!attempts && attempts.length > 0;
 
     return (
-        <div className="flex-1 overflow-y-auto bg-background/30">
-            <div className="max-w-5xl mx-auto px-6 py-6 sm:py-10">
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+        <div className="flex-1 overflow-y-auto bg-muted/[0.16]">
+            <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6 sm:py-8">
+                <div className="grid grid-cols-1 items-start gap-7 lg:grid-cols-12">
                     
                     {/* Left Panel: Quiz details & entry */}
-                    <div className="lg:col-span-7 space-y-6">
-                        <div className="space-y-2">
+                    <div className="flex flex-col gap-6 lg:col-span-7">
+                        <div className="flex flex-col gap-2">
                             <h2 className="text-sm font-semibold text-[var(--lesson-accent)] tracking-wider uppercase">
-                                Lesson Quiz
+                                Quiz bài học
                             </h2>
                             <p className="text-xs text-muted-foreground">
                                 Đánh giá mức độ hiểu biết của bạn để đánh dấu hoàn thành bài học này.
@@ -217,13 +217,12 @@ export function QuizOverview({
                         <QuizInfoCard quiz={quiz} />
 
                         {/* Instructions / Tips */}
-                        <div className="rounded-2xl border border-border bg-card/60 p-5 space-y-3.5 relative overflow-hidden">
-                            <div className="absolute right-0 top-0 size-24 bg-primary/5 blur-2xl rounded-full" />
+                        <div className="relative flex flex-col gap-3.5 overflow-hidden rounded-2xl border border-border/60 bg-card/75 p-5 shadow-sm">
                             <h4 className="text-sm font-semibold text-foreground flex items-center gap-2">
                                 <ZapIcon className="size-4 text-amber-500 fill-amber-500" />
                                 Hướng dẫn làm bài
                             </h4>
-                            <ul className="text-xs text-muted-foreground space-y-2 list-disc pl-4 leading-relaxed">
+                            <ul className="flex list-disc flex-col gap-2 pl-4 text-xs leading-relaxed text-muted-foreground">
                                 <li><strong>Điểm tối thiểu đạt:</strong> Bạn cần đạt ít nhất <span className="text-emerald-500 font-semibold">{quiz.passingScore}%</span> số câu trả lời chính xác để hoàn thành bài này.</li>
                                 <li><strong>Không giới hạn thời gian:</strong> Hãy suy nghĩ kỹ trước khi chọn, không có áp lực thời gian.</li>
                                 <li><strong>Hỗ trợ làm lại:</strong> Bạn có thể làm lại quiz này bao nhiêu lần tùy thích để ôn tập và cải thiện điểm số.</li>
@@ -238,9 +237,9 @@ export function QuizOverview({
                     </div>
 
                     {/* Right Panel: Attempts History */}
-                    <div className="lg:col-span-5 space-y-6">
-                        <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">
-                            <h3 className="text-sm font-bold text-foreground mb-4 uppercase tracking-wider">
+                    <div className="flex flex-col gap-6 lg:col-span-5">
+                        <div className="rounded-2xl border border-border/60 bg-card/75 p-6 shadow-sm">
+                            <h3 className="mb-4 text-sm font-bold uppercase tracking-wider text-foreground">
                                 Lịch sử làm bài
                             </h3>
                             <QuizAttemptsHistory

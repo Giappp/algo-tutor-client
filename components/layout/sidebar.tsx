@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import {useState} from "react";
 import UserProfileCard from "@/components/layout/UserProfileCard";
+import {useUser} from "@/hooks/use-user";
 
 const navItems = [
     {href: "/home", label: "Trang chủ", icon: HomeIcon},
@@ -32,6 +33,9 @@ const navItems = [
 export function Sidebar() {
     const pathname = usePathname();
     const [collapsed, setCollapsed] = useState(false);
+    const {user} = useUser();
+    const currentStreak = user?.currentStreak ?? 0;
+    const visibleStreakDays = Math.max(1, Math.min(currentStreak, 7));
 
     return (
         <aside
@@ -100,11 +104,19 @@ export function Sidebar() {
                             className="rounded-xl bg-gradient-to-br from-[oklch(0.65_0.2_145)] via-[oklch(0.65_0.18_85)] to-[oklch(0.65_0.15_340)] p-3.5 mt-4 text-primary-foreground">
                             <div className="flex items-center gap-2 mb-1.5">
                                 <FlameIcon className="size-4.5"/>
-                                <span className="text-sm font-semibold">Chuỗi 5 ngày! 🔥</span>
+                                <span className="text-sm font-semibold">
+                                    {currentStreak > 0
+                                        ? `Chuỗi ${currentStreak.toLocaleString("vi-VN")} ngày`
+                                        : "Chưa có chuỗi ngày"}
+                                </span>
                             </div>
-                            <p className="text-xs opacity-85">Tiếp tục giải bài để giữ streak</p>
+                            <p className="text-xs opacity-85">
+                                {currentStreak > 0
+                                    ? "Tiếp tục học để giữ nhịp hiện tại"
+                                    : "Hoàn thành một bài học để bắt đầu chuỗi"}
+                            </p>
                             <div className="mt-2.5 flex gap-1">
-                                {[1, 2, 3, 4, 5].map((day) => (
+                                {Array.from({length: visibleStreakDays}).map((_, day) => (
                                     <div
                                         key={day}
                                         className="h-2 flex-1 rounded-full bg-primary-foreground/30"

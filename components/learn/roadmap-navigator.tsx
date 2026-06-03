@@ -60,12 +60,12 @@ export function RoadmapNavigator({
     const isMobile = panelVariant === "mobile";
 
     return (
-        <div className="flex h-full min-h-0 flex-col bg-background/80">
-            <div className="shrink-0 border-b border-border/50 px-4 py-3">
-                <p className="text-sm font-bold uppercase tracking-[0.16em] text-muted-foreground">
+        <div className="flex h-full min-h-0 flex-col bg-background/75">
+            <div className="shrink-0 border-b border-border/50 px-4 py-3.5">
+                <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-muted-foreground">
                     Nội dung lộ trình
                 </p>
-                <h2 className="mt-1 line-clamp-2 text-sm font-semibold leading-snug text-foreground">
+                <h2 className="mt-1 line-clamp-2 text-base font-bold leading-snug text-foreground">
                     {roadmap.name}
                 </h2>
             </div>
@@ -93,9 +93,9 @@ export function RoadmapNavigator({
                                 key={topic.id}
                                 value={String(topic.id)}
                                 className={cn(
-                                    "overflow-hidden rounded-2xl border bg-card/70 shadow-sm transition-colors",
+                                    "overflow-hidden rounded-xl border bg-card/65 shadow-sm transition-colors",
                                     hasActiveLesson
-                                        ? "border-primary/35 bg-primary/[0.035]"
+                                        ? "border-[var(--lesson-accent-border)] bg-[var(--lesson-accent-muted)]"
                                         : "border-border/60"
                                 )}
                             >
@@ -108,12 +108,12 @@ export function RoadmapNavigator({
                                     <div className="flex min-w-0 flex-1 items-start gap-3 text-left">
                                         <div
                                             className={cn(
-                                                "mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-xl border text-xs font-bold",
+                                                "mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg border text-xs font-bold",
                                                 topicLocked
                                                     ? "border-border bg-muted text-muted-foreground"
                                                     : hasActiveLesson
-                                                        ? "border-primary/30 bg-primary text-primary-foreground"
-                                                        : "border-primary/15 bg-primary/10 text-primary"
+                                                        ? "border-[var(--lesson-accent-border)] bg-[var(--lesson-accent)] text-primary-foreground"
+                                                        : "border-[var(--lesson-accent-border)] bg-[var(--lesson-accent-muted)] text-[var(--lesson-accent)]"
                                             )}
                                         >
                                             {topicLocked ? (
@@ -130,7 +130,7 @@ export function RoadmapNavigator({
                                                 </h3>
 
                                                 {hasActiveLesson && (
-                                                    <span className="shrink-0 rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-bold text-primary">
+                                                    <span className="shrink-0 rounded-md bg-[var(--lesson-accent-muted)] px-2 py-0.5 text-[10px] font-bold text-[var(--lesson-accent)]">
                                                         Đang học
                                                     </span>
                                                 )}
@@ -143,7 +143,7 @@ export function RoadmapNavigator({
                                                             "h-full rounded-full",
                                                             progress === 100
                                                                 ? "bg-emerald-500"
-                                                                : "bg-primary"
+                                                                : "bg-[var(--lesson-accent)]"
                                                         )}
                                                         initial={false}
                                                         animate={{ width: `${progress}%` }}
@@ -183,7 +183,7 @@ export function RoadmapNavigator({
                                                         }
                                                     }}
                                                     className={cn(
-                                                        "group/lesson relative flex w-full items-center gap-3 rounded-xl border px-3 py-2.5 text-left transition-all",
+                                                        "group/lesson relative flex w-full items-center gap-3 rounded-lg border px-3 py-2.5 text-left transition-all",
                                                         isActive
                                                             ? "border-[var(--lesson-accent-border)] bg-[var(--lesson-accent-muted)] text-[var(--lesson-accent)] shadow-sm"
                                                             : isLocked

@@ -2,9 +2,6 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ReactNode } from "react";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
-import rehypeRaw from "rehype-raw";
 import { motion } from "framer-motion";
 import {
     BookOpenIcon,
@@ -20,6 +17,7 @@ import {
 import type { TheoryLesson } from "@/lib/types/lesson";
 import { LessonTypeIcon } from "@/components/roadmap/lesson-type-icon";
 import { DifficultyBadge } from "@/components/roadmap/difficulty-badge";
+import { MarkdownRenderer } from "@/components/learn/markdown-renderer";
 import { useSectionVisibility } from "@/hooks/use-section-visibility";
 import { springs } from "@/lib/motion";
 import { cn } from "@/lib/utils";
@@ -190,7 +188,7 @@ export function TheoryContent({
                             : "border-border/50 bg-background/85"
                     )}
                 >
-                    <div className="mx-auto flex max-w-[1080px] items-center gap-3">
+                <div className="mx-auto flex max-w-6xl items-center gap-3">
                         {completed ? (
                             <>
                                 <CheckCircle2Icon className="size-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
@@ -229,18 +227,18 @@ export function TheoryContent({
                 </div>
             )}
 
-            <div className="min-h-0 flex-1 overflow-hidden flex flex-col">
-                <div className="mx-auto grid flex-1 min-h-0 w-full max-w-[1120px] grid-cols-1 gap-8 px-4 py-6 sm:px-6 lg:grid-cols-[minmax(0,1fr)_280px] lg:py-8">
+            <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-muted/[0.16]">
+                <div className="mx-auto grid min-h-0 w-full max-w-6xl flex-1 grid-cols-1 gap-7 px-4 py-5 sm:px-6 lg:grid-cols-[minmax(0,1fr)_286px] lg:py-7">
                     <div
                         ref={contentRef}
                         className="min-h-0 overflow-y-auto scroll-smooth pr-0 scrollbar-thin lg:pr-4"
                     >
-                        <header className="mb-8 rounded-3xl border border-border/60 bg-card/60 p-5 shadow-sm sm:p-6">
+                        <header className="mb-7 overflow-hidden rounded-2xl border border-border/60 bg-card/75 p-5 shadow-sm sm:p-6">
                             <div className="mb-4 flex flex-wrap items-center gap-2.5">
                                 <LessonTypeIcon type="THEORY" showLabel />
                                 <DifficultyBadge difficulty="EASY" />
 
-                                <div className="ml-0 flex items-center gap-1.5 rounded-full border border-border/60 bg-background/70 px-2.5 py-1 text-xs font-medium text-muted-foreground sm:ml-auto">
+                                <div className="ml-0 flex items-center gap-1.5 rounded-lg border border-border/60 bg-background/70 px-2.5 py-1 text-xs font-medium text-muted-foreground sm:ml-auto">
                                     <ClockIcon className="size-3.5" />
                                     <span>{lesson.estimatedMinutes} phút đọc</span>
                                 </div>
@@ -255,50 +253,17 @@ export function TheoryContent({
                             </p>
                         </header>
 
-                        <article
-                            className={cn(
-                                "prose prose-base max-w-none dark:prose-invert",
-                                "prose-headings:scroll-mt-6 prose-headings:font-heading prose-headings:font-bold prose-headings:tracking-tight prose-headings:text-foreground",
-                                "prose-h1:text-3xl prose-h1:leading-tight",
-                                "prose-h2:mt-10 prose-h2:border-b prose-h2:border-border/50 prose-h2:pb-2 prose-h2:text-2xl",
-                                "prose-h3:mt-7 prose-h3:text-xl",
-                                "prose-p:text-[1.03rem] prose-p:leading-8 prose-p:text-foreground/90",
-                                "prose-a:text-primary prose-a:no-underline hover:prose-a:underline",
-                                "prose-strong:font-bold prose-strong:text-foreground",
-                                "prose-code:rounded-md prose-code:bg-muted prose-code:px-1.5 prose-code:py-0.5 prose-code:font-mono prose-code:text-[0.875rem] prose-code:text-primary prose-code:before:content-[''] prose-code:after:content-['']",
-                                "prose-pre:rounded-2xl prose-pre:border prose-pre:border-zinc-800 prose-pre:bg-[#18181b] prose-pre:p-4 prose-pre:text-[0.875rem] prose-pre:leading-relaxed",
-                                "prose-blockquote:my-6 prose-blockquote:rounded-r-2xl prose-blockquote:border-l-4 prose-blockquote:border-[var(--lesson-accent)] prose-blockquote:bg-[var(--lesson-accent-muted)] prose-blockquote:px-5 prose-blockquote:py-3 prose-blockquote:text-foreground/85",
-                                "prose-ul:space-y-2 prose-ol:space-y-2",
-                                "prose-li:text-[1.03rem] prose-li:leading-8 prose-li:text-foreground/90",
-                                "prose-table:my-6 prose-table:overflow-hidden prose-table:rounded-xl prose-table:text-sm",
-                                "prose-th:border prose-th:border-border prose-th:bg-muted/60 prose-th:px-4 prose-th:py-2 prose-th:text-left prose-th:font-semibold",
-                                "prose-td:border prose-td:border-border prose-td:px-4 prose-td:py-2",
-                                "prose-img:rounded-2xl prose-img:border prose-img:border-border/60 prose-img:shadow-sm"
-                            )}
-                        >
-                            <ReactMarkdown
-                                remarkPlugins={[remarkGfm]}
-                                rehypePlugins={[rehypeRaw]}
-                                components={{
-                                    h2: ({ children }) => (
-                                        <h2 id={slugifyHeading(children)}>
-                                            {children}
-                                        </h2>
-                                    ),
-                                    h3: ({ children }) => (
-                                        <h3 id={slugifyHeading(children)}>
-                                            {children}
-                                        </h3>
-                                    ),
-                                }}
-                            >
-                                {lesson.content}
-                            </ReactMarkdown>
+                        <article className="max-w-none">
+                            <MarkdownRenderer
+                                content={lesson.content}
+                                variant="theory"
+                                getHeadingId={(children) => slugifyHeading(children)}
+                            />
                         </article>
 
-                        <section className="mt-10 rounded-3xl border border-primary/20 bg-linear-to-br from-primary/5 via-background to-purple-500/5 p-5 shadow-sm sm:p-6">
+                        <section className="mt-10 rounded-2xl border border-[var(--lesson-accent-border)] bg-card/75 p-5 shadow-sm sm:p-6">
                             <div className="flex items-start gap-3">
-                                <div className="flex size-10 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-primary to-purple-600 text-primary-foreground shadow-sm">
+                                <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-[var(--lesson-accent)] text-primary-foreground shadow-sm">
                                     <SparklesIcon className="size-5" />
                                 </div>
 
@@ -320,7 +285,7 @@ export function TheoryContent({
                                             `Tôi đang đọc bài học "${lesson.title}". Hãy tóm tắt giúp tôi những kiến thức cốt lõi và quan trọng nhất dưới dạng các gạch đầu dòng ngắn gọn, dễ nhớ.`
                                         )
                                     }
-                                    className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-3.5 py-2 text-xs font-bold text-primary-foreground shadow-sm transition-all hover:bg-primary/95 active:scale-95"
+                                    className="inline-flex items-center gap-1.5 rounded-lg bg-[var(--lesson-accent)] px-3.5 py-2 text-xs font-bold text-primary-foreground shadow-sm transition-all hover:opacity-95 active:scale-95"
                                 >
                                     <SparklesIcon className="size-3.5" />
                                     Tóm tắt trọng tâm
@@ -333,7 +298,7 @@ export function TheoryContent({
                                             `Hãy lấy các ví dụ thực tế trực quan hoặc hình ảnh ẩn dụ sinh động liên quan đến bài học "${lesson.title}" để tôi ghi nhớ tốt hơn.`
                                         )
                                     }
-                                    className="inline-flex items-center gap-1.5 rounded-xl border border-border/70 bg-background px-3.5 py-2 text-xs font-bold text-foreground transition-all hover:bg-muted active:scale-95"
+                                    className="inline-flex items-center gap-1.5 rounded-lg border border-border/70 bg-background px-3.5 py-2 text-xs font-bold text-foreground transition-all hover:bg-muted active:scale-95"
                                 >
                                     <LightbulbIcon className="size-3.5 text-amber-500" />
                                     Cho ví dụ trực quan
@@ -346,7 +311,7 @@ export function TheoryContent({
                                             `Hãy kiểm tra kiến thức của tôi về bài học "${lesson.title}" bằng 2-3 câu hỏi ngắn. Đưa đáp án gợi ý ở cuối.`
                                         )
                                     }
-                                    className="inline-flex items-center gap-1.5 rounded-xl border border-border/70 bg-background px-3.5 py-2 text-xs font-bold text-foreground transition-all hover:bg-muted active:scale-95"
+                                    className="inline-flex items-center gap-1.5 rounded-lg border border-border/70 bg-background px-3.5 py-2 text-xs font-bold text-foreground transition-all hover:bg-muted active:scale-95"
                                 >
                                     <MessageSquareIcon className="size-3.5 text-primary" />
                                     Đố vui ôn tập
@@ -357,10 +322,11 @@ export function TheoryContent({
                         <div className="h-16" />
                     </div>
 
-                    <aside className="hidden min-h-0 border-l border-border/50 pl-6 lg:flex lg:flex-col">
+                    <aside className="hidden min-h-0 lg:flex lg:flex-col">
                         <div className="min-h-0 flex-1">
-                            <div className="mb-4 flex items-center gap-2">
-                                <div className="flex size-8 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                            <div className="mb-4 rounded-2xl border border-border/60 bg-card/70 p-3 shadow-sm">
+                                <div className="flex items-center gap-2">
+                                <div className="flex size-8 items-center justify-center rounded-lg bg-[var(--lesson-accent-muted)] text-[var(--lesson-accent)]">
                                     <ListIcon className="size-4" />
                                 </div>
 
@@ -371,6 +337,7 @@ export function TheoryContent({
                                     <p className="text-xs text-muted-foreground/80">
                                         Theo dõi nội dung bài học
                                     </p>
+                                </div>
                                 </div>
                             </div>
 
@@ -385,7 +352,7 @@ export function TheoryContent({
                                                 type="button"
                                                 onClick={() => scrollToHeading(heading.id)}
                                                 className={cn(
-                                                    "relative block w-full rounded-xl py-2 text-left text-xs transition-all",
+                                                    "relative block w-full rounded-lg py-2 text-left text-xs transition-all",
                                                     heading.depth === 3 ? "pl-6 pr-3" : "pl-3 pr-3",
                                                     isActive
                                                         ? "bg-[var(--lesson-accent-muted)] font-bold text-[var(--lesson-accent)]"
@@ -437,7 +404,7 @@ export function TheoryContent({
                                             "h-full rounded-full",
                                             completed
                                                 ? "bg-emerald-500"
-                                                : "bg-(--lesson-accent)"
+                                                : "bg-[var(--lesson-accent)]"
                                         )}
                                         initial={false}
                                         animate={{
