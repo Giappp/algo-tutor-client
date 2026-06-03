@@ -1,14 +1,11 @@
 "use client";
 
 import { use, useState, useCallback } from "react";
-import useSWR from "swr";
 import Link from "next/link";
 import { TheoryContent } from "@/components/learn/theory-content";
 import { QuizContent } from "@/components/learn/quiz/quiz-content";
 import { CodingContent } from "@/components/learn/coding-content";
-import { useRoadmapActions } from "@/hooks/use-roadmap-actions";
-import { useAutoMarkInProgress } from "@/hooks/use-auto-mark-progress";
-import { fetcher } from "@/api/fetchers";
+import { useRoadmapActions, useRoadmapDetail, useLessonContent, useAutoMarkInProgress } from "@/hooks";
 import type { RoadmapDetailResponse, LessonType } from "@/lib/types/roadmap";
 import type { TheoryLesson, Quiz, CodingProblem } from "@/lib/types/lesson";
 import { BookOpenIcon, Loader2Icon, LockIcon, SparklesIcon, ArrowLeftIcon } from "lucide-react";
@@ -127,24 +124,15 @@ function LockedLessonContent({
 export default function LearnPage({ params }: PageProps) {
     const { roadmapSlug, lessonSlug } = use(params);
 
-    // Fetch roadmap structure (for navigator + lesson type detection)
-    const { data: roadmap, mutate: mutateRoadmap } = useSWR<RoadmapDetailResponse>(
-        `/roadmaps/${roadmapSlug}`,
-        fetcher,
-        { revalidateOnFocus: false, shouldRetryOnError: false }
-    );
+    // Fetch roadmap structure (for navigator + lesson type detection) using custom hook
+    const { roadmap, mutate: mutateRoadmap } = useRoadmapDetail(roadmapSlug);
 
     const lessonType: LessonType = roadmap
         ? getLessonType(roadmap.topics, lessonSlug)
         : (lessonSlug.includes("quiz") ? "QUIZ" : lessonSlug.includes("coding") ? "CODING" : "THEORY");
 
-    // Fetch lesson content based on type
-    const contentEndpoint = `/lessons/${lessonSlug}/${lessonType.toLowerCase()}`;
-    const { data: lessonData, isLoading: isLoadingContent, error: contentError, mutate: mutateContent } = useSWR(
-        contentEndpoint,
-        fetcher,
-        { revalidateOnFocus: false, shouldRetryOnError: false }
-    );
+    // Fetch lesson content based on type using custom hook
+    const { lessonData, isLoading: isLoadingContent, error: contentError, mutate: mutateContent } = useLessonContent(lessonSlug, lessonType);
     const { enroll, isEnrolling, updateLessonProgress } = useRoadmapActions();
     const [contentCompleted, setContentCompleted] = useState(false);
 
@@ -155,7 +143,12 @@ export default function LearnPage({ params }: PageProps) {
     const isLocked = contentError?.response?.status === 403 || contentError?.status === 403;
 
     // Auto-mark lesson as IN_PROGRESS when opened (fire-and-forget, non-blocking)
-    useAutoMarkInProgress(roadmapSlug, lessonSlug, isLocked ? "IN_PROGRESS" : currentProgress);
+    useAutoMarkInProgress(
+        roadmapSlug,
+        lessonSlug,
+        isLocked ? "IN_PROGRESS" : currentProgress,
+        !!roadmap
+    );
 
     const isCompleted = currentProgress === "COMPLETED" || contentCompleted;
 
@@ -193,7 +186,15 @@ export default function LearnPage({ params }: PageProps) {
         content = (
             <TheoryContent
                 lesson={lessonData as TheoryLesson}
-                onComplete={handleContentComplete}
+                onComplete={async () => {
+                    handleContentComplete();
+                    try {
+                        await updateLessonProgress(roadmapSlug, lessonSlug, "COMPLETED");
+                        mutateRoadmap();
+                    } catch (error) {
+                        console.error("Failed to complete theory lesson:", error);
+                    }
+                }}
                 isCompleted={isCompleted}
             />
         );

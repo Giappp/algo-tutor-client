@@ -81,9 +81,9 @@ export interface Submission {
     id: string;
     timestamp: Date;
     language: string;
-    status: "ACCEPTED" | "WRONG_ANSWER" | "RUNTIME_ERROR" | "TIME_LIMIT_EXCEEDED" | "COMPILATION_ERROR";
-    passedCount: number;
-    totalCount: number;
+    status: "PENDING" | "ACCEPTED" | "WRONG_ANSWER" | "RUNTIME_ERROR" | "TIME_LIMIT_EXCEEDED" | "COMPILATION_ERROR";
+    passedTestcases: number;
+    totalTestcases: number;
     executionTime: number;
     memoryUsed: number;
     code: string;

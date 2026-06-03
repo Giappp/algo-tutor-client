@@ -47,6 +47,7 @@ export function useLessonProgress(pathSlug: string, lessonSlug: string) {
                             const lesson = topic.lessons.find((l) => l.slug === lessonSlug);
                             if (lesson) {
                                 lesson.progress = status;
+                                lesson.status = status;
                                 break;
                             }
                         }
@@ -119,7 +120,7 @@ export function findNextLesson(roadmap: RoadmapDetailResponse): LessonWithProgre
     if (!roadmap.topics) return null;
 
     for (const topic of roadmap.topics) {
-        if (topic.isLocked) continue;
+        if (!topic.unlocked) continue;
         for (const lesson of topic.lessons) {
             if (lesson.progress !== "COMPLETED") {
                 return lesson;

@@ -26,7 +26,6 @@ export interface ChatMessage {
 interface GeneralChatRequest {
     conversationId?: string;
     message: string;
-    mode: "EXPLAIN";
 }
 
 interface StreamChatOptions {
@@ -482,8 +481,7 @@ export function useGeneralAIChat(isOpen: boolean) {
 
             const requestBody: GeneralChatRequest = {
                 conversationId: conversationId || undefined,
-                message: trimmedText,
-                mode: "EXPLAIN",
+                message: trimmedText
             };
 
             try {

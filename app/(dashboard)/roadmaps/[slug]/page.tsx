@@ -2,7 +2,7 @@
 
 import {use} from "react";
 import Link from "next/link";
-import {useApiData} from "@/hooks";
+import {useRoadmapDetail} from "@/hooks";
 import {useRoadmapActions} from "@/hooks/use-roadmap-actions";
 import type {LessonType, Level, RoadmapDetailResponse} from "@/lib/types";
 import {DifficultyBadge} from "@/components/roadmap/difficulty-badge";
@@ -40,10 +40,7 @@ function getCompletedCountByTopic(
 export default function LearningPathDetailPage({params}: PageProps) {
     const {slug} = use(params);
 
-    const {data: path, error, isLoading, mutate} = useApiData<RoadmapDetailResponse>(
-        `/roadmaps/${slug}`,
-        {revalidateOnFocus: false}
-    );
+    const {roadmap: path, error, isLoading, mutate} = useRoadmapDetail(slug);
     const {enroll, isEnrolling} = useRoadmapActions();
 
     const enrolled = path?.enrolled ?? false;
@@ -97,11 +94,11 @@ export default function LearningPathDetailPage({params}: PageProps) {
     const totalLessons =
         path.topics?.reduce((sum, t) => sum + t.lessonCount, 0) ?? 0;
     const enrolledCompleted = path.topics
-        ?.filter((t) => !t.isLocked)
+        ?.filter((t) => !(t.isLocked || t.unlocked === false))
         .reduce((sum, _, i) => sum + (completedCounts[i] ?? 0), 0) ?? 0;
 
     const skills = path.topics
-        ?.filter((t) => !t.isLocked)
+        ?.filter((t) => !(t.isLocked || t.unlocked === false))
         .flatMap((t) =>
             t.lessons
                 .filter((l) => l.type === "THEORY")
@@ -371,10 +368,10 @@ export default function LearningPathDetailPage({params}: PageProps) {
                                 <Accordion
                                     type="multiple"
                                     defaultValue={
-                                        path.topics?.find((t) => !t.isLocked)
+                                        path.topics?.find((t) => !(t.isLocked || t.unlocked === false))
                                             ? [
                                                 path.topics.find(
-                                                    (t) => !t.isLocked
+                                                    (t) => !(t.isLocked || t.unlocked === false)
                                                 )!.name,
                                             ]
                                             : undefined

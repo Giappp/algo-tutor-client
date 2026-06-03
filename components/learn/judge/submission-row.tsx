@@ -29,7 +29,7 @@ export function SubmissionRow({ submission }: SubmissionRowProps) {
                 <span className="font-mono">{submission.language}</span>
                 <span className="mx-1.5">·</span>
                 <span>
-                    {submission.passedCount}/{submission.totalCount} passed
+                    {submission.passedTestcases}/{submission.totalTestcases} passed
                 </span>
             </div>
 

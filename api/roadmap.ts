@@ -5,6 +5,7 @@ import type {
     LessonProgressUpdateRequest,
     LessonProgressUpdateResponse,
     EnrollmentDetailResponse,
+    EnrollmentResponseDTO,
 } from "@/lib/types/roadmap";
 import type { ApiResponse } from "@/lib/types";
 
@@ -29,10 +30,20 @@ export const roadmapApi = {
 
     enroll: async (
         slug: string
-    ): Promise<{ id: string; userId: string; learningPathId: number }> => {
+    ): Promise<EnrollmentResponseDTO> => {
         const response = await apiClient.post<
-            ApiResponse<{ id: string; userId: string; learningPathId: number }>
+            ApiResponse<EnrollmentResponseDTO>
         >(`/roadmaps/${slug}/enroll`);
+        return response.data.data;
+    },
+
+    startLesson: async (
+        slug: string,
+        lessonSlug: string
+    ): Promise<LessonProgressUpdateResponse> => {
+        const response = await apiClient.post<
+            ApiResponse<LessonProgressUpdateResponse>
+        >(`/roadmaps/${slug}/lessons/${lessonSlug}/start`);
         return response.data.data;
     },
 
@@ -65,4 +76,5 @@ export type {
     LessonProgressUpdateRequest,
     LessonProgressUpdateResponse,
     EnrollmentDetailResponse,
+    EnrollmentResponseDTO,
 };

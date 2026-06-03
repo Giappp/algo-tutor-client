@@ -6,7 +6,8 @@ import { cn } from "@/lib/utils";
 import {
     GraduationCapIcon,
     SparklesIcon,
-    InfoIcon
+    InfoIcon,
+    ArrowUpRightIcon,
 } from "lucide-react";
 
 interface QuickAction {
@@ -30,54 +31,53 @@ export function WelcomeDashboard({
     quickActions,
     onQuickAction,
 }: WelcomeDashboardProps) {
+    const stripEmojiPrefix = (label: string) =>
+        label.replace(/^[^\p{L}\p{N}]+/u, "").trim();
+
     return (
-        <div className="flex-1 overflow-y-auto px-4 py-6 flex flex-col gap-6 scrollbar-thin">
-            {/* Glowing Welcome Card */}
+        <div className="scrollbar-thin flex flex-1 flex-col gap-5 overflow-y-auto px-4 py-5">
             <motion.div
                 initial={{ opacity: 0, y: 15 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.4 }}
-                className="relative overflow-hidden rounded-2xl border border-primary/20 bg-gradient-to-br from-primary/5 via-transparent to-purple-500/5 p-4 shadow-sm"
+                className="relative overflow-hidden rounded-lg border border-border/60 bg-card/80 p-4 shadow-xs"
             >
-                <div className="absolute -top-12 -right-12 w-24 h-24 rounded-full bg-primary/10 blur-xl pointer-events-none" />
+                <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-primary/30" />
                 <div className="flex gap-3">
-                    <div className="size-10 rounded-full bg-gradient-to-br from-primary to-purple-600 flex items-center justify-center shrink-0 shadow-md">
-                        <GraduationCapIcon className="size-5 text-primary-foreground" />
+                    <div className="flex size-10 shrink-0 items-center justify-center rounded-lg border border-primary/20 bg-primary/10 text-primary">
+                        <GraduationCapIcon className="size-5" aria-hidden="true" />
                     </div>
-                    <div className="flex flex-col gap-1">
-                        <h4 className="font-bold text-sm text-foreground">AlgoTutor AI Co-pilot</h4>
-                        <p className="text-xs text-muted-foreground leading-relaxed">
+                    <div className="flex min-w-0 flex-col gap-1">
+                        <h4 className="text-sm font-semibold text-foreground">AlgoTutor AI co-pilot</h4>
+                        <p className="text-pretty text-xs leading-relaxed text-muted-foreground">
                             Xin chào! Mình là trợ lý học tập cá nhân của bạn cho bài học <strong className="text-foreground">{lessonTitle}</strong>.
-                            Mình được thiết kế để giảng giải lý thuyết, gợi ý giải thuật và cùng bạn dò lỗi, giúp bạn phát triển tư duy lập trình tối đa!
+                            Mình sẽ giảng giải lý thuyết, gợi ý giải thuật và cùng bạn dò lỗi theo từng bước.
                         </p>
                     </div>
                 </div>
             </motion.div>
 
-            {/* Main Action Grid */}
             <div className="flex flex-col gap-3">
-                <h5 className="text-xs font-extrabold uppercase tracking-wider text-muted-foreground px-1">
-                    ⚡ Bạn muốn trợ lý hỗ trợ gì ngay?
-                </h5>
+                <div className="flex items-end justify-between gap-3 px-1">
+                    <div>
+                        <h5 className="text-xs font-semibold text-foreground">
+                            Bắt đầu bằng một hướng hỗ trợ
+                        </h5>
+                        <p className="text-[11px] text-muted-foreground">
+                            Chọn điều bạn cần ngay lúc này.
+                        </p>
+                    </div>
+                    <Badge variant="secondary" className="rounded-md px-2 py-0.5 text-[11px] font-medium">
+                        {quickActions.length} lựa chọn
+                    </Badge>
+                </div>
 
-                <div className="grid grid-cols-1 gap-2.5">
+                <div className="grid grid-cols-1 gap-2">
                     {quickActions.map((action, idx) => {
                         const ActionIcon = action.icon || SparklesIcon;
                         const isHint = action.mode === "HINT";
                         const isHintDisabled = isHint && !canAskNextHint;
-
-                        // Clean up emoji prefix from label if present
-                        const cleanLabel = action.label.startsWith("💡 ") ||
-                            action.label.startsWith("📖 ") ||
-                            action.label.startsWith("🛠️ ") ||
-                            action.label.startsWith("📝 ") ||
-                            action.label.startsWith("⚡ ") ||
-                            action.label.startsWith("🎯 ") ||
-                            action.label.startsWith("❓ ") ||
-                            action.label.startsWith("📈 ") ||
-                            action.label.startsWith("🌍 ")
-                            ? action.label.substring(2)
-                            : action.label;
+                        const cleanLabel = stripEmojiPrefix(action.label);
 
                         return (
                             <motion.button
@@ -88,27 +88,27 @@ export function WelcomeDashboard({
                                 disabled={isHintDisabled}
                                 onClick={() => onQuickAction(action)}
                                 className={cn(
-                                    "group text-left p-3 rounded-xl border transition-all duration-200 relative overflow-hidden flex items-start gap-3 shadow-xs cursor-pointer",
+                                    "group relative flex cursor-pointer items-start gap-3 overflow-hidden rounded-lg border p-3 text-left shadow-xs transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
                                     isHintDisabled
                                         ? "bg-muted/40 text-muted-foreground/30 border-border/20 cursor-not-allowed opacity-50"
-                                        : "bg-card hover:bg-muted/40 hover:border-primary/30 border-border/60 hover:shadow-xs active:scale-[0.99]"
+                                        : "border-border/60 bg-card/85 hover:border-primary/30 hover:bg-muted/35 active:scale-[0.99]"
                                 )}
                             >
                                 <div className={cn(
-                                    "size-8 rounded-lg flex items-center justify-center shrink-0 border transition-colors",
+                                    "flex size-8 shrink-0 items-center justify-center rounded-md border transition-colors",
                                     isHintDisabled
                                         ? "bg-muted border-border/20 text-muted-foreground/20"
                                         : "bg-primary/5 group-hover:bg-primary/10 border-primary/10 text-primary"
                                 )}>
-                                    <ActionIcon className="size-4" />
+                                    <ActionIcon className="size-4" aria-hidden="true" />
                                 </div>
-                                <div className="flex flex-col gap-0.5 min-w-0">
+                                <div className="flex min-w-0 flex-1 flex-col gap-1">
                                     <div className="flex items-center gap-1.5">
-                                        <span className="font-bold text-xs text-foreground group-hover:text-primary transition-colors">
+                                        <span className="text-xs font-semibold text-foreground transition-colors group-hover:text-primary">
                                             {cleanLabel}
                                         </span>
                                         {isHint && (
-                                            <Badge variant="outline" className={cn("text-[10px] font-extrabold py-0 px-1 rounded-sm uppercase tracking-wide", canAskNextHint ? "text-emerald-500 border-emerald-500/20 bg-emerald-500/5" : "text-amber-500 border-amber-500/20 bg-amber-500/5")}>
+                                            <Badge variant="outline" className={cn("rounded-sm px-1 py-0 text-[10px] font-semibold", canAskNextHint ? "border-primary/25 bg-primary/5 text-primary" : "border-border/60 bg-muted text-muted-foreground")}>
                                                 {canAskNextHint ? "Gợi ý khả dụng" : "Đã hết lượt"}
                                             </Badge>
                                         )}
@@ -117,17 +117,17 @@ export function WelcomeDashboard({
                                         {action.message}
                                     </p>
                                 </div>
+                                <ArrowUpRightIcon className="mt-0.5 size-3.5 shrink-0 text-muted-foreground/60 transition-colors group-hover:text-primary" aria-hidden="true" />
                             </motion.button>
                         );
                     })}
                 </div>
             </div>
 
-            {/* Socratic Mode Note */}
-            <div className="mt-auto p-3 rounded-xl border border-border/40 bg-muted/10 flex gap-2 items-start text-xs text-muted-foreground leading-relaxed">
-                <InfoIcon className="size-3.5 text-primary shrink-0 mt-0.5" />
+            <div className="mt-auto flex items-start gap-2 rounded-lg border border-border/50 bg-muted/20 p-3 text-xs leading-relaxed text-muted-foreground">
+                <InfoIcon className="mt-0.5 size-3.5 shrink-0 text-primary" aria-hidden="true" />
                 <div>
-                    <strong className="text-foreground">Chế độ Gợi mở (Socratic) đang BẬT:</strong> AI Tutor sẽ gợi mở hướng giải và chỉ ra lỗi sai thay vì trực tiếp cho code giải, giúp bạn phát triển tư duy thuật toán vững chắc.
+                    <strong className="text-foreground">Tutor gợi mở đang bật:</strong> AI sẽ ưu tiên câu hỏi dẫn dắt, chỉ ra điểm sai và giữ lại phần tự suy luận cho bạn.
                 </div>
             </div>
         </div>

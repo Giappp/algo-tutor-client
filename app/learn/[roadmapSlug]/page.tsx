@@ -2,10 +2,9 @@
 
 import { use, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import useSWR from "swr";
-import { fetcher } from "@/api/fetchers";
 import type { RoadmapDetailResponse } from "@/lib/types/roadmap";
 import { Loader2Icon } from "lucide-react";
+import { useRoadmapDetail } from "@/hooks";
 
 interface PageProps {
     params: Promise<{ roadmapSlug: string }>;
@@ -23,7 +22,7 @@ interface PageProps {
  */
 function getNextLessonSlug(roadmap: RoadmapDetailResponse): string | null {
     const allLessons = roadmap.topics
-        .filter((t) => !t.isLocked)
+        .filter((t) => !(t.isLocked || t.unlocked === false))
         .flatMap((t) => t.lessons);
 
     if (allLessons.length === 0) return null;
@@ -40,11 +39,7 @@ export default function LearnRoadmapPage({ params }: PageProps) {
     const { roadmapSlug } = use(params);
     const router = useRouter();
 
-    const { data: roadmap, error } = useSWR<RoadmapDetailResponse>(
-        `/roadmaps/${roadmapSlug}`,
-        fetcher,
-        { revalidateOnFocus: false }
-    );
+    const { roadmap, error } = useRoadmapDetail(roadmapSlug);
 
     useEffect(() => {
         if (error) {

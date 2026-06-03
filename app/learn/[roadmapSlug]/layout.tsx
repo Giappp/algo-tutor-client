@@ -2,11 +2,10 @@
 
 import { use } from "react";
 import { usePathname } from "next/navigation";
-import useSWR from "swr";
-import { fetcher } from "@/api/fetchers";
+import { useRoadmapActions } from "@/hooks/use-roadmap-actions";
+import { useRoadmapDetail } from "@/hooks";
 import { LearningLayout } from "@/components/learn/learning-layout";
 import { LessonThemeProvider } from "@/components/learn/lesson-theme-provider";
-import { useRoadmapActions } from "@/hooks/use-roadmap-actions";
 import type { RoadmapDetailResponse, LessonType } from "@/lib/types/roadmap";
 import { Loader2Icon } from "lucide-react";
 
@@ -36,12 +35,8 @@ export default function RoadmapLearnLayout({ children, params }: LayoutProps) {
     const segments = pathname.split("/");
     const lessonSlug = segments[3] || "";
 
-    // Fetch roadmap structure at the layout level
-    const { data: roadmap, mutate: mutateRoadmap } = useSWR<RoadmapDetailResponse>(
-        `/roadmaps/${roadmapSlug}`,
-        fetcher,
-        { revalidateOnFocus: false, shouldRetryOnError: false }
-    );
+    // Fetch roadmap structure at the layout level using custom hook
+    const { roadmap, mutate: mutateRoadmap } = useRoadmapDetail(roadmapSlug);
 
     const { updateLessonProgress, isUpdatingProgress } = useRoadmapActions();
 

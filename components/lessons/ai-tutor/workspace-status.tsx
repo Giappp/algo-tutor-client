@@ -27,38 +27,38 @@ export function WorkspaceStatus({
     const hasVerdict = !!workspace.verdict;
 
     return (
-        <div className="mx-4 mt-3 p-3 rounded-xl border border-border/40 bg-muted/15 backdrop-blur-xs flex flex-col gap-2 shrink-0 animate-in fade-in duration-200">
+        <div className="animate-in fade-in mx-4 mt-3 flex shrink-0 flex-col gap-2 rounded-lg border border-border/50 bg-card/70 p-3 shadow-xs backdrop-blur-xs duration-200">
             <div className="flex items-center justify-between text-xs">
                 <div className="flex items-center gap-1.5 text-muted-foreground font-medium">
-                    <TerminalIcon className="size-3.5 text-primary" />
-                    <span className="font-bold">Trình biên dịch:</span>
-                    <Badge variant="outline" className="text-xs px-1 rounded-sm bg-background border-border/40 font-mono font-extrabold text-foreground">
+                    <TerminalIcon className="size-3.5 text-primary" aria-hidden="true" />
+                    <span className="font-semibold">Workspace</span>
+                    <Badge variant="outline" className="rounded-sm border-border/50 bg-background px-1 font-mono text-xs font-semibold text-foreground">
                         {workspace.language}
                     </Badge>
                 </div>
                 {hasCode ? (
-                    <span className="text-xs text-emerald-500 font-bold flex items-center gap-1">
-                        <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                    <span className="flex items-center gap-1 text-xs font-semibold text-primary">
+                        <span className="size-1.5 rounded-full bg-primary" />
                         Đã liên kết code ({workspace.code.length} ký tự)
                     </span>
                 ) : (
-                    <span className="text-xs text-amber-500 font-bold flex items-center gap-1">
-                        <span className="size-1.5 rounded-full bg-amber-500 animate-pulse" />
+                    <span className="flex items-center gap-1 text-xs font-semibold text-muted-foreground">
+                        <span className="size-1.5 rounded-full bg-muted-foreground/70" />
                         Chưa viết code
                     </span>
                 )}
             </div>
 
             {hasVerdict && (
-                <div className="flex items-center justify-between border-t border-border/20 pt-2 text-xs mt-1">
+                <div className="mt-1 flex items-center justify-between border-t border-border/30 pt-2 text-xs">
                     <div className="flex items-center gap-1">
-                        <span className="font-bold text-muted-foreground">Kết quả:</span>
+                        <span className="font-semibold text-muted-foreground">Kết quả:</span>
                         {workspace.verdict === "ACCEPTED" ? (
-                            <Badge className="text-xs bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20 font-extrabold uppercase rounded px-1 py-0">
-                                SUCCESS (AC)
+                            <Badge variant="secondary" className="rounded px-1 py-0 text-xs font-semibold">
+                                Accepted
                             </Badge>
                         ) : (
-                            <Badge className="text-xs bg-destructive/10 text-destructive border-destructive/20 font-extrabold uppercase rounded px-1 py-0">
+                            <Badge variant="destructive" className="rounded px-1 py-0 text-xs font-semibold">
                                 {workspace.verdict} ({workspace.failedCount}/{workspace.totalCount} lỗi)
                             </Badge>
                         )}
@@ -67,9 +67,9 @@ export function WorkspaceStatus({
                     {workspace.verdict !== "ACCEPTED" && (
                         <button
                             onClick={onDebugRequest}
-                            className="text-xs font-extrabold text-primary hover:text-primary/80 transition-colors flex items-center gap-1 cursor-pointer underline underline-offset-2"
+                            className="flex cursor-pointer items-center gap-1 rounded-md px-1.5 py-1 text-xs font-semibold text-primary transition-colors hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                         >
-                            <SparklesIcon className="size-3 text-amber-500 animate-pulse" />
+                            <SparklesIcon className="size-3" aria-hidden="true" />
                             Nhờ AI sửa lỗi
                         </button>
                     )}

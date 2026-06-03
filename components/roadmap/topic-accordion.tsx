@@ -114,7 +114,7 @@ function LessonItem({
                 {isLocked ? (
                     <LockIcon className="size-4 text-muted-foreground" />
                 ) : (
-                    statusIcon(lesson.progress)
+                    statusIcon(lesson.progress ?? null)
                 )}
             </div>
         </div>
@@ -146,7 +146,7 @@ export function TopicAccordion({
                     <div
                         className={cn(
                             "flex size-10 shrink-0 items-center justify-center rounded-xl text-sm font-bold transition-colors duration-200",
-                            topic.isLocked
+                            !topic.unlocked
                                 ? "bg-muted text-muted-foreground"
                                 : "bg-primary/10 text-primary",
                         )}
@@ -160,7 +160,7 @@ export function TopicAccordion({
                             <span className="text-sm font-bold text-foreground tracking-tight">
                                 {topic.name}
                             </span>
-                            {topic.isLocked && (
+                            {!topic.unlocked && (
                                 <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5">
                                     <LockIcon className="size-2.5 text-muted-foreground" />
                                     <span className="text-[10px] font-medium text-muted-foreground">Locked</span>
@@ -196,7 +196,7 @@ export function TopicAccordion({
                             )}
 
                             {/* Progress indicator */}
-                            {completedCount > 0 && !topic.isLocked && (
+                            {completedCount > 0 && topic.unlocked && (
                                 <div className="flex items-center gap-2 ml-auto">
                                     <span className="text-[11px] font-semibold text-primary">
                                         {completedCount}/{totalLessons}
@@ -205,9 +205,9 @@ export function TopicAccordion({
                                 </div>
                             )}
                         </div>
-
+ 
                         {/* Progress Bar */}
-                        {completedCount > 0 && !topic.isLocked && (
+                        {completedCount > 0 && topic.unlocked && (
                             <div className="h-1 rounded-full bg-muted overflow-hidden">
                                 <div
                                     className="h-full rounded-full bg-gradient-to-r from-primary/80 to-primary transition-all duration-700 ease-out"
@@ -225,7 +225,7 @@ export function TopicAccordion({
                         <LessonItem
                             key={lesson.slug}
                             lesson={lesson}
-                            isLocked={topic.isLocked}
+                            isLocked={!topic.unlocked}
                             index={i}
                             roadmapSlug={roadmapSlug ?? ""}
                         />

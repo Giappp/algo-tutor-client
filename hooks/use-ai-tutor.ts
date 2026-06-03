@@ -1,0 +1,486 @@
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import type { ChatMessage, LessonContext } from "@/lib/types/lesson";
+import { toast } from "sonner";
+import {
+    buildFallbackIntroMessage,
+    getAvailableModes,
+    getDefaultTutorMode,
+    getQuickActions,
+    type QuickAction,
+} from "@/lib//ai-tutor-config";
+import {
+    clearTutorSession,
+    loadChatHistory,
+    readActiveCodeSnapshot,
+    readConversationId,
+    readFailedTestCases,
+    readWorkspaceSnapshot,
+    saveChatHistory,
+    saveConversationId,
+    type WorkspaceSnapshot,
+} from "@/lib/ai-tutor-storage";
+import {
+    bootstrapTutorChat,
+    sendTutorChat,
+    streamTutorChat,
+    type TutorChatError,
+    type TutorChatRequest,
+    type TutorChatResponseData,
+} from "@/api/ai-tutor-service";
+
+function isGuidedMode(mode: string): boolean {
+    return mode === "HINT" || mode === "DEBUG" || mode === "EXPLAIN";
+}
+
+function applyMetadata(
+    metadata: TutorChatResponseData,
+    setters: {
+        setConversationId: (conversationId: string | null) => void;
+        setCanAskNextHint: (canAskNextHint: boolean) => void;
+        setServerQuickActions: (quickActions: QuickAction[] | null) => void;
+    }
+) {
+    if (metadata.conversationId !== undefined) {
+        setters.setConversationId(metadata.conversationId ?? null);
+    }
+
+    if (metadata.quickActions && metadata.quickActions.length > 0) {
+        setters.setServerQuickActions(metadata.quickActions);
+    }
+
+    if (metadata.canAskNextHint !== undefined && metadata.canAskNextHint !== null) {
+        setters.setCanAskNextHint(metadata.canAskNextHint);
+    }
+}
+
+function getTutorChatError(error: unknown): TutorChatError | null {
+    const maybeError = error as Partial<TutorChatError>;
+    return maybeError?.code ? (maybeError as TutorChatError) : null;
+}
+
+export function useAITutor(context: LessonContext) {
+    const [messages, setMessages] = useState<ChatMessage[]>([]);
+    const [input, setInput] = useState("");
+    const [isLoading, setIsLoading] = useState(false);
+
+    const [conversationId, setConversationId] = useState<string | null>(null);
+    const [canAskNextHint, setCanAskNextHint] = useState(true);
+    const [selectedMode, setSelectedMode] = useState(getDefaultTutorMode(context.lessonType));
+    const [serverQuickActions, setServerQuickActions] = useState<QuickAction[] | null>(null);
+
+    const [isSocratic, setIsSocratic] = useState(true);
+    const [rateLimitCountdown, setRateLimitCountdown] = useState<number | null>(null);
+    const [workspace, setWorkspace] = useState<WorkspaceSnapshot | null>(null);
+
+    const scrollRef = useRef<HTMLDivElement>(null);
+    const isLoadingRef = useRef(false);
+
+    const fallbackIntroMessage = useMemo(
+        () =>
+            buildFallbackIntroMessage({
+                lessonTitle: context.lessonTitle,
+                lessonType: context.lessonType,
+                roadmapName: context.roadmapName,
+            }),
+        [context.lessonTitle, context.lessonType, context.roadmapName]
+    );
+
+    const availableModes = useMemo(
+        () => getAvailableModes(context.lessonType),
+        [context.lessonType]
+    );
+
+    const quickActionsList = useMemo(
+        () => serverQuickActions || getQuickActions(context.lessonType),
+        [serverQuickActions, context.lessonType]
+    );
+
+    const isRateLimited = rateLimitCountdown !== null && rateLimitCountdown > 0;
+    const hasRealMessages = messages.length > 1;
+
+    const applyResponseMetadata = useCallback((metadata: TutorChatResponseData) => {
+        applyMetadata(metadata, {
+            setConversationId,
+            setCanAskNextHint,
+            setServerQuickActions,
+        });
+    }, []);
+
+    useEffect(() => {
+        if (rateLimitCountdown === null || rateLimitCountdown <= 0) return;
+
+        const interval = window.setInterval(() => {
+            setRateLimitCountdown((prev) => {
+                if (prev === null || prev <= 1) {
+                    window.clearInterval(interval);
+                    return null;
+                }
+
+                return prev - 1;
+            });
+        }, 1000);
+
+        return () => window.clearInterval(interval);
+    }, [rateLimitCountdown]);
+
+    useEffect(() => {
+        const updateWorkspaceState = () => {
+            try {
+                setWorkspace(readWorkspaceSnapshot(context.lessonSlug));
+            } catch (error) {
+                console.error("Error reading workspace state", error);
+            }
+        };
+
+        updateWorkspaceState();
+
+        const interval = window.setInterval(updateWorkspaceState, 1500);
+        return () => window.clearInterval(interval);
+    }, [context.lessonSlug]);
+
+    const triggerBootstrap = useCallback(
+        async (activeRef?: { current: boolean }) => {
+            setIsLoading(true);
+
+            try {
+                const resData = await bootstrapTutorChat(context.lessonSlug);
+
+                if (activeRef && !activeRef.current) return;
+
+                if (resData) {
+                    if (resData.conversationId) {
+                        setConversationId(resData.conversationId);
+                        saveConversationId(context.lessonSlug, resData.conversationId);
+                    }
+
+                    if (resData.canAskNextHint !== null && resData.canAskNextHint !== undefined) {
+                        setCanAskNextHint(resData.canAskNextHint);
+                    }
+
+                    setServerQuickActions(
+                        resData.quickActions && resData.quickActions.length > 0
+                            ? resData.quickActions
+                            : null
+                    );
+
+                    setMessages([
+                        {
+                            id: "intro",
+                            role: "assistant",
+                            content:
+                                resData.answer ||
+                                `Chào mừng bạn đến với bài học **${context.lessonTitle}**!`,
+                            timestamp: new Date(),
+                        },
+                    ]);
+
+                    setIsLoading(false);
+                    return;
+                }
+            } catch (error) {
+                console.warn("Backend bootstrap API not ready or failed.", error);
+            }
+
+            if (activeRef && !activeRef.current) return;
+
+            setConversationId(null);
+            setCanAskNextHint(true);
+            setServerQuickActions(null);
+
+            setMessages([
+                {
+                    id: "intro",
+                    role: "assistant",
+                    content: fallbackIntroMessage,
+                    timestamp: new Date(),
+                },
+            ]);
+
+            setIsLoading(false);
+        },
+        [context.lessonSlug, context.lessonTitle, fallbackIntroMessage]
+    );
+
+    useEffect(() => {
+        const stored = loadChatHistory(context.lessonSlug);
+        const active = { current: true };
+
+        const timer = window.setTimeout(() => {
+            if (!active.current) return;
+
+            setSelectedMode(getDefaultTutorMode(context.lessonType));
+
+            if (stored.length > 0) {
+                setMessages(stored);
+                setServerQuickActions(null);
+
+                const cachedConversationId = readConversationId(context.lessonSlug);
+
+                if (cachedConversationId) {
+                    setConversationId(cachedConversationId);
+                }
+            } else {
+                setMessages([]);
+                triggerBootstrap(active);
+            }
+        }, 0);
+
+        return () => {
+            active.current = false;
+            window.clearTimeout(timer);
+        };
+    }, [context.lessonSlug, context.lessonType, triggerBootstrap]);
+
+    useEffect(() => {
+        if (messages.length === 0) return;
+
+        saveChatHistory(context.lessonSlug, messages);
+
+        if (conversationId) {
+            saveConversationId(context.lessonSlug, conversationId);
+        }
+    }, [messages, conversationId, context.lessonSlug]);
+
+    useEffect(() => {
+        if (!scrollRef.current) return;
+        scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }, [messages, isLoading]);
+
+    const handleChatError = useCallback((error: unknown, tempAiMsgId: string): boolean => {
+        const chatError = getTutorChatError(error);
+        if (!chatError) return false;
+
+        if (chatError.code === "RATE_LIMITED") {
+            const retrySec = chatError.retryAfterSeconds ?? 60;
+
+            setRateLimitCountdown(retrySec);
+            toast.error(`Bạn đang thao tác quá nhanh. Vui lòng thử lại sau ${retrySec} giây.`);
+            setMessages((prev) => prev.filter((message) => message.id !== tempAiMsgId));
+            setIsLoading(false);
+            isLoadingRef.current = false;
+            return true;
+        }
+
+        if (chatError.code === "NO_MORE_HINTS") {
+            toast.error("Bạn đã hết lượt xin gợi ý cho bài tập này.");
+            setCanAskNextHint(false);
+            setMessages((prev) => prev.filter((message) => message.id !== tempAiMsgId));
+            setIsLoading(false);
+            isLoadingRef.current = false;
+            return true;
+        }
+
+        return false;
+    }, []);
+
+    const sendMessage = useCallback(
+        async (text: string, overrideMode?: string) => {
+            if (!text.trim() || isLoading || isLoadingRef.current) return;
+            if (isRateLimited) return;
+
+            isLoadingRef.current = true;
+
+            const modeToSend = overrideMode || selectedMode;
+
+            if (modeToSend === "HINT" && !canAskNextHint) {
+                toast.error("Bạn đã hết lượt xin gợi ý cho bài tập này. Hãy thử tự phân tích thêm trước.");
+                isLoadingRef.current = false;
+                return;
+            }
+
+            const finalPromptText =
+                isSocratic && isGuidedMode(modeToSend)
+                    ? `${text}`
+                    : text;
+
+            const userMsg: ChatMessage = {
+                id: Date.now().toString(),
+                role: "user",
+                content: text,
+                timestamp: new Date(),
+            };
+
+            setMessages((prev) => [...prev, userMsg]);
+            setInput("");
+            setIsLoading(true);
+
+            const tempAiMsgId = `${Date.now() + 1}`;
+
+            setMessages((prev) => [
+                ...prev,
+                {
+                    id: tempAiMsgId,
+                    role: "assistant",
+                    content: "",
+                    timestamp: new Date(),
+                },
+            ]);
+
+            const activeCode = readActiveCodeSnapshot(context.lessonSlug);
+            const { verdict, errorMessage, failedTestCases } = readFailedTestCases(
+                context.lessonSlug
+            );
+
+            const requestBody: TutorChatRequest = {
+                conversationId: conversationId || undefined,
+                lessonId: context.lessonId,
+                lessonSlug: context.lessonSlug,
+                mode: modeToSend,
+                message: finalPromptText,
+                code: activeCode.code || undefined,
+                language: activeCode.language,
+                judgeResult: verdict,
+                errorMessage: errorMessage || undefined,
+                failedTestCases: failedTestCases.length > 0 ? failedTestCases : undefined,
+            };
+
+            let streamSuccess = false;
+            let fullResponseText = "";
+
+            try {
+                await streamTutorChat(requestBody, {
+                    onMessageChunk: (chunk) => {
+                        fullResponseText += chunk;
+
+                        setMessages((prev) =>
+                            prev.map((message) =>
+                                message.id === tempAiMsgId
+                                    ? { ...message, content: fullResponseText }
+                                    : message
+                            )
+                        );
+                    },
+                    onMetadata: applyResponseMetadata,
+                });
+
+                streamSuccess = true;
+            } catch (error) {
+                if (handleChatError(error, tempAiMsgId)) return;
+                console.warn("Streaming chat failed, falling back to sync chat.", error);
+            }
+
+            if (!streamSuccess) {
+                try {
+                    const resData = await sendTutorChat(requestBody);
+
+                    if (resData) {
+                        applyResponseMetadata(resData);
+
+                        fullResponseText = resData.answer || "";
+
+                        setMessages((prev) =>
+                            prev.map((message) =>
+                                message.id === tempAiMsgId
+                                    ? { ...message, content: fullResponseText }
+                                    : message
+                            )
+                        );
+
+                        setIsLoading(false);
+                        isLoadingRef.current = false;
+                        return;
+                    }
+                } catch (error) {
+                    console.warn("Synchronous chat failed.", error);
+                    if (handleChatError(error, tempAiMsgId)) return;
+                }
+            }
+
+            setIsLoading(false);
+            isLoadingRef.current = false;
+        },
+        [
+            isLoading,
+            isRateLimited,
+            selectedMode,
+            canAskNextHint,
+            isSocratic,
+            context.lessonSlug,
+            context.lessonId,
+            conversationId,
+            applyResponseMetadata,
+            handleChatError,
+        ]
+    );
+
+    useEffect(() => {
+        const handleExternalAsk = (event: Event) => {
+            const customEvent = event as CustomEvent<{
+                message: string;
+                mode?: string;
+            }>;
+
+            if (!customEvent.detail?.message) return;
+
+            const { message, mode } = customEvent.detail;
+
+            if (mode) {
+                setSelectedMode(mode);
+            }
+
+            sendMessage(message, mode);
+        };
+
+        window.addEventListener("ai-tutor-ask", handleExternalAsk);
+        return () => window.removeEventListener("ai-tutor-ask", handleExternalAsk);
+    }, [sendMessage]);
+
+    const handleSend = useCallback(() => {
+        sendMessage(input);
+    }, [input, sendMessage]);
+
+    const handleQuickAction = useCallback(
+        (action: QuickAction) => {
+            sendMessage(action.message, action.mode);
+        },
+        [sendMessage]
+    );
+
+    const handleClearChat = useCallback(async () => {
+        const confirmed = window.confirm(
+            "Bạn có chắc chắn muốn xóa toàn bộ lịch sử trò chuyện và bắt đầu lại với AI Tutor?"
+        );
+
+        if (!confirmed) return;
+
+        setMessages([]);
+        setConversationId(null);
+        setCanAskNextHint(true);
+        setServerQuickActions(null);
+
+        clearTutorSession(context.lessonSlug);
+
+        await triggerBootstrap();
+    }, [context.lessonSlug, triggerBootstrap]);
+
+    const handleDebugRequest = useCallback(() => {
+        setSelectedMode("DEBUG");
+        sendMessage(
+            `Tôi đang chạy thử bài làm của mình trên Editor và gặp lỗi [${workspace?.verdict}]. Hãy phân tích lỗi này giúp tôi và hướng dẫn tôi các bước debug cụ thể.`,
+            "DEBUG"
+        );
+    }, [sendMessage, workspace?.verdict]);
+
+    return {
+        availableModes,
+        canAskNextHint,
+        handleClearChat,
+        handleDebugRequest,
+        handleQuickAction,
+        handleSend,
+        hasRealMessages,
+        input,
+        isLoading,
+        isRateLimited,
+        isSocratic,
+        messages,
+        quickActionsList,
+        rateLimitCountdown,
+        scrollRef,
+        selectedMode,
+        setInput,
+        setIsSocratic,
+        setSelectedMode,
+        workspace,
+    };
+}

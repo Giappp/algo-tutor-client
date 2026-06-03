@@ -68,13 +68,13 @@ export interface SubmitResponse {
 
 export interface SubmissionSummary {
     id: string;
-    timestamp: string;
     language: string;
     status: Submission["status"];
-    passedCount: number;
-    totalCount: number;
+    passedTestcases: number;
+    totalTestcases: number;
     executionTime: number;
     memoryUsed: number;
+    submittedAt: Date;
 }
 
 // ─── Mapping helpers ──────────────────────────────────────────────────────────
@@ -93,6 +93,7 @@ function mapTestCases(raw: RawTestCase[]): TestResult[] {
 
 function mapVerdict(verdict: string): Submission["status"] {
     const map: Record<string, Submission["status"]> = {
+        PENDING: "PENDING",
         ACCEPTED: "ACCEPTED",
         WRONG_ANSWER: "WRONG_ANSWER",
         RUNTIME_ERROR: "RUNTIME_ERROR",
@@ -109,7 +110,10 @@ export const judgeApi = {
     run: async (data: RunRequest): Promise<RunResponse> => {
         const response = await apiClient.post<ApiResponse<RawJudgeResponse>>(
             "/judge/run",
-            data
+            {
+                ...data,
+                language: data.language.toUpperCase(),
+            }
         );
         const raw = response.data.data;
         return {
@@ -125,7 +129,10 @@ export const judgeApi = {
     submit: async (data: RunRequest): Promise<SubmitResponse> => {
         const response = await apiClient.post<ApiResponse<RawJudgeResponse>>(
             "/judge/submit",
-            data
+            {
+                ...data,
+                language: data.language.toUpperCase(),
+            }
         );
         const raw = response.data.data;
         return {
@@ -145,10 +152,10 @@ export const judgeApi = {
         lessonSlug: string,
         params?: { page?: number; size?: number }
     ): Promise<SubmissionSummary[]> => {
-        const response = await apiClient.get<ApiResponse<{ data: SubmissionSummary[] }>>(
-            "/judge/submissions",
+        const response = await apiClient.get<ApiResponse<SubmissionSummary[]>>(
+            "/submissions",
             { params: { lessonSlug, ...params } }
         );
-        return response.data.data.data;
+        return response.data.data;
     },
 };

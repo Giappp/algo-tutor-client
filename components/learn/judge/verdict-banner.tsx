@@ -8,6 +8,7 @@ import {
     AlertTriangleIcon,
     ZapIcon,
     BugIcon,
+    Loader2 as Loader2Icon,
 } from "lucide-react";
 
 export type Verdict = Submission["status"];
@@ -21,6 +22,13 @@ interface VerdictConfig {
 }
 
 const VERDICT_CONFIG: Record<Verdict, VerdictConfig> = {
+    PENDING: {
+        label: "Evaluating...",
+        icon: Loader2Icon,
+        color: "text-zinc-400 animate-spin",
+        bgColor: "bg-zinc-800/20 dark:bg-zinc-100/5",
+        borderColor: "border-zinc-500/20",
+    },
     ACCEPTED: {
         label: "Accepted",
         icon: CheckCircleIcon,

@@ -48,10 +48,21 @@ export function useRoadmapActions() {
         []
     );
 
+    const startLesson = useCallback(
+        async (
+            slug: string,
+            lessonSlug: string
+        ): Promise<LessonProgressUpdateResponse> => {
+            return roadmapApi.startLesson(slug, lessonSlug);
+        },
+        []
+    );
+
     return {
         enroll,
         updateLessonProgress,
         getEnrollment,
+        startLesson,
         isEnrolling,
         isUpdatingProgress,
     };

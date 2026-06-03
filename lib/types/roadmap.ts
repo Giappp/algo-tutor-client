@@ -15,7 +15,9 @@ export interface LessonWithProgress {
     type: LessonType;
     displayOrder: number;
     difficulty: Difficulty;
-    progress: ProgressStatus | null;
+    progress?: ProgressStatus | null;
+    status?: ProgressStatus | null;
+    unlocked?: boolean;
     createdAt: string;
     updatedAt: string;
 }
@@ -25,8 +27,12 @@ export interface TopicWithLessons {
     name: string;
     description: string;
     displayOrder: number;
-    isLocked: boolean;
     lessonCount: number;
+    unlocked?: boolean;
+    isLocked?: boolean;
+    completed?: boolean;
+    completedLessons?: number;
+    totalLessons?: number;
     createdAt: string;
     updatedAt: string;
     lessons: LessonWithProgress[];
@@ -89,6 +95,16 @@ export interface EnrollmentDetailResponse {
     completedAt: string | null;
     createdAt: string;
     lessonProgressions: LessonProgressionDTO[];
+}
+
+export interface EnrollmentResponseDTO {
+    id: string;
+    userId: string;
+    learningPathId: number;
+    learningPathName: string;
+    status: EnrollmentStatus;
+    completedAt: string | null;
+    enrolledAt: string;
 }
 
 export const LESSON_TYPE_COUNTS = {

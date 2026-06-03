@@ -18,7 +18,7 @@ import {
     GraduationCapIcon 
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { usePaginatedData } from "@/hooks";
+import { useRoadmaps } from "@/hooks";
 import { useEnrollments } from "@/hooks/use-enrollments";
 import type { RoadmapListItem } from "@/lib/types/roadmap";
 
@@ -38,11 +38,12 @@ export default function RoadMapPage() {
     const [searchQuery, setSearchQuery] = useState("");
     const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
 
-    // Fetch catalogue
-    const { data: paths, pagination, isLoading } = usePaginatedData<
-        RoadmapListItem,
-        { level?: string }
-    >("/roadmaps", { page: 0, size: 10, level: selectedLevel === "All" ? undefined : selectedLevel });
+    // Fetch catalogue using custom hook
+    const { roadmaps: paths, pagination, isLoading } = useRoadmaps({
+        page: 0,
+        size: 10,
+        level: selectedLevel === "All" ? undefined : selectedLevel,
+    });
 
     // Fetch personal enrollments
     const { enrollments } = useEnrollments();
