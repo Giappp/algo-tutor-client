@@ -12,9 +12,6 @@ import {
     ChevronRightIcon,
     FlameIcon,
     HomeIcon,
-    MessageSquareIcon,
-    SettingsIcon,
-    TrophyIcon,
     GraduationCapIcon,
 } from "lucide-react";
 import {useState} from "react";
@@ -24,10 +21,7 @@ import {useUser} from "@/hooks/use-user";
 const navItems = [
     {href: "/home", label: "Trang chủ", icon: HomeIcon},
     {href: "/roadmaps", label: "Lộ trình", icon: BookOpenIcon},
-    {href: "/my-roadmaps", label: "Khóa học của tôi", icon: GraduationCapIcon},
-    {href: "/ai-tutor", label: "AI Tutor", icon: MessageSquareIcon},
-    {href: "/leaderboard", label: "Bảng xếp hạng", icon: TrophyIcon},
-    {href: "/settings", label: "Cài đặt", icon: SettingsIcon},
+    {href: "/my-roadmaps", label: "Khóa học của tôi", icon: GraduationCapIcon}
 ];
 
 export function Sidebar() {
