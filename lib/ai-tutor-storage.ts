@@ -82,6 +82,11 @@ export function saveConversationId(lessonSlug: string, conversationId: string) {
     localStorage.setItem(getConversationStorageKey(lessonSlug), conversationId);
 }
 
+export function clearConversationId(lessonSlug: string) {
+    if (typeof window === "undefined") return;
+    localStorage.removeItem(getConversationStorageKey(lessonSlug));
+}
+
 export function clearTutorSession(lessonSlug: string) {
     if (typeof window === "undefined") return;
 

@@ -36,26 +36,18 @@ export function WelcomeDashboard({
 
     return (
         <div className="scrollbar-thin flex flex-1 flex-col gap-5 overflow-y-auto px-4 py-5">
-            <motion.div
-                initial={{ opacity: 0, y: 15 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.4 }}
-                className="relative overflow-hidden rounded-lg border border-border/60 bg-card/80 p-4 shadow-xs"
-            >
-                <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-primary/30" />
-                <div className="flex gap-3">
-                    <div className="flex size-10 shrink-0 items-center justify-center rounded-lg border border-primary/20 bg-primary/10 text-primary">
-                        <GraduationCapIcon className="size-5" aria-hidden="true" />
-                    </div>
-                    <div className="flex min-w-0 flex-col gap-1">
-                        <h4 className="text-sm font-semibold text-foreground">AlgoTutor AI co-pilot</h4>
-                        <p className="text-pretty text-xs leading-relaxed text-muted-foreground">
-                            Xin chào! Mình là trợ lý học tập cá nhân của bạn cho bài học <strong className="text-foreground">{lessonTitle}</strong>.
-                            Mình sẽ giảng giải lý thuyết, gợi ý giải thuật và cùng bạn dò lỗi theo từng bước.
-                        </p>
-                    </div>
+            <section className="flex gap-3 rounded-lg border border-border/50 bg-background/80 p-3 shadow-xs">
+                <div className="flex size-10 shrink-0 items-center justify-center rounded-lg border border-primary/20 bg-primary/10 text-primary">
+                    <GraduationCapIcon className="size-5" aria-hidden="true" />
                 </div>
-            </motion.div>
+                <div className="flex min-w-0 flex-col gap-1">
+                    <h4 className="text-sm font-semibold text-foreground">AlgoTutor AI co-pilot</h4>
+                    <p className="text-pretty text-xs leading-relaxed text-muted-foreground">
+                        Xin chào! Mình là trợ lý học tập cá nhân của bạn cho bài học <strong className="text-foreground">{lessonTitle}</strong>.
+                        Mình sẽ giảng giải lý thuyết, gợi ý giải thuật và cùng bạn dò lỗi theo từng bước.
+                    </p>
+                </div>
+            </section>
 
             <div className="flex flex-col gap-3">
                 <div className="flex items-end justify-between gap-3 px-1">
@@ -91,7 +83,7 @@ export function WelcomeDashboard({
                                     "group relative flex cursor-pointer items-start gap-3 overflow-hidden rounded-lg border p-3 text-left shadow-xs transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
                                     isHintDisabled
                                         ? "bg-muted/40 text-muted-foreground/30 border-border/20 cursor-not-allowed opacity-50"
-                                        : "border-border/60 bg-card/85 hover:border-primary/30 hover:bg-muted/35 active:scale-[0.99]"
+                                        : "border-border/50 bg-background/80 hover:border-primary/30 hover:bg-muted/25 active:scale-[0.99]"
                                 )}
                             >
                                 <div className={cn(

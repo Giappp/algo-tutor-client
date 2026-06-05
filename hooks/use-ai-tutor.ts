@@ -7,9 +7,10 @@ import {
     getDefaultTutorMode,
     getQuickActions,
     type QuickAction,
-} from "@/lib//ai-tutor-config";
+} from "@/lib/ai-tutor-config";
 import {
     clearTutorSession,
+    clearConversationId,
     loadChatHistory,
     readActiveCodeSnapshot,
     readConversationId,
@@ -32,6 +33,10 @@ function isGuidedMode(mode: string): boolean {
     return mode === "HINT" || mode === "DEBUG" || mode === "EXPLAIN";
 }
 
+function requiresCode(mode: string): boolean {
+    return mode === "DEBUG" || mode === "REVIEW" || mode === "COMPLEXITY";
+}
+
 function applyMetadata(
     metadata: TutorChatResponseData,
     setters: {
@@ -44,8 +49,12 @@ function applyMetadata(
         setters.setConversationId(metadata.conversationId ?? null);
     }
 
-    if (metadata.quickActions && metadata.quickActions.length > 0) {
-        setters.setServerQuickActions(metadata.quickActions);
+    if (metadata.quickActions !== undefined) {
+        setters.setServerQuickActions(
+            metadata.quickActions && metadata.quickActions.length > 0
+                ? metadata.quickActions
+                : null
+        );
     }
 
     if (metadata.canAskNextHint !== undefined && metadata.canAskNextHint !== null) {
@@ -270,8 +279,26 @@ export function useAITutor(context: LessonContext) {
             return true;
         }
 
+        if (chatError.code === "CODE_REQUIRED") {
+            toast.error("Chế độ này cần mã nguồn hiện tại. Hãy viết hoặc chạy code trước khi nhờ AI phân tích.");
+            setMessages((prev) => prev.filter((message) => message.id !== tempAiMsgId));
+            setIsLoading(false);
+            isLoadingRef.current = false;
+            return true;
+        }
+
+        if (chatError.code === "CONVERSATION_NOT_FOUND") {
+            setConversationId(null);
+            clearConversationId(context.lessonSlug);
+            toast.error("Phiên chat AI đã hết hạn. Mình sẽ bắt đầu lại ở tin nhắn tiếp theo.");
+            setMessages((prev) => prev.filter((message) => message.id !== tempAiMsgId));
+            setIsLoading(false);
+            isLoadingRef.current = false;
+            return true;
+        }
+
         return false;
-    }, []);
+    }, [context.lessonSlug]);
 
     const sendMessage = useCallback(
         async (text: string, overrideMode?: string) => {
@@ -321,17 +348,34 @@ export function useAITutor(context: LessonContext) {
                 context.lessonSlug
             );
 
+            const shouldAttachCode = requiresCode(modeToSend);
+
+            if (shouldAttachCode && !activeCode.code.trim()) {
+                toast.error("Chế độ này cần mã nguồn hiện tại. Hãy viết hoặc chạy code trước khi nhờ AI phân tích.");
+                setMessages((prev) =>
+                    prev.filter(
+                        (message) => message.id !== tempAiMsgId && message.id !== userMsg.id
+                    )
+                );
+                setIsLoading(false);
+                isLoadingRef.current = false;
+                return;
+            }
+
             const requestBody: TutorChatRequest = {
                 conversationId: conversationId || undefined,
                 lessonId: context.lessonId,
                 lessonSlug: context.lessonSlug,
                 mode: modeToSend,
                 message: finalPromptText,
-                code: activeCode.code || undefined,
-                language: activeCode.language,
-                judgeResult: verdict,
-                errorMessage: errorMessage || undefined,
-                failedTestCases: failedTestCases.length > 0 ? failedTestCases : undefined,
+                code: shouldAttachCode ? activeCode.code : undefined,
+                language: shouldAttachCode ? activeCode.language : undefined,
+                judgeResult: shouldAttachCode ? verdict : undefined,
+                errorMessage: shouldAttachCode ? errorMessage || undefined : undefined,
+                failedTestCases:
+                    shouldAttachCode && failedTestCases.length > 0
+                        ? failedTestCases
+                        : undefined,
             };
 
             let streamSuccess = false;

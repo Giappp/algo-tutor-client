@@ -5,13 +5,12 @@ import { useCurrentLesson } from "@/hooks/use-current-lesson";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import Link from "next/link";
-import { MapIcon, UserIcon, ArrowRightIcon } from "lucide-react";
+import { ArrowRightIcon, MapIcon, UserIcon } from "lucide-react";
 
 export function WelcomeSection() {
     const { user } = useUser();
     const { currentLesson, isLoading, isError } = useCurrentLesson();
 
-    // Subtitle logic
     let subtitle: React.ReactNode;
     let ctaHref: string = "/roadmaps";
     let showContinue = false;
@@ -30,10 +29,19 @@ export function WelcomeSection() {
     }
 
     return (
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 p-6 sm:p-8 rounded-2xl bg-linear-to-r from-primary/10 via-primary/5 to-transparent border border-primary/15 shadow-sm">
-            <div className="flex flex-col gap-1.5 max-w-xl">
-                <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight bg-gradient-to-r from-foreground via-foreground/90 to-muted-foreground bg-clip-text text-transparent">
-                    Chào, {user?.username} 👋
+        <section className="relative overflow-hidden rounded-2xl border border-primary/15 bg-card shadow-sm">
+            <div className="absolute inset-y-0 right-0 hidden w-1/2 bg-[radial-gradient(circle_at_top_right,oklch(0.7_0.18_195_/_0.18),transparent_28rem)] md:block" />
+            <div className="relative flex flex-col gap-5 p-6 sm:p-8 md:flex-row md:items-center md:justify-between">
+            <div className="flex max-w-2xl flex-col gap-2">
+                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-primary">
+                    Dashboard cá nhân
+                </p>
+                <h1 className="text-2xl font-extrabold tracking-tight text-foreground sm:text-3xl">
+                    {user?.username ? (
+                        <>Xin chào, {user.username}</>
+                    ) : (
+                        <Skeleton className="h-9 w-56 bg-muted/60" />
+                    )}
                 </h1>
                 <div className="text-sm sm:text-base text-muted-foreground font-medium">
                     {subtitle}
@@ -45,7 +53,7 @@ export function WelcomeSection() {
                     <Link href={ctaHref}>
                         <Button size="default" className="gap-2 shadow-md shadow-primary/20 hover:shadow-lg active:scale-95 transition-all duration-200">
                             <span>Tiếp tục học</span>
-                            <ArrowRightIcon className="size-4 animate-pulse" />
+                            <ArrowRightIcon className="size-4" />
                         </Button>
                     </Link>
                 )}
@@ -64,6 +72,7 @@ export function WelcomeSection() {
                     </Button>
                 </Link>
             </div>
-        </div>
+            </div>
+        </section>
     );
 }

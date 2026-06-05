@@ -256,13 +256,13 @@ function ChatPanel({
         <section
             role="dialog"
             aria-label="AI Assistant"
-            className="mb-4 flex h-[min(560px,calc(100vh-7rem))] w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-2xl backdrop-blur-md animate-in slide-in-from-bottom-5 duration-300 sm:w-[400px]"
+            className="mb-3 flex h-[min(560px,calc(100dvh-7rem))] w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-xl border border-border/70 bg-background shadow-[0_18px_60px_hsl(var(--foreground)/0.16)] backdrop-blur-md animate-in slide-in-from-bottom-3 duration-300 sm:w-[408px]"
         >
             <ChatHeader onClearChat={onClearChat} onClose={onClose} />
 
             <RateLimitBanner rateLimitCountdown={rateLimitCountdown} />
 
-            <div ref={scrollRef} className="flex-1 overflow-y-auto bg-background/40 p-4">
+            <div ref={scrollRef} className="flex-1 overflow-y-auto bg-muted/[0.16] p-4">
                 <ChatMessages
                     messages={messages}
                     copiedId={copiedId}
@@ -293,11 +293,8 @@ function RateLimitBanner({ rateLimitCountdown }: { rateLimitCountdown: number | 
     }
 
     return (
-        <div className="flex shrink-0 items-center gap-2 border-b border-destructive/20 bg-destructive/15 px-4 py-2 text-xs font-semibold text-destructive animate-in fade-in duration-200">
-            <span className="relative flex size-2 shrink-0">
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-75" />
-                <span className="relative inline-flex size-2 rounded-full bg-red-500" />
-            </span>
+        <div className="flex shrink-0 items-center gap-2 border-b border-destructive/20 bg-destructive/10 px-4 py-2 text-xs font-semibold text-destructive animate-in fade-in duration-200">
+            <span className="inline-flex size-2 shrink-0 rounded-full bg-destructive" />
             <span>Bạn thao tác quá nhanh. Hãy thử lại sau {rateLimitCountdown}s.</span>
         </div>
     );
@@ -310,24 +307,18 @@ interface ChatHeaderProps {
 
 function ChatHeader({ onClearChat, onClose }: ChatHeaderProps) {
     return (
-        <header className="flex items-center justify-between border-b border-border/50 bg-muted/40 px-4 py-3">
+        <header className="flex items-center justify-between border-b border-border/50 bg-background/95 px-4 py-3">
             <div className="flex items-center gap-2.5">
-                <div className="relative">
-                    <div className="absolute -inset-0.5 animate-pulse rounded-full bg-gradient-to-br from-primary to-indigo-500 opacity-50 blur-xs" />
-                    <div className="relative flex size-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-primary to-primary/60 shadow-md">
-                        <SparklesIcon className="size-4 text-primary-foreground" />
-                    </div>
+                <div className="flex size-8 shrink-0 items-center justify-center rounded-lg border border-primary/15 bg-primary/10 text-primary shadow-xs">
+                    <BotIcon className="size-4" />
                 </div>
 
                 <div>
-                    <h3 className="text-sm font-bold text-foreground">AI Assistant</h3>
+                    <h3 className="text-sm font-semibold text-foreground">AI Assistant</h3>
                     <div className="flex items-center gap-1">
-                        <span className="relative flex size-1.5">
-                            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
-                            <span className="relative inline-flex size-1.5 rounded-full bg-emerald-500" />
-                        </span>
+                        <span className="inline-flex size-1.5 rounded-full bg-emerald-500" />
                         <p className="text-[10px] font-medium text-muted-foreground">
-                            Hỗ trợ học tập 24/7
+                            Sẵn sàng hỗ trợ học tập
                         </p>
                     </div>
                 </div>
@@ -340,7 +331,7 @@ function ChatHeader({ onClearChat, onClose }: ChatHeaderProps) {
                     size="icon"
                     aria-label="Xóa lịch sử trò chuyện"
                     title="Xóa lịch sử"
-                    className="size-8 rounded-lg text-muted-foreground transition-all hover:bg-destructive/10 hover:text-destructive active:scale-95"
+                    className="size-8 rounded-md text-muted-foreground transition-all hover:bg-destructive/10 hover:text-destructive active:scale-95"
                     onClick={onClearChat}
                 >
                     <TrashIcon className="size-4" />
@@ -352,7 +343,7 @@ function ChatHeader({ onClearChat, onClose }: ChatHeaderProps) {
                     size="icon"
                     aria-label="Đóng AI Assistant"
                     title="Đóng"
-                    className="size-8 rounded-lg text-muted-foreground transition-all hover:text-foreground active:scale-95"
+                    className="size-8 rounded-md text-muted-foreground transition-all hover:bg-muted hover:text-foreground active:scale-95"
                     onClick={onClose}
                 >
                     <XIcon className="size-4" />
@@ -454,9 +445,9 @@ const ChatMessageBubble = memo(function ChatMessageBubble({
                 {normalizedContent && (
                     <div
                         className={cn(
-                            "overflow-hidden rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed shadow-xs",
+                            "overflow-hidden rounded-xl px-3.5 py-2.5 text-sm leading-relaxed shadow-xs",
                             isAssistant
-                                ? "rounded-tl-sm border border-border/20 bg-muted text-foreground"
+                                ? "rounded-tl-sm border border-border/30 bg-background text-foreground"
                                 : "rounded-tr-sm bg-primary text-primary-foreground"
                         )}
                     >
@@ -494,7 +485,7 @@ function MessageAvatar({ role }: { role: ChatMessage["role"] }) {
     return (
         <div
             className={cn(
-                "flex size-7 shrink-0 items-center justify-center rounded-full border text-xs shadow-sm",
+                "flex size-7 shrink-0 items-center justify-center rounded-md border text-xs shadow-sm",
                 isAssistant
                     ? "border-primary/10 bg-primary/10 text-primary"
                     : "border-border/50 bg-muted text-muted-foreground"
@@ -608,8 +599,8 @@ function RoadmapRecommendations({ roadmaps }: RoadmapRecommendationsProps) {
 
     return (
         <div className="mt-2.5 space-y-2.5">
-            <p className="flex items-center gap-1 px-1 text-[10px] font-bold text-muted-foreground">
-                <SparklesIcon className="size-3 animate-pulse fill-purple-500 text-purple-500" />
+            <p className="flex items-center gap-1 px-1 text-[10px] font-semibold text-muted-foreground">
+                <SparklesIcon className="size-3 text-primary" />
                 Lộ trình đề xuất riêng cho bạn
             </p>
 
@@ -669,12 +660,12 @@ function MessageMeta({ message, copiedId, canCopy, onCopy }: MessageMetaProps) {
 
 function ThinkingIndicator() {
     return (
-        <div className="flex gap-2.5 animate-pulse">
-            <div className="flex size-7 shrink-0 items-center justify-center rounded-full border border-primary/10 bg-primary/10 text-primary">
-                <BotIcon className="size-3.5 animate-bounce" />
+        <div className="flex gap-2.5 animate-in fade-in duration-200">
+            <div className="flex size-7 shrink-0 items-center justify-center rounded-md border border-primary/10 bg-primary/10 text-primary">
+                <BotIcon className="size-3.5" />
             </div>
 
-            <div className="rounded-2xl rounded-tl-sm border border-border/20 bg-muted px-3.5 py-2.5 shadow-xs">
+            <div className="rounded-xl rounded-tl-sm border border-border/30 bg-background px-3.5 py-2.5 shadow-xs">
                 <div className="flex items-center gap-1.5 text-muted-foreground">
                     <Loader2Icon className="size-3.5 animate-spin text-primary" />
                     <span className="text-[10px] font-semibold">
@@ -705,7 +696,7 @@ function QuickActions({ onSelect }: QuickActionsProps) {
                         type="button"
                         variant="outline"
                         size="sm"
-                        className="h-auto justify-start rounded-xl border-border/60 px-2 py-1.5 text-left text-xs leading-normal transition-all duration-200 hover:bg-muted/80 hover:text-primary active:scale-95"
+                        className="h-auto justify-start rounded-lg border-border/60 px-2 py-1.5 text-left text-xs leading-normal transition-all duration-200 hover:bg-background hover:text-primary active:scale-95"
                         onClick={() => onSelect(action.prompt)}
                     >
                         <action.icon className="mr-1.5 size-3 shrink-0 text-muted-foreground" />
@@ -736,7 +727,7 @@ function ChatComposer({
     const isComposerDisabled = isLoading || isRateLimited;
 
     return (
-        <footer className="relative z-10 shrink-0 border-t border-border/40 bg-muted/20 p-3">
+        <footer className="relative z-10 shrink-0 border-t border-border/40 bg-background/95 p-3">
             <div className="flex gap-1.5">
                 <Input
                     placeholder={isRateLimited ? "Vui lòng chờ đếm ngược..." : "Hỏi AI bất cứ điều gì..."}
@@ -749,7 +740,7 @@ function ChatComposer({
                             onSend();
                         }
                     }}
-                    className="h-9 flex-1 rounded-xl border-border/60 bg-background text-xs shadow-inner transition-all focus:border-primary/50"
+                    className="h-9 flex-1 rounded-lg border-border/60 bg-muted/25 text-xs shadow-inner transition-all focus:border-primary/50"
                 />
 
                 <Button
@@ -758,7 +749,7 @@ function ChatComposer({
                     aria-label="Gửi tin nhắn"
                     disabled={!input.trim() || isComposerDisabled}
                     onClick={onSend}
-                    className="size-9 shrink-0 cursor-pointer rounded-xl bg-primary text-primary-foreground shadow transition-all hover:bg-primary/95 active:scale-90"
+                    className="size-9 shrink-0 cursor-pointer rounded-lg bg-primary text-primary-foreground shadow transition-all hover:bg-primary/95 active:scale-90"
                 >
                     {isLoading ? (
                         <Loader2Icon className="size-3.5 animate-spin" />
@@ -783,20 +774,16 @@ function ChatFloatingButton({ isOpen, onClick }: ChatFloatingButtonProps) {
             aria-label={isOpen ? "Đóng AI Assistant" : "Mở AI Assistant"}
             onClick={onClick}
             className={cn(
-                "group relative flex size-14 cursor-pointer items-center justify-center rounded-full border border-purple-500/30 bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-xl shadow-purple-500/20 transition-all duration-300 hover:scale-105 hover:from-purple-700 hover:to-indigo-700 hover:shadow-2xl hover:shadow-purple-500/30 active:scale-95",
+                "group relative flex size-14 cursor-pointer items-center justify-center rounded-xl border border-primary/25 bg-primary text-primary-foreground shadow-[0_12px_36px_hsl(var(--primary)/0.28)] transition-all duration-300 hover:-translate-y-0.5 hover:bg-primary/95 active:scale-95",
                 isOpen &&
-                "rotate-90 border-red-500/30 from-red-500 to-rose-500 shadow-red-500/20 hover:bg-destructive/90"
+                "rotate-90 border-destructive/25 bg-destructive text-destructive-foreground shadow-[0_12px_36px_hsl(var(--destructive)/0.22)] hover:bg-destructive/90"
             )}
         >
-            {!isOpen && (
-                <span className="absolute -inset-0.5 animate-ping rounded-full bg-gradient-to-r from-purple-600 to-indigo-600 opacity-40 blur-md duration-1000 group-hover:opacity-75" />
-            )}
-
             <span className="relative z-10 flex items-center justify-center">
                 {isOpen ? (
                     <XIcon className="size-6 transition-transform duration-300" />
                 ) : (
-                    <SparklesIcon className="size-6 animate-pulse fill-current text-white" />
+                    <MessageSquareIcon className="size-6" />
                 )}
             </span>
         </button>
@@ -817,7 +804,7 @@ const RoadmapAdvisoryCard = memo(function RoadmapAdvisoryCard({
     const description = getRoadmapDescription(roadmap);
 
     return (
-        <div className="group relative flex flex-col gap-2 overflow-hidden rounded-xl border border-border/50 bg-background/50 p-3 shadow-xs backdrop-blur-xs transition-all duration-300 animate-in fade-in hover:border-primary/30 hover:bg-background/80 hover:shadow-md">
+        <div className="group relative flex flex-col gap-2 overflow-hidden rounded-lg border border-border/50 bg-background p-3 shadow-xs transition-all duration-300 animate-in fade-in hover:border-primary/30 hover:shadow-md">
             <div className="flex items-start justify-between gap-2">
                 <h4 className="line-clamp-1 text-xs font-bold text-foreground transition-colors group-hover:text-primary">
                     {roadmap.name || "Lộ trình học tập"}
@@ -855,7 +842,7 @@ const RoadmapAdvisoryCard = memo(function RoadmapAdvisoryCard({
             </div>
 
             <Link href={`/roadmaps/${roadmap.slug}`} className="block w-full">
-                <Button className="flex h-7 w-full cursor-pointer items-center justify-center gap-1 rounded-lg bg-primary text-[9px] font-bold text-primary-foreground shadow-xs transition-all duration-200 hover:bg-primary/95 active:scale-95">
+                <Button className="flex h-7 w-full cursor-pointer items-center justify-center gap-1 rounded-md bg-primary text-[9px] font-bold text-primary-foreground shadow-xs transition-all duration-200 hover:bg-primary/95 active:scale-95">
                     <span>Học ngay</span>
                     <ArrowRightIcon className="size-2.5 transition-transform group-hover:translate-x-0.5" />
                 </Button>

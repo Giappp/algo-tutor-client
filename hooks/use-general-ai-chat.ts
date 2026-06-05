@@ -1,19 +1,17 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { apiClient } from "@/api/api-client";
 import { toast } from "sonner";
+import {
+    sendGeneralChat,
+    streamGeneralChat,
+    type AiChatError,
+    type GeneralChatRequest,
+    type GeneralChatResponse,
+    type RoadmapRecommendation,
+} from "@/api/ai-chat-service";
 
-export interface RoadmapRecommendation {
-    name: string;
-    slug: string;
-    level: string;
-    description: string;
-    thumbnailUrl?: string;
-    topicCount: number;
-    lessonCount: number;
-    isPremium: boolean;
-}
+export type { RoadmapRecommendation } from "@/api/ai-chat-service";
 
 export interface ChatMessage {
     id: string;
@@ -23,42 +21,8 @@ export interface ChatMessage {
     roadmaps?: RoadmapRecommendation[];
 }
 
-interface GeneralChatRequest {
-    conversationId?: string;
-    message: string;
-}
-
-interface StreamChatOptions {
-    requestBody: GeneralChatRequest;
-    assistantMessageId: string;
-    signal?: AbortSignal;
-    onTextDelta: (messageId: string, fullText: string) => void;
-    onMetadata: (metadata: StreamMetadata, messageId: string) => void;
-}
-
-interface SyncChatOptions {
-    requestBody: GeneralChatRequest;
-    assistantMessageId: string;
-    onSuccess: (response: SyncChatResponse, messageId: string) => void;
-}
-
-interface StreamMetadata {
-    conversationId?: string;
-    recommendedRoadmaps?: RoadmapRecommendation[];
-    roadmaps?: RoadmapRecommendation[];
-}
-
-interface SyncChatResponse {
-    conversationId?: string;
-    answer?: string;
-    recommendedRoadmaps?: RoadmapRecommendation[];
-    roadmaps?: RoadmapRecommendation[];
-}
-
 const GENERAL_STORAGE_KEY = "ai-general-chat-history";
 const CONVERSATION_ID_KEY = "ai-general-conversation-id";
-
-const DEFAULT_API_BASE_URL = "http://localhost:8080/api/v1";
 
 const WELCOME_MESSAGE = `Xin chào! Tôi là **AI Assistant** hỗ trợ học tập của AlgoTutor. 🚀
 
@@ -160,169 +124,13 @@ function saveConversationId(conversationId: string | null) {
     }
 }
 
-function getRoadmaps(data: StreamMetadata | SyncChatResponse): RoadmapRecommendation[] {
+function getRoadmaps(data: GeneralChatResponse): RoadmapRecommendation[] {
     return data.recommendedRoadmaps ?? data.roadmaps ?? [];
 }
 
-function parseSseChunk(
-    rawChunk: string,
-    currentEventRef: { value: string },
-    onMessage: (eventName: string, data: unknown) => void
-) {
-    const lines = rawChunk.split("\n");
-
-    for (const line of lines) {
-        const trimmed = line.trim();
-
-        if (!trimmed) {
-            currentEventRef.value = "";
-            continue;
-        }
-
-        if (trimmed.startsWith("event:")) {
-            currentEventRef.value = trimmed.substring("event:".length).trim();
-            continue;
-        }
-
-        if (!trimmed.startsWith("data:")) continue;
-
-        const dataContent = trimmed.substring("data:".length).trim();
-        if (!dataContent) continue;
-
-        try {
-            onMessage(currentEventRef.value, JSON.parse(dataContent));
-        } catch (error) {
-            console.error("Error parsing stream data", error);
-        }
-    }
-}
-
-class RateLimitError extends Error {
-    retryAfter: number;
-    constructor(retryAfter: number) {
-        super(`Bạn đã gửi yêu cầu quá nhanh. Vui lòng thử lại sau ${retryAfter} giây.`);
-        this.name = "RateLimitError";
-        this.retryAfter = retryAfter;
-    }
-}
-
-async function streamGeneralChat({
-    requestBody,
-    assistantMessageId,
-    signal,
-    onTextDelta,
-    onMetadata,
-}: StreamChatOptions): Promise<boolean> {
-    const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL ?? DEFAULT_API_BASE_URL;
-
-    const response = await fetch(`${baseUrl}/ai/general/chat/stream`, {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-            Accept: "text/event-stream",
-        },
-        body: JSON.stringify(requestBody),
-        credentials: "include",
-        signal,
-    });
-
-    if (!response.ok) {
-        if (response.status === 429) {
-            const retryAfterHeader = response.headers.get("Retry-After");
-            const seconds = retryAfterHeader ? parseInt(retryAfterHeader, 10) : 60;
-            throw new RateLimitError(isNaN(seconds) ? 60 : seconds);
-        }
-        throw new Error(`Streaming endpoint failed with status ${response.status}`);
-    }
-
-    const reader = response.body?.getReader();
-    if (!reader) {
-        throw new Error("ReadableStream is not supported");
-    }
-
-    const decoder = new TextDecoder();
-    const currentEventRef = { value: "" };
-
-    let buffer = "";
-    let fullResponseText = "";
-
-    const handleMessage = (eventName: string, data: unknown) => {
-        if (!data || typeof data !== "object") return;
-
-        const parsed = data as Record<string, unknown>;
-
-        if (eventName === "message") {
-            const chunkText =
-                typeof parsed.chunkText === "string"
-                    ? parsed.chunkText
-                    : typeof parsed.answer === "string"
-                        ? parsed.answer
-                        : "";
-
-            if (!chunkText) return;
-
-            fullResponseText += chunkText;
-            onTextDelta(assistantMessageId, fullResponseText);
-            return;
-        }
-
-        if (eventName === "metadata") {
-            onMetadata(parsed as StreamMetadata, assistantMessageId);
-        }
-    };
-
-    while (true) {
-        const { done, value } = await reader.read();
-
-        if (done) break;
-
-        buffer += decoder.decode(value, { stream: true });
-
-        const chunks = buffer.split("\n");
-        buffer = chunks.pop() ?? "";
-
-        parseSseChunk(chunks.join("\n"), currentEventRef, handleMessage);
-    }
-
-    const remainingText = buffer + decoder.decode();
-    if (remainingText.trim()) {
-        parseSseChunk(remainingText, currentEventRef, handleMessage);
-    }
-
-    return true;
-}
-
-async function syncGeneralChat({
-    requestBody,
-    assistantMessageId,
-    onSuccess,
-}: SyncChatOptions): Promise<boolean> {
-    try {
-        const response = await apiClient.post<{
-            data?: SyncChatResponse;
-        }>("/ai/general/chat", requestBody);
-
-        const responseData = response.data?.data;
-        if (!responseData) return false;
-
-        onSuccess(responseData, assistantMessageId);
-
-        return true;
-    } catch (error) {
-        interface AxiosErrorWithResponse {
-            response?: {
-                status?: number;
-                headers?: Record<string, string>;
-            };
-        }
-        const err = error as AxiosErrorWithResponse;
-        if (err.response?.status === 429) {
-            const retryAfterHeader = err.response.headers?.["retry-after"] || err.response.headers?.["Retry-After"];
-            const seconds = retryAfterHeader ? parseInt(retryAfterHeader, 10) : 60;
-            throw new RateLimitError(isNaN(seconds) ? 60 : seconds);
-        }
-        throw error;
-    }
+function getGeneralChatError(error: unknown): AiChatError | null {
+    const maybeError = error as Partial<AiChatError>;
+    return maybeError?.code ? (maybeError as AiChatError) : null;
 }
 
 export function useGeneralAIChat(isOpen: boolean) {
@@ -400,7 +208,7 @@ export function useGeneralAIChat(isOpen: boolean) {
     }, []);
 
     const updateAssistantMetadata = useCallback(
-        (metadata: StreamMetadata, messageId: string) => {
+        (metadata: GeneralChatResponse, messageId: string) => {
             if (metadata.conversationId) {
                 setConversationId(metadata.conversationId);
             }
@@ -423,7 +231,7 @@ export function useGeneralAIChat(isOpen: boolean) {
     );
 
     const updateAssistantFromSyncResponse = useCallback(
-        (response: SyncChatResponse, messageId: string) => {
+        (response: GeneralChatResponse, messageId: string) => {
             if (response.conversationId) {
                 setConversationId(response.conversationId);
             }
@@ -486,23 +294,44 @@ export function useGeneralAIChat(isOpen: boolean) {
 
             try {
                 let streamSuccess = false;
+                let fullResponseText = "";
+                let fallbackRequestBody = requestBody;
 
                 try {
-                    streamSuccess = await streamGeneralChat({
+                    await streamGeneralChat(
                         requestBody,
-                        assistantMessageId: assistantMessage.id,
-                        signal: abortController.signal,
-                        onTextDelta: updateAssistantContent,
-                        onMetadata: updateAssistantMetadata,
-                    });
+                        {
+                            onMessageChunk: (chunk) => {
+                                fullResponseText += chunk;
+                                updateAssistantContent(assistantMessage.id, fullResponseText);
+                            },
+                            onMetadata: (metadata) => {
+                                updateAssistantMetadata(metadata, assistantMessage.id);
+                            },
+                        },
+                        abortController.signal
+                    );
+                    streamSuccess = true;
                 } catch (error) {
                     if (abortController.signal.aborted) return;
 
-                    if (error instanceof RateLimitError) {
-                        setRateLimitCountdown(error.retryAfter);
-                        toast.error(`Bạn đang thao tác quá nhanh. AI cần nghỉ ngơi một chút. Vui lòng thử lại sau ${error.retryAfter} giây.`);
+                    const chatError = getGeneralChatError(error);
+
+                    if (chatError?.code === "RATE_LIMITED") {
+                        const retryAfter = chatError.retryAfterSeconds ?? 60;
+                        setRateLimitCountdown(retryAfter);
+                        toast.error(`Bạn đang thao tác quá nhanh. Vui lòng thử lại sau ${retryAfter} giây.`);
                         setMessages((prev) => prev.filter((m) => m.id !== assistantMessage.id));
                         return;
+                    }
+
+                    if (chatError?.code === "CONVERSATION_NOT_FOUND") {
+                        setConversationId(null);
+                        saveConversationId(null);
+                        fallbackRequestBody = {
+                            ...requestBody,
+                            conversationId: undefined,
+                        };
                     }
 
                     console.warn(
@@ -513,11 +342,12 @@ export function useGeneralAIChat(isOpen: boolean) {
 
                 if (streamSuccess) return;
 
-                const syncSuccess = await syncGeneralChat({
-                    requestBody,
-                    assistantMessageId: assistantMessage.id,
-                    onSuccess: updateAssistantFromSyncResponse,
-                });
+                const syncResponse = await sendGeneralChat(fallbackRequestBody);
+                const syncSuccess = Boolean(syncResponse);
+
+                if (syncResponse) {
+                    updateAssistantFromSyncResponse(syncResponse, assistantMessage.id);
+                }
 
                 if (!syncSuccess) {
                     throw new Error("Synchronous chat returned empty response");
@@ -525,9 +355,20 @@ export function useGeneralAIChat(isOpen: boolean) {
             } catch (error) {
                 if (abortController.signal.aborted) return;
 
-                if (error instanceof RateLimitError) {
-                    setRateLimitCountdown(error.retryAfter);
-                    toast.error(`Bạn đang thao tác quá nhanh. AI cần nghỉ ngơi một chút. Vui lòng thử lại sau ${error.retryAfter} giây.`);
+                const chatError = getGeneralChatError(error);
+
+                if (chatError?.code === "RATE_LIMITED") {
+                    const retryAfter = chatError.retryAfterSeconds ?? 60;
+                    setRateLimitCountdown(retryAfter);
+                    toast.error(`Bạn đang thao tác quá nhanh. Vui lòng thử lại sau ${retryAfter} giây.`);
+                    setMessages((prev) => prev.filter((m) => m.id !== assistantMessage.id));
+                    return;
+                }
+
+                if (chatError?.code === "CONVERSATION_NOT_FOUND") {
+                    setConversationId(null);
+                    saveConversationId(null);
+                    toast.error("Phiên chat AI đã hết hạn. Mình sẽ bắt đầu lại ở tin nhắn tiếp theo.");
                     setMessages((prev) => prev.filter((m) => m.id !== assistantMessage.id));
                     return;
                 }

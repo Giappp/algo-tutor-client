@@ -9,7 +9,7 @@ import { WorkspaceStatus } from "./ai-tutor/workspace-status";
 import { WelcomeDashboard } from "./ai-tutor/welcome-dashboard";
 import { ChatMessagesList } from "./ai-tutor/chat-messages-list";
 import { ChatInput } from "./ai-tutor/chat-input";
-import { useAITutor } from "@/hooks/use-ai-tutor"
+import { useAITutor } from "@/hooks/use-ai-tutor";
 
 export function AITutorPanel({ context }: { context: LessonContext }) {
     const {
@@ -37,8 +37,7 @@ export function AITutorPanel({ context }: { context: LessonContext }) {
 
     return (
         <section className="relative flex h-full min-h-0 flex-col overflow-hidden bg-background">
-            <div className="pointer-events-none absolute inset-x-0 top-0 h-28 bg-muted/35 [mask-image:linear-gradient(to_bottom,black,transparent)]" />
-            <div className="pointer-events-none absolute inset-0 opacity-[0.035] [background-image:radial-gradient(var(--foreground)_1px,transparent_1px)] [background-size:18px_18px]" />
+            <div className="pointer-events-none absolute inset-x-0 top-0 h-20 bg-muted/25 [mask-image:linear-gradient(to_bottom,black,transparent)]" />
 
             <div className="relative z-10 shrink-0 border-b border-border/50 bg-background/95 backdrop-blur-xl">
                 <ChatHeader
@@ -50,9 +49,9 @@ export function AITutorPanel({ context }: { context: LessonContext }) {
                 />
 
                 <div className="flex flex-col gap-2 px-3 pb-3">
-                    <div className="flex items-center justify-between gap-3 rounded-lg border border-border/60 bg-card/70 px-3 py-2 shadow-xs">
+                    <div className="flex items-center justify-between gap-3 rounded-lg border border-border/50 bg-muted/20 px-3 py-2">
                         <div className="flex min-w-0 items-center gap-2">
-                            <div className="flex size-7 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
+                            <div className="flex size-7 shrink-0 items-center justify-center rounded-md border border-primary/10 bg-primary/10 text-primary">
                                 <ShieldCheckIcon className="size-3.5" aria-hidden="true" />
                             </div>
 
@@ -89,7 +88,7 @@ export function AITutorPanel({ context }: { context: LessonContext }) {
                         </button>
                     </div>
 
-                    <div className="flex gap-1 overflow-x-auto rounded-lg border border-border/60 bg-muted/35 p-1 scrollbar-none">
+                    <div className="flex gap-1 overflow-x-auto rounded-lg border border-border/50 bg-muted/25 p-1 scrollbar-none">
                         {availableModes.map((mode) => {
                             const Icon = mode.icon;
                             const isActive = selectedMode === mode.id;
@@ -104,7 +103,7 @@ export function AITutorPanel({ context }: { context: LessonContext }) {
                                     className={cn(
                                         "inline-flex h-8 shrink-0 items-center gap-1.5 rounded-md px-2.5 text-xs font-semibold transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background active:scale-95",
                                         isActive
-                                            ? "bg-background text-foreground shadow-sm ring-1 ring-border/60"
+                                            ? "bg-background text-foreground shadow-sm ring-1 ring-border/50"
                                             : isHintDisabled
                                                 ? "cursor-not-allowed text-muted-foreground/40"
                                                 : "text-muted-foreground hover:bg-background/70 hover:text-foreground"

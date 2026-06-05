@@ -61,7 +61,7 @@ export const ChatMessagesList = React.forwardRef<HTMLDivElement, ChatMessagesLis
                 ref={ref}
                 className="flex-1 overflow-y-auto p-4"
             >
-                <div className="flex flex-col gap-5 pb-4">
+                <div className="flex flex-col gap-4 pb-4">
                     <AnimatePresence initial={false}>
                         {messages.map((message, index) => {
                             const isLast = index === messages.length - 1;
@@ -93,9 +93,9 @@ export const ChatMessagesList = React.forwardRef<HTMLDivElement, ChatMessagesLis
                                     <div className="flex flex-col gap-1.5 max-w-[85%] relative group/bubble">
                                         <div
                                             className={cn(
-                                                "rounded-2xl px-4 py-3 text-base shadow-xs leading-relaxed overflow-hidden relative border",
+                                                "rounded-xl px-3.5 py-2.5 text-sm shadow-xs leading-relaxed overflow-hidden relative border",
                                                 message.role === "assistant"
-                                                    ? "bg-card text-foreground rounded-tl-xs border-border/30 backdrop-blur-xs"
+                                                    ? "bg-background text-foreground rounded-tl-xs border-border/30"
                                                     : "border-primary/20 bg-primary text-primary-foreground rounded-tr-xs"
                                             )}
                                         >
@@ -105,7 +105,7 @@ export const ChatMessagesList = React.forwardRef<HTMLDivElement, ChatMessagesLis
 
                                             {message.role === "assistant" ? (
                                                 <div className={cn(
-                                                    "prose dark:prose-invert max-w-none break-words leading-relaxed pl-1 text-base",
+                                                    "prose prose-sm dark:prose-invert max-w-none break-words leading-relaxed pl-1 text-sm",
                                                     isLastAndStreaming && "is-streaming"
                                                 )}>
                                                     <ReactMarkdown
@@ -164,7 +164,7 @@ export const ChatMessagesList = React.forwardRef<HTMLDivElement, ChatMessagesLis
                                                 </ReactMarkdown>
                                             </div>
                                         ) : (
-                                            <div className="whitespace-pre-wrap break-words text-base">
+                                            <div className="whitespace-pre-wrap break-words text-sm">
                                                 {formatMathAndSpace(message.content)}
                                             </div>
                                         )}
@@ -213,7 +213,7 @@ export const ChatMessagesList = React.forwardRef<HTMLDivElement, ChatMessagesLis
                                         <BotIcon className="size-4" />
                                     </div>
                                 </div>
-                                <div className="max-w-[85%] rounded-2xl rounded-tl-xs border border-border/30 bg-card px-4 py-3 shadow-xs">
+                                <div className="max-w-[85%] rounded-xl rounded-tl-xs border border-border/30 bg-background px-3.5 py-2.5 shadow-xs">
                                     <div className="flex items-center gap-2 text-muted-foreground">
                                         <Loader2Icon className="size-3.5 animate-spin text-primary" />
                                         <span className="text-xs font-semibold">Tutor đang phân tích bài làm...</span>

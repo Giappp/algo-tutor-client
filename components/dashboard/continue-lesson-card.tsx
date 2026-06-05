@@ -5,7 +5,13 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import Link from "next/link";
 import Image from "next/image";
-import { PlayIcon, BookOpenIcon, CheckCircle2Icon, SparklesIcon } from "lucide-react";
+import {
+    AlertCircleIcon,
+    BookOpenIcon,
+    CheckCircle2Icon,
+    PlayIcon,
+    SparklesIcon,
+} from "lucide-react";
 
 export function ContinueLessonCard() {
     const { enrollments, isLoading, isError } = useEnrollments();
@@ -42,7 +48,21 @@ export function ContinueLessonCard() {
     }
 
     if (isError) {
-        return null;
+        return (
+            <div className="rounded-xl border border-border bg-card p-6">
+                <div className="flex items-start gap-3">
+                    <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
+                        <AlertCircleIcon className="size-5" />
+                    </div>
+                    <div className="space-y-1">
+                        <h3 className="font-semibold text-foreground">Chưa tải được lộ trình</h3>
+                        <p className="text-sm text-muted-foreground">
+                            Máy chủ chưa trả về danh sách lộ trình đang học.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        );
     }
 
     if (!enrollments || enrollments.length === 0) {
@@ -68,11 +88,13 @@ export function ContinueLessonCard() {
         );
     }
 
+    const visibleEnrollments = enrollments.slice(0, 3);
+
     return (
         <div className="rounded-xl border border-border bg-card overflow-hidden shadow-sm hover:shadow-md transition-shadow duration-300">
             <div className="p-5 border-b border-border/50 bg-muted/10 flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                    <div className="p-1 rounded bg-purple-500/10 dark:bg-purple-500/20 text-purple-600 dark:text-purple-400">
+                    <div className="p-1 rounded bg-primary/10 text-primary">
                         <PlayIcon className="size-4 fill-current" />
                     </div>
                     <h3 className="font-bold text-foreground tracking-tight">
@@ -89,7 +111,7 @@ export function ContinueLessonCard() {
             </div>
 
             <div className="p-5 space-y-4">
-                {enrollments.map((item) => {
+                {visibleEnrollments.map((item) => {
                     const isCompleted = item.completionPercentage === 100 || !item.nextLessonSlug;
                     const ctaHref = isCompleted
                         ? `/roadmaps/${item.roadmapSlug}`
@@ -124,7 +146,7 @@ export function ContinueLessonCard() {
                                     <p className="text-xs text-muted-foreground truncate max-w-[280px] sm:max-w-md">
                                         {isCompleted ? (
                                             <span className="inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-medium">
-                                                <CheckCircle2Icon className="size-3" /> Hoàn thành lộ trình!
+                                                <CheckCircle2Icon className="size-3" /> Hoàn thành lộ trình
                                             </span>
                                         ) : (
                                             <>
@@ -141,13 +163,13 @@ export function ContinueLessonCard() {
                                 <div className="space-y-1.5 min-w-[120px]">
                                     <div className="flex items-center justify-between text-xs font-semibold">
                                         <span className="text-muted-foreground">Tiến độ</span>
-                                        <span className={item.completionPercentage > 0 ? "text-purple-600 dark:text-purple-400" : "text-muted-foreground"}>
+                                        <span className={item.completionPercentage > 0 ? "text-primary" : "text-muted-foreground"}>
                                             {item.completionPercentage}%
                                         </span>
                                     </div>
                                     <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden shadow-inner">
                                         <div
-                                            className="h-full rounded-full bg-linear-to-r from-purple-500 to-indigo-500 transition-all duration-500 group-hover:from-purple-600 group-hover:to-indigo-600"
+                                            className="h-full rounded-full bg-primary transition-all duration-500"
                                             style={{ width: `${item.completionPercentage}%` }}
                                         />
                                     </div>
@@ -160,7 +182,7 @@ export function ContinueLessonCard() {
                                         variant={isCompleted ? "outline" : "default"}
                                         className={`w-full sm:w-auto h-9 px-4 font-semibold rounded-lg shadow-sm whitespace-nowrap transition-all duration-200 active:scale-95 ${isCompleted
                                             ? "hover:bg-muted"
-                                            : "bg-linear-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white shadow-purple-500/10 hover:shadow-md hover:shadow-purple-500/20"
+                                            : "shadow-primary/10 hover:shadow-md hover:shadow-primary/20"
                                             }`}
                                     >
                                         {isCompleted ? (
@@ -177,6 +199,14 @@ export function ContinueLessonCard() {
                         </div>
                     );
                 })}
+                {enrollments.length > visibleEnrollments.length && (
+                    <Link
+                        href="/my-roadmaps"
+                        className="block rounded-lg border border-dashed border-border px-4 py-3 text-center text-sm font-medium text-muted-foreground transition-colors hover:border-primary/30 hover:text-primary"
+                    >
+                        Xem thêm {enrollments.length - visibleEnrollments.length} lộ trình
+                    </Link>
+                )}
             </div>
         </div>
     );

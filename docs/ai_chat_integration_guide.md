@@ -1,37 +1,137 @@
-# Hướng Dẫn Tích Hợp Frontend - Tính Năng AI Chat & Tư Vấn Lộ Trình
+# AI Chatbot FE Integration Guide
 
-Tài liệu này hướng dẫn chi tiết cho đội ngũ phát triển Frontend (FE) cách tích hợp các API từ **`AiChatController`** để hiển thị giao diện Chat với AI Assistant cho học viên. Hệ thống hỗ trợ cả phương thức phản hồi thông thường (Standard Response) lẫn phản hồi thời gian thực theo dòng dữ liệu (Streaming Response - Server-Sent Events).
+Tài liệu này là hướng dẫn tích hợp hoàn chỉnh module AI Chatbot từ Backend AlgoTutor sang Frontend.
 
----
-
-## 📌 1. Các Tính Năng AI Chat Chính
-Hệ thống AI Chat hỗ trợ 2 phân hệ lớn:
-1. **Lesson Chat (Chat Hỗ Trợ Bài Học)**:
-   - Tích hợp trực tiếp tại giao diện học tập/luyện code.
-   - Hỗ trợ giải thích lý thuyết (`EXPLAIN`), chỉ dẫn từng bước qua gợi ý (`HINT` - kiểm soát theo chính sách giới hạn số lượt gợi ý của bài học), sửa lỗi code (`DEBUG`), đánh giá độ phức tạp thuật toán (`COMPLEXITY`), review code (`REVIEW`), và tìm hướng đi tiếp theo (`NEXT_STEP`).
-   - Có cơ chế **Quick Actions** (Gợi ý câu hỏi nhanh) động trả về từ AI để người dùng bấm chọn phản hồi nhanh chóng.
-2. **General Chat (Tư Vấn Lộ Trình - Roadmap Advisory)**:
-   - Chat tự do, tư vấn thắc mắc chung về ngành, lộ trình học tập.
-   - Tự động phân tích nhu cầu học viên để gợi ý trực quan các **Roadmaps (Lộ trình học)** tương ứng hiện có trên hệ thống dưới dạng các card trực quan.
+> Lưu ý base URL: controller hiện tại expose trực tiếp dưới prefix `/ai`. Nếu FE đang gọi qua API gateway hoặc reverse proxy có prefix `/api/v1`, hãy map tương ứng thành `/api/v1/ai/...`.
 
 ---
 
-## 🛠️ 2. Danh Sách API Endpoints
+## 1. Tổng quan
 
-### 2.1 Khởi Tạo Phiên Chat (Bootstrap Lesson Chat)
-Trước khi người dùng bắt đầu giao tiếp trong một bài học, FE gọi API này để lấy tin nhắn chào mừng (Onboarding message) và thông tin cấu hình ban đầu.
+Module AI Chatbot có 2 luồng chính:
 
-* **Endpoint**: `GET /ai/chat/bootstrap`
-* **Params**:
-  - `lessonSlug` (String, required): Slug của bài học hiện tại (ví dụ: `binary-search-introduction`).
-* **Header**: `Authorization: Bearer <token>`
-* **Response DTO**: `ApiResponse<AiChatResponse>`
+1. **Lesson Chat**
+   - Chat theo ngữ cảnh bài học.
+   - Có mode hỗ trợ: `HINT`, `EXPLAIN`, `DEBUG`, `REVIEW`, `COMPLEXITY`, `SOLUTION`, `NEXT_STEP`.
+   - Có quick actions và hint limit.
+   - Có guardrails chống lộ lời giải/full code ngoài mode `SOLUTION`.
+
+2. **General Chat**
+   - Chat chung, hỏi lập trình, hỏi nền tảng, hoặc tư vấn roadmap.
+   - Backend tự route intent: `GENERAL`, `CODING_HELP`, `PLATFORM_HELP`, `ROADMAP_ADVISORY`.
+   - Nếu là roadmap advisory, response có thể kèm danh sách roadmap cards.
+
+Tất cả API yêu cầu user đã đăng nhập. FE nên gửi credential/JWT giống các API authenticated khác của hệ thống.
+
+---
+
+## 2. Response Wrapper
+
+Các endpoint blocking trả về `ApiResponse<T>`:
+
 ```json
 {
   "success": true,
   "data": {
-    "conversationId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
-    "answer": "Chào bạn! Bạn đang học bài 'Tìm Kiếm Nhị Phân'. Mình có thể hỗ trợ bạn theo từng bước: giải thích lý thuyết, đưa ra gợi ý giải bài mà không tiết lộ code ngay, hoặc debug code của bạn. Bạn muốn bắt đầu từ đâu?",
+    "...": "..."
+  }
+}
+```
+
+Các endpoint streaming trả về `text/event-stream`, không bọc `ApiResponse`.
+
+Error response thường có dạng:
+
+```json
+{
+  "success": false,
+  "errors": "Invalid chat mode",
+  "code": 8000
+}
+```
+
+Riêng rate limit có header:
+
+```http
+Retry-After: 45
+```
+
+---
+
+## 3. Auth, Rate Limit, Provider
+
+### Auth
+
+Tất cả endpoint `/ai/**` cần authenticated user.
+
+FE cần gửi:
+
+```ts
+fetch(url, {
+  credentials: "include",
+  headers: {
+    "Content-Type": "application/json"
+  }
+})
+```
+
+Nếu hệ thống FE dùng Bearer token thay vì cookie, thêm:
+
+```http
+Authorization: Bearer <accessToken>
+```
+
+### Rate Limit
+
+Backend đang giới hạn mặc định:
+
+```txt
+20 requests / 60 seconds / user / chat type
+```
+
+Khi bị limit:
+
+```http
+HTTP 429 Too Many Requests
+Retry-After: <seconds>
+```
+
+FE nên disable input/send button và hiển thị countdown theo `Retry-After`.
+
+### Provider
+
+Request có thể truyền:
+
+```txt
+OPENAI | GEMINI | CLAUDE
+```
+
+Nếu bỏ trống `provider`, backend dùng provider mặc định. Backend có fallback chain nếu provider chính lỗi.
+
+Khuyến nghị FE:
+- Không expose provider selector cho user thường.
+- Nếu cần debug/admin, truyền provider explicit.
+
+---
+
+## 4. Lesson Chat API
+
+### 4.1 Bootstrap Lesson Chat
+
+Dùng khi mở trang học để lấy `conversationId` gần nhất hoặc tạo conversation mới.
+
+```http
+GET /ai/chat/bootstrap?lessonSlug={lessonSlug}
+```
+
+Response:
+
+```json
+{
+  "success": true,
+  "data": {
+    "conversationId": "5b1b7e5f-1d1d-4b0d-9c93-67f7d087c0fd",
+    "answer": "Bạn đang học bài \"Two Sum\".\n\nMình có thể hỗ trợ bạn theo từng bước...",
     "mode": "BOOTSTRAP",
     "quickActions": null,
     "sources": [],
@@ -40,32 +140,55 @@ Trước khi người dùng bắt đầu giao tiếp trong một bài học, FE 
 }
 ```
 
+FE usage:
+- Gọi khi mount lesson page.
+- Lưu `conversationId` vào state của chat widget.
+- Render `answer` như assistant message đầu tiên nếu UI muốn có onboarding.
+
 ---
 
-### 2.2 Chat Hỗ Trợ Bài Học (Standard Response)
-* **Endpoint**: `POST /ai/chat`
-* **Header**: `Authorization: Bearer <token>`
-* **Request Body** (`AiChatRequest`): *Chi tiết các thuộc tính xem ở Mục 3.*
-* **Response DTO**: `ApiResponse<AiChatResponse>`
+### 4.2 Lesson Chat Blocking
+
+Dùng làm fallback khi browser/client không xử lý streaming tốt.
+
+```http
+POST /ai/chat
+Content-Type: application/json
+```
+
+Request:
+
+```json
+{
+  "conversationId": "5b1b7e5f-1d1d-4b0d-9c93-67f7d087c0fd",
+  "lessonId": 10,
+  "lessonSlug": "two-sum",
+  "provider": "GEMINI",
+  "mode": "HINT",
+  "message": "Tôi nên bắt đầu từ đâu?",
+  "code": null,
+  "language": null,
+  "judgeResult": null,
+  "errorMessage": null,
+  "failedTestCases": []
+}
+```
+
+Response:
+
 ```json
 {
   "success": true,
   "data": {
-    "conversationId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
-    "answer": "Để giải quyết bài toán này bằng hai con trỏ, bạn cần duy trì hai biến chỉ mục `left` và `right`...",
+    "conversationId": "5b1b7e5f-1d1d-4b0d-9c93-67f7d087c0fd",
+    "answer": "Hãy thử nghĩ xem mỗi phần tử cần tìm một giá trị bù là gì...",
     "mode": "HINT",
     "quickActions": [
       {
-        "label": "Yêu cầu gợi ý bước tiếp theo",
+        "label": "Gợi ý tiếp theo",
         "intent": "NEXT_HINT",
         "mode": "HINT",
-        "message": "Hãy cho mình xin gợi ý tiếp theo."
-      },
-      {
-        "label": "Giải thích đoạn code hiện tại",
-        "intent": "EXPLAIN_CODE",
-        "mode": "EXPLAIN",
-        "message": "Giải thích giúp mình đoạn code này nhé!"
+        "message": "Cho tôi xin gợi ý tiếp theo nhé."
       }
     ],
     "sources": [],
@@ -76,37 +199,154 @@ Trước khi người dùng bắt đầu giao tiếp trong một bài học, FE 
 
 ---
 
-### 2.3 Chat Hỗ Trợ Bài Học (Streaming Response)
-Sử dụng khi muốn hiển thị chữ chạy thời gian thực (như ChatGPT).
+### 4.3 Lesson Chat Streaming
 
-* **Endpoint**: `POST /ai/chat/stream`
-* **Header**: `Authorization: Bearer <token>`
-* **Accept**: `text/event-stream`
-* **Request Body**: `AiChatRequest`
-* **Response**: Dòng dữ liệu Server-Sent Events (SSE). *Xem hướng dẫn tích hợp chi tiết ở Mục 4.*
+Endpoint FE nên ưu tiên dùng.
+
+```http
+POST /ai/chat/stream
+Content-Type: application/json
+Accept: text/event-stream
+```
+
+Request body giống `/ai/chat`.
+
+SSE events:
+
+```txt
+event: message
+data: {"answer":"Hãy thử nghĩ xem "}
+
+event: message
+data: {"answer":"mỗi phần tử cần tìm "}
+
+event: metadata
+data: {"conversationId":"5b1b7e5f-1d1d-4b0d-9c93-67f7d087c0fd","answer":null,"mode":"HINT","quickActions":[...],"sources":[],"canAskNextHint":true}
+```
+
+Quan trọng:
+- `message` event chứa chunk text trong field `answer`.
+- `metadata` event là event cuối, dùng để cập nhật `conversationId`, quick actions, `canAskNextHint`.
+- Với mode không phải `SOLUTION`, backend có thể buffer response để chạy guardrails trước. FE vẫn xử lý giống nhau, nhưng có thể thấy chunk ít hơn hoặc chỉ một chunk cuối.
 
 ---
 
-### 2.4 Chat Tư Vấn Lộ Trình (Standard Response)
-* **Endpoint**: `POST /ai/general/chat`
-* **Header**: `Authorization: Bearer <token>`
-* **Request Body**: `AiChatRequest`
-* **Response DTO**: `ApiResponse<AiGeneralChatResponse>`
+## 5. Lesson Chat Request Fields
+
+`AiLessonChatRequest`
+
+| Field | Type | Required | Mô tả |
+|---|---:|---:|---|
+| `conversationId` | UUID | No | Null khi tạo cuộc trò chuyện mới. Sau response đầu tiên, FE nên reuse. |
+| `lessonId` | number | Yes | ID bài học hiện tại. |
+| `lessonSlug` | string | Yes | Slug bài học hiện tại. |
+| `provider` | string | No | `OPENAI`, `GEMINI`, `CLAUDE`; null để dùng default. |
+| `mode` | string | Yes | Một trong các mode ở phần 6. |
+| `message` | string | Conditional | Nội dung user hỏi. Cần có `message` hoặc `code`. Max 5000 chars. |
+| `code` | string | Conditional | Code hiện tại trong editor. Max 10000 chars. |
+| `language` | string | No | Ví dụ `java`, `python`, `cpp`, `javascript`. |
+| `judgeResult` | string | No | Kết quả judge gần nhất, ví dụ `WRONG_ANSWER`, `ACCEPTED`. |
+| `errorMessage` | string | No | Compile/runtime error hoặc message từ judge. |
+| `failedTestCases` | string[] | No | Danh sách failed cases FE muốn gửi cho AI. |
+
+Validation:
+- `message` và `code` không được cùng rỗng.
+- `DEBUG`, `REVIEW`, `COMPLEXITY` bắt buộc có `code`.
+- `message` tối đa 5000 ký tự.
+- `code` tối đa 10000 ký tự.
+
+---
+
+## 6. Lesson Chat Modes
+
+| Mode | Khi FE dùng | Code required | Ghi chú UI |
+|---|---|---:|---|
+| `HINT` | User xin gợi ý từng bước | No | Respect `canAskNextHint`; disable nút hint khi false. |
+| `EXPLAIN` | Giải thích đề/lý thuyết/ý tưởng | No | Không kỳ vọng full solution. |
+| `DEBUG` | User có lỗi code/testcase | Yes | Gửi `code`, `language`, `errorMessage`, `failedTestCases` nếu có. |
+| `REVIEW` | Đánh giá code/style/correctness | Yes | Gửi code hiện tại. |
+| `COMPLEXITY` | Phân tích Big-O | Yes | Gửi code hiện tại. |
+| `SOLUTION` | User muốn lời giải đầy đủ | No | Chỉ mode này backend cho phép full code solution. |
+| `NEXT_STEP` | User muốn một bước tiếp theo | No | Dùng cho quick action “Tôi cần làm gì tiếp theo?”. |
+
+Guardrails:
+- Ngoài `SOLUTION`, backend sẽ cố chặn full code/full solution.
+- Nếu model trả lời vượt policy, backend có thể thay câu trả lời bằng hướng dẫn an toàn.
+- FE không cần tự filter code, nhưng nên label rõ mode `SOLUTION` là “xem lời giải đầy đủ”.
+
+---
+
+## 7. Quick Actions
+
+Response lesson chat có `quickActions`.
+
+```ts
+type AiQuickAction = {
+  label: string;
+  intent:
+    | "FREE_CHAT"
+    | "EXPLAIN_PROBLEM"
+    | "GIVE_HINT"
+    | "NEXT_HINT"
+    | "DEBUG_CODE"
+    | "EXPLAIN_CODE"
+    | "EXPLAIN_ERROR"
+    | "ANALYZE_COMPLEXITY"
+    | "REVIEW_CODE"
+    | "SUGGEST_NEXT_STEP"
+    | "CONTINUE"
+    | "REGENERATE";
+  mode: string;
+  message: string;
+};
+```
+
+FE behavior:
+- Render quick actions sau assistant answer.
+- Khi user click quick action:
+  - Fill request `mode = quickAction.mode`.
+  - Fill request `message = quickAction.message`.
+  - Vẫn gửi kèm `conversationId`, `lessonId`, `lessonSlug`.
+  - Nếu mode yêu cầu code, gửi code editor hiện tại.
+
+---
+
+## 8. General Chat API
+
+### 8.1 General Chat Blocking
+
+```http
+POST /ai/general/chat
+Content-Type: application/json
+```
+
+Request:
+
+```json
+{
+  "conversationId": null,
+  "provider": "GEMINI",
+  "message": "Tôi mới học Java, nên bắt đầu lộ trình nào?"
+}
+```
+
+Response:
+
 ```json
 {
   "success": true,
   "data": {
-    "conversationId": "8fa85f64-5717-4562-b3fc-2c963f66afb2",
-    "answer": "Dựa trên mong muốn học cấu trúc dữ liệu giải thuật cơ bản của bạn, mình đề xuất bạn nên bắt đầu với Lộ trình Cấu Trúc Dữ Liệu và Thuật Toán Basic. Sau đó có thể chuyển sang Advanced.",
+    "conversationId": "1a89a0c4-bcd2-47d0-885a-b258d8736810",
+    "answer": "Dựa trên việc bạn mới học Java, mình đề xuất...",
     "roadmaps": [
       {
-        "name": "Cấu Trúc Dữ Liệu & Thuật Toán Cơ Bản",
-        "slug": "dsa-basic",
+        "name": "DSA Fundamentals",
+        "slug": "dsa-fundamentals",
         "level": "BEGINNER",
-        "description": "Lộ trình dành cho người mới bắt đầu làm quen với Array, Linked List, Stack, Queue...",
-        "thumbnailUrl": "https://cdn.algotutor.vn/roadmaps/dsa-basic.png",
-        "topicCount": 5,
-        "lessonCount": 24,
+        "description": "Master the essential data structures...",
+        "thumbnailUrl": "https://...",
+        "topicCount": 4,
+        "lessonCount": 14,
         "isPremium": false
       }
     ]
@@ -116,105 +356,87 @@ Sử dụng khi muốn hiển thị chữ chạy thời gian thực (như ChatGP
 
 ---
 
-### 2.5 Chat Tư Vấn Lộ Trình (Streaming Response)
-* **Endpoint**: `POST /ai/general/chat/stream`
-* **Header**: `Authorization: Bearer <token>`
-* **Accept**: `text/event-stream`
-* **Request Body**: `AiChatRequest`
-* **Response**: Dòng dữ liệu Server-Sent Events (SSE). *Xem hướng dẫn tích hợp chi tiết ở Mục 4.*
+### 8.2 General Chat Streaming
+
+```http
+POST /ai/general/chat/stream
+Content-Type: application/json
+Accept: text/event-stream
+```
+
+Request body giống `/ai/general/chat`.
+
+SSE events:
+
+```txt
+event: message
+data: {"answer":"Dựa trên mục tiêu của bạn, "}
+
+event: message
+data: {"answer":"mình đề xuất..."}
+
+event: metadata
+data: {"conversationId":"1a89a0c4-bcd2-47d0-885a-b258d8736810","roadmaps":[...]}
+```
+
+Khác với lesson metadata:
+- General metadata không có `mode`, `quickActions`, `canAskNextHint`.
+- General metadata có `roadmaps`.
 
 ---
 
-## 📋 3. Chi Tiết Các Cấu Trúc Dữ Liệu (DTO Schemas)
+## 9. General Chat Intent Router
 
-### 3.1 DTO Gửi Đi: `AiChatRequest`
-> [!IMPORTANT]
-> Backend áp dụng ràng buộc xác thực: **Ít nhất một trong hai trường `message` hoặc `code` phải được cung cấp**. Nếu thiếu cả hai, API sẽ trả về lỗi `400 Bad Request`.
-> Khi chuyển sang các mode cần code như `DEBUG`, `REVIEW`, `COMPLEXITY`, FE bắt buộc phải gửi trường `code`.
+Backend tự phân loại intent trong general chat:
 
-| Tên trường | Kiểu dữ liệu | Bắt buộc | Mô tả |
-| :--- | :--- | :---: | :--- |
-| `conversationId` | `String (UUID)` | Không | ID cuộc hội thoại cũ nếu muốn chat tiếp. Để `null` ở lượt chat đầu tiên (sau đó lưu ID trả về từ response để gửi lại ở các lượt tiếp theo). |
-| `lessonId` | `Long` | Không | ID bài học hiện tại (Bắt buộc đối với Lesson Chat để AI hiểu ngữ cảnh bài học). |
-| `lessonSlug` | `String` | Không | Slug bài học. |
-| `provider` | `String` | Không | Nhà cung cấp LLM mong muốn (ví dụ: `OPENAI`, `GEMINI`). Thường để mặc định. |
-| `mode` | `String` | **Có** | Chế độ chat. Giá trị thuộc enum `AiChatMode`: `HINT`, `EXPLAIN`, `DEBUG`, `REVIEW`, `COMPLEXITY`, `SOLUTION`, `NEXT_STEP`. |
-| `message` | `String` | Tùy chọn | Lời nhắn/câu hỏi từ người dùng. Tối đa 5,000 ký tự. |
-| `code` | `String` | Tùy chọn | Đoạn code hiện tại trong IDE của học viên. Tối đa 10,000 ký tự. (Bắt buộc với mode `DEBUG`, `REVIEW`, `COMPLEXITY`). |
-| `language` | `String` | Không | Ngôn ngữ lập trình của IDE (ví dụ: `cpp`, `java`, `python`). |
-| `judgeResult` | `String` | Không | Kết quả chấm thử từ trình chấm (ví dụ: `WRONG_ANSWER`, `TIME_LIMIT_EXCEEDED`). |
-| `errorMessage` | `String` | Không | Thông báo lỗi biên dịch/lỗi runtime nếu có. |
-| `failedTestCases` | `List<String>` | Không | Danh sách test case bị sai để AI phân tích. |
+| Intent | Khi nào xảy ra | FE cần làm gì |
+|---|---|---|
+| `ROADMAP_ADVISORY` | User hỏi lộ trình, học gì, bắt đầu học gì, chọn course | Render `roadmaps` cards nếu metadata/response có. |
+| `CODING_HELP` | User hỏi debug/code/error/testcase/Big-O chung | Render answer bình thường. Có thể gợi ý user chuyển sang lesson chat nếu đang ở bài học. |
+| `PLATFORM_HELP` | User hỏi cách dùng AlgoTutor, nộp bài, quiz, tài khoản | Render answer bình thường. |
+| `GENERAL` | Small talk hoặc câu hỏi học tập chung | Render answer bình thường. |
+
+FE không cần gửi intent. Backend tự classify.
 
 ---
 
-### 3.2 DTO Nhận Về (Khi không Stream)
-#### `AiChatResponse` (Dành cho Lesson Chat)
-* `conversationId` (`UUID`): ID cuộc hội thoại hiện tại.
-* `answer` (`String`): Câu trả lời dạng Markdown.
-* `mode` (`String`): Chế độ hiện tại của cuộc chat.
-* `quickActions` (`List<AiQuickAction>`): Danh sách hành động nhanh được đề xuất.
-* `sources` (`List<AiSource>`): Các nguồn tham khảo tài liệu học tập nếu có.
-* `canAskNextHint` (`Boolean`): Trả về `true`/`false` cho biết người dùng có thể bấm nút xin gợi ý tiếp theo hay không. Nếu bài học hết gợi ý, trường này sẽ là `false` (nút xin Hint nên bị mờ đi).
+## 10. FE SSE Implementation
 
-#### `AiGeneralChatResponse` (Dành cho General Chat)
-* `conversationId` (`UUID`): ID cuộc hội thoại hiện tại.
-* `answer` (`String`): Lời phản hồi tư vấn của AI.
-* `roadmaps` (`List<RoadmapInfo>`): Danh sách lộ trình được AI phân tích và đề xuất.
+Vì `EventSource` mặc định không hỗ trợ `POST`, FE nên dùng `fetch` + ReadableStream parser hoặc thư viện hỗ trợ POST SSE.
 
----
+Ví dụ TypeScript tối giản:
 
-## 🌊 4. Hướng Dẫn Tích Hợp API Stream (Server-Sent Events)
+```ts
+type SseHandler = {
+  onMessage: (chunk: string) => void;
+  onMetadata: (data: unknown) => void;
+  onError?: (error: unknown) => void;
+};
 
-Các API Stream (`/ai/chat/stream` và `/ai/general/chat/stream`) nhận yêu cầu bằng phương thức **`POST`** và trả về dòng stream. 
-> [!WARNING]
-> Không thể sử dụng đối tượng `new EventSource(url)` mặc định của trình duyệt vì nó chỉ hỗ trợ phương thức `GET` và không cho phép tùy biến HTTP Headers (đặc biệt là Token Authorization).
-
-### 🛠️ Giải Pháo Kỹ Thuật
-FE nên sử dụng API `fetch` tiêu chuẩn với `ReadableStream` hoặc cài đặt thư viện chuyên dụng như **`@microsoft/fetch-event-source`**.
-
-#### Ví dụ Tích Hợp bằng `fetch` và `ReadableStream` (Vanilla JS / TypeScript):
-```typescript
-interface ChunkData {
-  answer: string;
-}
-
-interface MetadataResponse {
-  conversationId: string;
-  mode?: string;
-  quickActions?: any[];
-  canAskNextHint?: boolean;
-  roadmaps?: any[];
-}
-
-async function sendAiChatStream(requestPayload: AiChatRequest, onChunk: (text: string) => void, onMetadata: (meta: MetadataResponse) => void) {
-  const token = localStorage.getItem("accessToken");
-
-  const response = await fetch("https://api.algotutor.vn/ai/chat/stream", {
+export async function postSse(
+  url: string,
+  body: unknown,
+  handlers: SseHandler,
+  signal?: AbortSignal
+) {
+  const res = await fetch(url, {
     method: "POST",
+    credentials: "include",
     headers: {
       "Content-Type": "application/json",
-      "Accept": "text/event-stream",
-      "Authorization": `Bearer ${token}`
+      "Accept": "text/event-stream"
     },
-    body: JSON.stringify(requestPayload)
+    body: JSON.stringify(body),
+    signal
   });
 
-  if (!response.ok) {
-    if (response.status === 429) {
-      // Xử lý giới hạn tần suất yêu cầu (Rate Limit)
-      const retryAfter = response.headers.get("Retry-After") || "60";
-      alert(`Bạn đã gửi yêu cầu quá nhanh. Vui lòng thử lại sau ${retryAfter} giây.`);
-    } else {
-      alert("Đã xảy ra lỗi khi kết nối với AI.");
-    }
-    return;
+  if (!res.ok || !res.body) {
+    const error = await res.json().catch(() => null);
+    throw { status: res.status, retryAfter: res.headers.get("Retry-After"), error };
   }
 
-  const reader = response.body?.getReader();
-  const decoder = new TextDecoder("utf-8");
-  if (!reader) return;
-
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
   let buffer = "";
 
   while (true) {
@@ -222,121 +444,216 @@ async function sendAiChatStream(requestPayload: AiChatRequest, onChunk: (text: s
     if (done) break;
 
     buffer += decoder.decode(value, { stream: true });
-    
-    // SSE phân tách các event bằng hai ký tự xuống dòng liên tiếp (\n\n)
-    const parts = buffer.split("\n\n");
-    buffer = parts.pop() || ""; // Giữ lại phần chưa hoàn thành trong buffer
+    const events = buffer.split(/\n\n/);
+    buffer = events.pop() ?? "";
 
-    for (const part of parts) {
-      if (part.trim() === "") continue;
+    for (const rawEvent of events) {
+      const eventName = rawEvent.match(/^event:\s*(.+)$/m)?.[1]?.trim();
+      const dataLine = rawEvent.match(/^data:\s*(.+)$/m)?.[1];
+      if (!eventName || !dataLine) continue;
 
-      // Xử lý dòng dữ liệu SSE: "event: message\ndata: {...}" hoặc "event: metadata\ndata: {...}"
-      const lines = part.split("\n");
-      let eventName = "message";
-      let dataString = "";
-
-      for (const line of lines) {
-        if (line.startsWith("event:")) {
-          eventName = line.replace("event:", "").trim();
-        } else if (line.startsWith("data:")) {
-          dataString = line.replace("data:", "").trim();
-        }
+      const data = JSON.parse(dataLine);
+      if (eventName === "message") {
+        handlers.onMessage(data.answer ?? "");
       }
-
-      if (!dataString) continue;
-
-      try {
-        const parsedData = JSON.parse(dataString);
-        if (eventName === "message") {
-          // data là AiChunkResponse { answer: "một phần text..." }
-          onChunk(parsedData.answer);
-        } else if (eventName === "metadata") {
-          // data là AiChatResponse (chứa conversationId, quickActions, canAskNextHint...)
-          onMetadata(parsedData);
-        }
-      } catch (e) {
-        console.error("Lỗi parse JSON chunk:", e, dataString);
+      if (eventName === "metadata") {
+        handlers.onMetadata(data);
       }
     }
   }
 }
 ```
 
+Abort/cancel:
+
+```ts
+const controller = new AbortController();
+
+postSse("/ai/chat/stream", payload, handlers, controller.signal);
+
+// user clicks stop
+controller.abort();
+```
+
 ---
 
-## 🎨 5. Hướng Dẫn Thiết Kế & Trải Nghiệm Người Dùng (UI/UX)
+## 11. Recommended FE State Model
 
-Để đảm bảo mang lại trải nghiệm tương tác AI cao cấp, hiện thực các tiêu chuẩn thiết kế sau:
+```ts
+type ChatRole = "user" | "assistant";
 
-### 5.1 Hiển Thị Khung Chat & Trình Trình Chiếu Chữ (Typing Indicator)
-* **Markdown Rendering**: Sử dụng thư viện markdown mạnh mẽ (như `react-markdown` kết hợp với `rehype-katex` để hiển thị biểu thức toán học và `react-syntax-highlighter` để highlight cú pháp code).
-* **Streaming Cursor**: Khi luồng stream đang hoạt động (`message` chunks liên tục gửi tới), hãy hiển thị một dấu nháy dọc nhấp nháy hoặc một chấm tròn nhỏ ở cuối dòng text (`typing-cursor`) để biểu thị AI đang tiếp tục viết.
-* **Auto Scroll**: Tự động cuộn khung chat xuống dưới cùng khi có chunk mới xuất hiện, nhưng hãy dừng auto-scroll nếu người dùng chủ động cuộn ngược lên trên để đọc lịch sử chat.
+type ChatMessage = {
+  id: string;
+  role: ChatRole;
+  content: string;
+  mode?: string;
+  pending?: boolean;
+};
 
-```css
-/* Animation nhấp nháy cho cursor stream */
-.typing-cursor {
-  display: inline-block;
-  width: 6px;
-  height: 15px;
-  background-color: var(--primary-color, #4f46e5);
-  margin-left: 4px;
-  animation: blink 1s step-start infinite;
-}
+type LessonChatState = {
+  conversationId?: string;
+  messages: ChatMessage[];
+  quickActions: AiQuickAction[];
+  canAskNextHint: boolean | null;
+  isStreaming: boolean;
+  error?: string;
+};
 
-@keyframes blink {
-  50% { opacity: 0; }
+type GeneralChatState = {
+  conversationId?: string;
+  messages: ChatMessage[];
+  roadmaps: RoadmapInfo[];
+  isStreaming: boolean;
+  error?: string;
+};
+```
+
+Lesson chat submit flow:
+
+1. Add user message locally.
+2. Add empty assistant message with `pending=true`.
+3. POST `/ai/chat/stream`.
+4. Append each `message.answer` chunk to pending assistant message.
+5. On `metadata`, update:
+   - `conversationId`
+   - `quickActions`
+   - `canAskNextHint`
+   - `pending=false`
+6. On error, mark pending assistant message as failed or remove it.
+
+General chat submit flow:
+
+1. Add user message locally.
+2. Add empty assistant message.
+3. POST `/ai/general/chat/stream`.
+4. Append `message.answer` chunks.
+5. On `metadata`, update:
+   - `conversationId`
+   - `roadmaps`
+6. Render roadmap cards if `roadmaps.length > 0`.
+
+---
+
+## 12. Lesson Chat Payload Builders
+
+### Hỏi hint
+
+```ts
+const payload = {
+  conversationId,
+  lessonId,
+  lessonSlug,
+  provider: null,
+  mode: "HINT",
+  message: "Cho tôi xin một gợi ý",
+  code: editorCode || null,
+  language,
+  judgeResult: lastJudge?.verdict ?? null,
+  errorMessage: lastJudge?.errorMessage ?? null,
+  failedTestCases: lastJudge?.failedTestCases ?? []
+};
+```
+
+### Debug code
+
+```ts
+const payload = {
+  conversationId,
+  lessonId,
+  lessonSlug,
+  provider: null,
+  mode: "DEBUG",
+  message: "Giúp tôi tìm lỗi trong code này",
+  code: editorCode,
+  language,
+  judgeResult: lastJudge?.verdict ?? null,
+  errorMessage: lastJudge?.errorMessage ?? null,
+  failedTestCases: lastJudge?.failedTestCases ?? []
+};
+```
+
+### Xem solution
+
+```ts
+const payload = {
+  conversationId,
+  lessonId,
+  lessonSlug,
+  provider: null,
+  mode: "SOLUTION",
+  message: "Cho tôi xem lời giải đầy đủ",
+  code: editorCode || null,
+  language,
+  judgeResult: null,
+  errorMessage: null,
+  failedTestCases: []
+};
+```
+
+---
+
+## 13. Error Handling Map
+
+| HTTP | Code | ErrorCode | FE behavior |
+|---:|---:|---|---|
+| 400 | 8000 | `INVALID_CHAT_MODE` | Check mode mapping. |
+| 400 | 8001 | `CODE_REQUIRED` | Prompt user to submit/include code. |
+| 404 | 8002 | `CONVERSATION_NOT_FOUND` | Reset `conversationId`, call bootstrap or start new chat. |
+| 400 | 8003 | `UNSUPPORTED_PROVIDER` | Remove provider override. |
+| 429 | 8004 | `RATE_LIMIT_EXCEEDED` | Disable send, show countdown from `Retry-After`. |
+| 503 | 8005 | `AI_SERVICE_UNAVAILABLE` | Show retry action. |
+| 400 | 8006 | `NO_MORE_HINTS` | Disable hint button. |
+| 503 | 8007 | `PROVIDER_NOT_CONFIGURED` | Hide provider/admin option; retry default later. |
+
+Validation example:
+
+```json
+{
+  "success": false,
+  "errors": {
+    "code": ["Code must not exceed 10000 characters"]
+  },
+  "code": 1
 }
 ```
 
 ---
 
-### 5.2 Quản Lý Trạng Thái Gợi Ý (Hint Policy UI)
-Đối với các bài tập Coding, hệ thống khống chế số lượt yêu cầu Gợi ý (`HINT`) để tránh việc học viên lạm dụng AI giải hộ toàn bộ bài toán.
-* Khi gọi API Bootstrap hoặc API Chat thông thường, hãy kiểm tra thuộc tính `canAskNextHint`.
-* **Giao diện**:
-  - Nếu `canAskNextHint === true`: Nút "Yêu cầu gợi ý" (hoặc Quick Action tương đương) được hiển thị bình thường.
-  - Nếu `canAskNextHint === false`: Vô hiệu hóa nút (Disable / Gray-out) và hiển thị tooltip ngắn: *"Bạn đã dùng hết số lượt gợi ý cho bài tập này. Hãy cố gắng tự hoàn thiện phần còn lại nhé!"*.
+## 14. UI/UX Notes
+
+- Use streaming endpoint by default.
+- Keep input disabled while `isStreaming=true`; allow “Stop” via `AbortController`.
+- For `HINT`, disable quick action if `canAskNextHint === false`.
+- For `SOLUTION`, show a confirmation UI if product wants to discourage early reveal.
+- Render Markdown safely. Sanitize HTML if markdown renderer allows raw HTML.
+- Code editor content can be large; avoid sending code for modes that do not need it unless useful.
+- For `DEBUG`, `REVIEW`, `COMPLEXITY`, always send current editor code.
+- For general roadmap chat, render roadmap cards from metadata/response `roadmaps`.
+- Store `conversationId` per lesson for lesson chat and separately for general chat.
 
 ---
 
-### 5.3 Hiển Thị Quick Actions (Hành Động Nhanh)
-Gợi ý nhanh giúp học viên không cần gõ phím mà vẫn tương tác nhanh với AI.
-* Khi kết thúc stream (nhận sự kiện `metadata`), hoặc khi gọi API Standard thành công, backend trả về danh sách `quickActions` dạng mảng:
-  ```json
-  {
-    "label": "Xem phân tích độ phức tạp",
-    "intent": "ANALYZE_COMPLEXITY",
-    "mode": "COMPLEXITY",
-    "message": "Phân tích độ phức tạp thời gian và không gian của code này giúp mình."
-  }
-  ```
-* **Cách xử lý khi bấm Quick Action**:
-  1. Hiển thị ngay nội dung của thuộc tính `message` vào khung chat như một tin nhắn gửi đi của User.
-  2. Tự động kích hoạt cuộc chat mới (Stream hoặc Standard) với thuộc tính `mode` lấy từ Quick Action đó (ở ví dụ trên là gửi request với `mode: "COMPLEXITY"` và đính kèm `code` hiện tại trong IDE).
+## 15. Endpoint Summary
+
+| Feature | Method | Endpoint | Response |
+|---|---|---|---|
+| Bootstrap lesson chat | GET | `/ai/chat/bootstrap?lessonSlug={slug}` | `ApiResponse<AiChatResponse>` |
+| Lesson chat blocking | POST | `/ai/chat` | `ApiResponse<AiChatResponse>` |
+| Lesson chat streaming | POST | `/ai/chat/stream` | SSE: `message`, `metadata` |
+| General chat blocking | POST | `/ai/general/chat` | `ApiResponse<AiGeneralChatResponse>` |
+| General chat streaming | POST | `/ai/general/chat/stream` | SSE: `message`, `metadata` |
 
 ---
 
-### 5.4 Hiển Thị Đề Xuất Lộ Trình (General Chat)
-Trong phân hệ General Chat, AI sẽ đề cử các Roadmap liên quan. 
-* Khi kết thúc stream hoặc API trả về mảng `roadmaps`, hãy kết xuất chúng thành danh sách các Card đẹp mắt bên dưới câu trả lời của AI.
-* **Layout Card**:
-  - Hình ảnh thu nhỏ (`thumbnailUrl`).
-  - Tên Lộ Trình (`name`) kèm badge độ khó (`level` - BEGINNER: Xanh lá, INTERMEDIATE: Vàng, ADVANCED: Đỏ).
-  - Tóm tắt thông tin: Số chủ đề (`topicCount` chủ đề), Số bài học (`lessonCount` bài học).
-  - Nhãn **Premium** nổi bật nếu `isPremium: true`.
-  - Nút hành động: "Bắt đầu học ngay" (chuyển hướng người dùng sang trang `/roadmaps/{slug}`).
+## 16. Minimal FE Checklist
 
----
-
-### 5.5 Xử Lý Lỗi & Giới Hạn Tần Suất (Rate Limiting)
-Hệ thống giới hạn tần suất gửi tin nhắn lên AI (mặc định tối đa 20 yêu cầu trong vòng 60 giây).
-* Khi vượt ngưỡng giới hạn, API sẽ trả về mã lỗi **`429 Too Many Requests`** đi kèm header `Retry-After` (thời gian chờ tính bằng giây).
-* **FE xử lý**:
-  1. Chặn người dùng gửi thêm tin nhắn.
-  2. Hiển thị banner/hộp thoại cảnh báo trực quan: *"Bạn đang thao tác quá nhanh. AI cần nghỉ ngơi một chút. Vui lòng thử lại sau X giây."*
-  3. Chạy bộ đếm ngược thời gian thực trên giao diện đếm lùi số giây này về 0, sau đó tự động mở khóa nút gửi tin nhắn.
-
----
-
-Chúc các bạn phát triển Frontend tích hợp thành công trải nghiệm AI đột phá trên AlgoTutor! Mọi thắc mắc về luồng dữ liệu vui lòng liên hệ team Backend.
+- [ ] Call bootstrap when entering lesson page.
+- [ ] Keep lesson `conversationId` in chat state.
+- [ ] Implement POST SSE parser.
+- [ ] Append `message.answer` chunks to current assistant bubble.
+- [ ] Parse lesson `metadata` and update quick actions + hint state.
+- [ ] Parse general `metadata` and update roadmap cards.
+- [ ] Send editor code for `DEBUG`, `REVIEW`, `COMPLEXITY`.
+- [ ] Respect `Retry-After` on 429.
+- [ ] Reset conversation if backend returns `CONVERSATION_NOT_FOUND`.
+- [ ] Render Markdown safely.
