@@ -183,36 +183,37 @@ export function LearningLayout({
     return (
         <div className="flex h-screen overflow-hidden bg-background noise-texture">
             {/* Desktop navigator */}
-            <aside className="relative hidden shrink-0 md:flex">
+            <aside
+                className={cn(
+                    "relative hidden shrink-0 border-r border-border/50 bg-card/70 shadow-[8px_0_24px_-28px_var(--foreground)] backdrop-blur-xl transition-[width] duration-300 ease-in-out md:flex",
+                    navigatorOpen ? "w-[318px]" : "w-12"
+                )}
+            >
                 <div
                     className={cn(
-                        "flex h-full flex-col overflow-hidden border-r border-border/50 bg-card/70 shadow-[8px_0_24px_-28px_var(--foreground)] backdrop-blur-xl transition-[width] duration-300 ease-in-out",
-                        navigatorOpen ? "w-[318px]" : "w-0 border-r-0"
+                        "flex h-full min-w-0 flex-col overflow-hidden transition-opacity duration-200",
+                        navigatorOpen ? "w-full opacity-100" : "w-0 opacity-0 pointer-events-none"
                     )}
                 >
-                    {navigatorOpen && (
-                        <>
-                            <div className="shrink-0 border-b border-border/50 bg-muted/30 px-4 py-3.5">
-                                <Link
-                                    href={`/roadmaps/${roadmapSlug}`}
-                                    className="group flex min-w-0 items-center gap-2"
-                                >
-                                    <ArrowLeftIcon className="size-4 shrink-0 text-muted-foreground transition-colors group-hover:text-primary" />
-                                    <span className="truncate text-sm font-bold text-foreground transition-colors group-hover:text-primary">
-                                        {roadmap.name}
-                                    </span>
-                                </Link>
-                            </div>
+                    <div className="shrink-0 border-b border-border/50 bg-muted/30 px-4 py-3.5">
+                        <Link
+                            href={`/roadmaps/${roadmapSlug}`}
+                            className="group flex min-w-0 items-center gap-2"
+                        >
+                            <ArrowLeftIcon className="size-4 shrink-0 text-muted-foreground transition-colors group-hover:text-primary" />
+                            <span className="truncate text-sm font-bold text-foreground transition-colors group-hover:text-primary">
+                                {roadmap.name}
+                            </span>
+                        </Link>
+                    </div>
 
-                            <RoadmapNavigator
-                                roadmap={roadmap}
-                                currentLessonSlug={lessonSlug}
-                                roadmapSlug={roadmapSlug}
-                                onLessonSelect={(slug) => handleLessonSelect(slug)}
-                                panelVariant="desktop"
-                            />
-                        </>
-                    )}
+                    <RoadmapNavigator
+                        roadmap={roadmap}
+                        currentLessonSlug={lessonSlug}
+                        roadmapSlug={roadmapSlug}
+                        onLessonSelect={(slug) => handleLessonSelect(slug)}
+                        panelVariant="desktop"
+                    />
                 </div>
 
                 <button
@@ -221,9 +222,9 @@ export function LearningLayout({
                     aria-label={navigatorOpen ? "Thu gọn mục lục" : "Mở mục lục"}
                     title={navigatorOpen ? "Thu gọn mục lục" : "Mở mục lục"}
                     className={cn(
-                        "absolute top-[4.25rem] z-20 flex size-8 items-center justify-center rounded-full border border-border/70 bg-background shadow-sm transition-all",
+                        "absolute top-16 z-30 flex size-8 items-center justify-center rounded-full border border-border/70 bg-background shadow-md transition-all",
                         "text-muted-foreground hover:-translate-y-0.5 hover:bg-muted hover:text-foreground",
-                        navigatorOpen ? "-right-4" : "-right-4"
+                        navigatorOpen ? "-right-4" : "left-1/2 -translate-x-1/2"
                     )}
                 >
                     {navigatorOpen ? (

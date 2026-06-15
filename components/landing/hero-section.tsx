@@ -1,11 +1,13 @@
 "use client";
 
-import {ArrowRight, BrainCircuit, PlayCircle, Zap} from "lucide-react";
+import {ArrowRight, BrainCircuit, CheckCircle2, PlayCircle, Zap} from "lucide-react";
 import {Badge} from "@/components/ui/badge";
 import {Button} from "@/components/ui/button";
 import {useApiData} from "@/hooks";
 import {Skeleton} from "@/components/ui/skeleton";
 import type {PlatformStats} from "@/lib/types/landing";
+import Link from "next/link";
+import {MOCK_STATS} from "@/lib/mock/landing-data";
 
 function HeroBanner() {
     return (
@@ -92,9 +94,8 @@ function HeroBanner() {
                         <div className="space-y-2">
                             <div className="bg-card rounded-lg p-3 border border-border/50 shadow-sm">
                                 <p className="text-xs text-card-foreground leading-relaxed">
-                                    <span className="text-primary font-medium">Hint: </span>
-                                    A hash map lets you look up complement in O(1) time. What value are you looking
-                                    for each element?
+                                    <span className="text-primary font-medium">Gợi ý: </span>
+                                    Hash map giúp tra cứu phần bù trong O(1). Với mỗi phần tử, bạn đang cần tìm giá trị nào?
                                 </p>
                             </div>
                             <div className="flex items-center gap-1.5">
@@ -102,7 +103,7 @@ function HeroBanner() {
                                      viewBox="0 0 24 24">
                                     <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
                                 </svg>
-                                <span className="text-xs text-muted-foreground">Hint consumed — no spoilers!</span>
+                                <span className="text-xs text-muted-foreground">Gợi ý theo từng bước, không lộ đáp án</span>
                             </div>
                         </div>
                     </div>
@@ -148,81 +149,76 @@ function HeroBanner() {
 export function HeroSection() {
     const {data: stats, isLoading} = useApiData<PlatformStats>("/landing/stats");
 
-    const studentCount = stats?.totalStudents
-        ? `${(stats.totalStudents / 1000).toFixed(0)}K+`
-        : isLoading ? "" : "50K+";
-    const problemCount = stats?.totalProblems
-        ? `${stats.totalProblems}+`
-        : isLoading ? "" : "1K+";
-    const topicCount = stats?.totalTopics
-        ? `${stats.totalTopics}`
-        : isLoading ? "" : "12";
+    const visibleStats = stats ?? MOCK_STATS;
+    const studentCount = `${Math.floor(visibleStats.totalStudents / 1000)}K+`;
+    const problemCount = `${visibleStats.totalProblems.toLocaleString("vi-VN")}+`;
+    const topicCount = `${visibleStats.totalTopics}`;
 
     return (
-        <section className="relative min-h-screen flex items-center overflow-hidden pt-16">
-            <div className="absolute inset-0 bg-dotgrid opacity-40"/>
+        <section className="relative flex min-h-dvh items-center overflow-hidden pt-16">
+            <div className="absolute inset-0 bg-dotgrid opacity-25"/>
             <div className="absolute top-20 left-1/4 w-96 h-96 bg-primary/10 orb-primary rounded-full blur-3xl"/>
             <div
                 className="absolute bottom-20 right-1/4 w-72 h-72 bg-[oklch(0.65_0.15_340)]/10 orb-primary rounded-full blur-3xl"/>
 
-            <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24 lg:py-32">
-                <div className="grid lg:grid-cols-2 gap-16 items-center">
+            <div className="relative mx-auto w-full max-w-7xl px-4 py-20 sm:px-6 lg:px-8 lg:py-24">
+                <div className="grid items-center gap-14 lg:grid-cols-[0.92fr_1.08fr]">
                     {/* Left: Text content */}
-                    <div className="space-y-8">
-                        <Badge variant="secondary" className="gap-1.5 text-sm px-3 py-1">
+                    <div className="space-y-7">
+                        <Badge variant="secondary" className="gap-1.5 px-3 py-1 text-sm">
                             <Zap className="size-3.5 text-primary"/>
                             Nền tảng học thuật toán thông minh
                         </Badge>
 
-                        <h1 className="text-5xl sm:text-6xl lg:text-7xl font-bold tracking-tight leading-[1.05]">
-                            Chinh phục
-                            <br/>
-                            <span className="text-gradient">Thuật toán</span>
-                            <br/>
-                            cùng AI Tutor
+                        <h1 className="max-w-xl text-balance text-5xl font-semibold leading-[0.98] tracking-[-0.055em] sm:text-6xl lg:text-7xl">
+                            Học thuật toán theo một lộ trình{" "}
+                            <span className="text-primary">thật sự rõ ràng.</span>
                         </h1>
 
-                        <p className="text-lg sm:text-xl text-muted-foreground max-w-lg leading-relaxed">
-                            Học thuật toán có hệ thống qua roadmap chi tiết, luyện code thực hành, và AI tutor hướng dẫn từng bước — không spoil đáp án.
+                        <p className="max-w-xl text-pretty text-lg leading-8 text-muted-foreground">
+                            Hiểu lý thuyết, luyện code ngay trong bài học và nhờ AI Tutor gợi ý đúng lúc, không đưa sẵn lời giải.
                         </p>
 
-                        <div className="flex flex-wrap items-center gap-3">
-                            <Button size="lg" className="gap-2 text-base px-6 h-12 glow-border">
-                                Bắt đầu miễn phí
-                                <ArrowRight className="size-4"/>
+                        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                            <Button size="lg" className="h-12 gap-2 px-6 text-base shadow-lg shadow-primary/20" asChild>
+                                <Link href="/auth?tab=signup">
+                                    Bắt đầu học miễn phí
+                                    <ArrowRight className="size-4"/>
+                                </Link>
                             </Button>
-                            <Button variant="outline" size="lg" className="gap-2 text-base px-6 h-12">
-                                <PlayCircle className="size-4"/>
-                                Xem Demo
+                            <Button variant="ghost" size="lg" className="h-12 justify-start gap-2 px-3 text-base" asChild>
+                                <a href="#ai-tutor">
+                                    <PlayCircle className="size-4"/>
+                                    Xem cách AI Tutor hỗ trợ
+                                </a>
                             </Button>
                         </div>
 
-                        {/* Dynamic stats — show skeletons while loading */}
-                        <div className="flex items-center gap-6 pt-2">
-                            {isLoading ? (
-                                <>
-                                    <Skeleton className="h-6 w-16"/>
-                                    <Skeleton className="h-6 w-16"/>
-                                    <Skeleton className="h-6 w-12"/>
-                                </>
-                            ) : (
-                                <>
-                                    {[
-                                        {value: studentCount, label: "Học viên"},
-                                        {value: problemCount, label: "Bài tập"},
-                                        {value: topicCount, label: "Chủ đề"},
-                                    ].map((stat) => (
-                                        <div key={stat.label} className="flex items-center gap-2">
-                                            <span className="text-2xl font-bold text-foreground">{stat.value}</span>
-                                            <span className="text-sm text-muted-foreground">{stat.label}</span>
-                                        </div>
-                                    ))}
-                                </>
-                            )}
+                        <div className="flex flex-wrap gap-x-6 gap-y-3 pt-1 text-sm text-muted-foreground">
+                            {["Không cần thẻ thanh toán", "Lưu tiến độ học", "Gợi ý theo ngữ cảnh"].map((item) => (
+                                <span key={item} className="flex items-center gap-1.5">
+                                    <CheckCircle2 className="size-4 text-difficulty-easy"/>
+                                    {item}
+                                </span>
+                            ))}
                         </div>
                     </div>
 
-                    <HeroBanner/>
+                    <div className="space-y-5">
+                        <HeroBanner/>
+                        <div className="grid grid-cols-3 gap-3" aria-label="Thống kê nền tảng">
+                            {[
+                                {value: studentCount, label: "học viên"},
+                                {value: problemCount, label: "bài tập"},
+                                {value: topicCount, label: "chủ đề"},
+                            ].map((stat) => (
+                                <div key={stat.label} className="rounded-xl border border-border/70 bg-card/70 px-3 py-3 text-center backdrop-blur-sm">
+                                    {isLoading ? <Skeleton className="mx-auto mb-1 h-6 w-14"/> : <strong className="block font-mono text-lg">{stat.value}</strong>}
+                                    <span className="text-xs text-muted-foreground">{stat.label}</span>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
                 </div>
             </div>
 

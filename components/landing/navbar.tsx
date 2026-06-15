@@ -1,10 +1,11 @@
 "use client";
 
 import {useEffect, useState} from "react";
-import {Braces} from "lucide-react";
+import {Braces, Menu, X} from "lucide-react";
 import {cn} from "@/lib/utils";
 import {ThemeToggle} from "@/components/theme-toggle";
 import CtaButton from "@/components/landing/cta-button";
+import Link from "next/link";
 
 export function Navbar() {
     const [scrolled, setScrolled] = useState(false);
@@ -17,16 +18,17 @@ export function Navbar() {
     }, []);
 
     const navLinks = [
-        {label: "Roadmaps", href: "#roadmaps"},
-        {label: "Problems", href: "#features"},
-        {label: "How It Works", href: "#how-it-works"},
-        {label: "Pricing", href: "#pricing"},
+        {label: "Lộ trình", href: "#roadmaps"},
+        {label: "Cách học", href: "#how-it-works"},
+        {label: "AI Tutor", href: "#ai-tutor"},
+        {label: "Hỏi đáp", href: "#faq"},
     ];
 
     return (
         <nav
+            aria-label="Điều hướng chính"
             className={cn(
-                "fixed top-0 inset-x-0 z-50 transition-all duration-300",
+                "fixed inset-x-0 top-0 z-50 transition-all duration-300",
                 scrolled
                     ? "bg-background/80 backdrop-blur-xl border-b border-border/50 shadow-sm"
                     : "bg-transparent"
@@ -34,8 +36,7 @@ export function Navbar() {
         >
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="flex items-center justify-between h-16">
-                    {/* Logo */}
-                    <a href="#" className="flex items-center gap-2 group">
+                    <Link href="/" className="flex items-center gap-2 group" aria-label="AlgoTutor - Trang chủ">
                         <div
                             className="size-8 rounded-lg bg-primary flex items-center justify-center group-hover:scale-110 transition-transform">
                             <Braces className="size-4 text-primary-foreground"/>
@@ -43,7 +44,7 @@ export function Navbar() {
                         <span className="font-bold text-lg tracking-tight">
                             Algo<span className="text-primary">Tutor</span>
                         </span>
-                    </a>
+                    </Link>
 
                     {/* Desktop Links */}
                     <div className="hidden md:flex items-center gap-1">
@@ -68,17 +69,10 @@ export function Navbar() {
                     <button
                         className="md:hidden p-2 rounded-md hover:bg-muted"
                         onClick={() => setMobileOpen(!mobileOpen)}
-                        aria-label="Toggle menu"
+                        aria-label={mobileOpen ? "Đóng menu" : "Mở menu"}
+                        aria-expanded={mobileOpen}
                     >
-                        <svg className="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            {mobileOpen ? (
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                                      d="M6 18L18 6M6 6l12 12"/>
-                            ) : (
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                                      d="M4 6h16M4 12h16M4 18h16"/>
-                            )}
-                        </svg>
+                        {mobileOpen ? <X className="size-5"/> : <Menu className="size-5"/>}
                     </button>
                 </div>
 
@@ -96,6 +90,7 @@ export function Navbar() {
                             </a>
                         ))}
                         <div className="flex items-center gap-2 mt-4 px-3">
+                            <ThemeToggle/>
                             <CtaButton/>
                         </div>
                     </div>

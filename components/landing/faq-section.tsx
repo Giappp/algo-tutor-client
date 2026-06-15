@@ -1,56 +1,53 @@
 "use client";
 
-import {Badge} from "@/components/ui/badge";
 import type {FaqItem} from "@/lib/types/landing";
 
 export const MOCK_FAQS: FaqItem[] = [
     {
         id: "faq-1",
-        question: "Do I need prior coding experience?",
+        question: "Mình cần biết lập trình đến mức nào để bắt đầu?",
         answer:
-            "Not at all. Our Arrays & Strings roadmap starts from absolute zero. We assume no prior knowledge of algorithms — just basic programming syntax.",
+            "Bạn chỉ cần nắm cú pháp cơ bản của một ngôn ngữ lập trình. Các lộ trình nhập môn sẽ xây nền giải thuật từ đầu.",
         order: 1,
     },
     {
         id: "faq-2",
-        question: "How does the AI tutor work?",
+        question: "AI Tutor có đưa luôn đáp án không?",
         answer:
-            "The AI tutor analyzes your submitted code using a vector database and an LLM. It understands the current lesson context and provides hints that are scoped to what you've already learned — never spoiling advanced solutions.",
+            "Không. AI Tutor ưu tiên câu hỏi gợi mở và gợi ý theo từng mức, dựa trên code và phạm vi kiến thức của bài học hiện tại.",
         order: 2,
     },
     {
         id: "faq-3",
-        question: "Is AlgoTutor free?",
+        question: "AlgoTutor có miễn phí không?",
         answer:
-            "Yes! The core learning experience — all roadmaps, theory lessons, and coding problems — is completely free. A premium tier adds advanced analytics, mentorship, and personalized study plans.",
+            "Các trải nghiệm học cốt lõi gồm lộ trình, lý thuyết và bài tập đều có thể bắt đầu miễn phí.",
         order: 3,
     },
     {
         id: "faq-4",
-        question: "How are problems graded?",
+        question: "Bài code được chấm như thế nào?",
         answer:
-            "Every problem is auto-graded against a suite of test cases covering edge cases, performance, and correctness. You'll see detailed feedback for each failing test case.",
+            "Mỗi bài được chạy qua bộ test case kiểm tra tính đúng đắn và các trường hợp biên. Bạn sẽ thấy phản hồi chi tiết cho từng kết quả.",
         order: 4,
     },
     {
         id: "faq-5",
-        question: "Can I track my progress?",
+        question: "Tiến độ học có được lưu lại không?",
         answer:
-            "Absolutely. Your (dashboard) shows completion rates per topic, streaks, difficulty distribution, and hints consumed — giving you a clear picture of your strengths and areas to improve.",
+            "Có. Trang học lưu bài đã hoàn thành, tiến độ từng lộ trình và bài học gần nhất để bạn tiếp tục đúng chỗ.",
         order: 5,
     },
 ];
 
 export function FaqSection() {
     return (
-        <section id="pricing" className="py-24 lg:py-32 bg-muted/10">
+        <section id="faq" className="bg-muted/10 py-24 lg:py-32">
             <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
-                <div className="text-center mb-12 reveal-up">
-                    <Badge variant="secondary" className="text-xs mb-3">
-                        FAQ
-                    </Badge>
-                    <h2 className="text-4xl sm:text-5xl font-bold tracking-tight mb-4">
-                        Common questions
+                <div className="mb-12 reveal-up">
+                    <p className="mb-3 text-sm font-medium text-primary">Câu hỏi thường gặp</p>
+                    <h2 className="text-balance text-4xl font-semibold tracking-tight sm:text-5xl">
+                        Những điều bạn nên biết trước khi bắt đầu.
                     </h2>
                 </div>
 

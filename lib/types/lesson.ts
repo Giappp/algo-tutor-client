@@ -68,6 +68,11 @@ export interface LessonContext {
 }
 
 export interface TestResult {
+    index?: number;
+    status?: SubmissionStatus;
+    stdout?: string;
+    stderr?: string;
+    memoryKb?: number;
     stdin: string;
     expected: string;
     actual: string;
@@ -77,11 +82,22 @@ export interface TestResult {
     error?: string;
 }
 
+export type SubmissionStatus =
+    | "PENDING"
+    | "PROCESSING"
+    | "ACCEPTED"
+    | "WRONG_ANSWER"
+    | "TIME_LIMIT_EXCEEDED"
+    | "MEMORY_LIMIT_EXCEEDED"
+    | "RUNTIME_ERROR"
+    | "COMPILATION_ERROR"
+    | "SYSTEM_ERROR";
+
 export interface Submission {
     id: string;
     timestamp: Date;
     language: string;
-    status: "PENDING" | "ACCEPTED" | "WRONG_ANSWER" | "RUNTIME_ERROR" | "TIME_LIMIT_EXCEEDED" | "COMPILATION_ERROR";
+    status: SubmissionStatus;
     passedTestcases: number;
     totalTestcases: number;
     executionTime: number;
@@ -94,6 +110,7 @@ export interface ChatMessage {
     role: "user" | "assistant" | "system";
     content: string;
     timestamp: Date;
+    mode?: string | null;
 }
 
 // Quiz Attempt types

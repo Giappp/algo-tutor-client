@@ -6,7 +6,7 @@ import {zodResolver} from "@hookform/resolvers/zod"
 import {z} from "zod"
 import {Check, Eye, EyeOff, Loader2} from "lucide-react"
 import {toast} from "sonner"
-import {useRouter} from "next/navigation"
+import {useRouter, useSearchParams} from "next/navigation"
 
 import {Button} from "@/components/ui/button"
 import {Input} from "@/components/ui/input"
@@ -14,33 +14,34 @@ import {Label} from "@/components/ui/label"
 import {signUp} from "@/api/auth"
 import {cn} from "@/lib/utils"
 import {isAxiosError} from "axios";
+import {ApiResponse} from "@/lib/types";
 
 const signUpSchema = z
     .object({
         username: z
             .string()
-            .min(3, "Username must be at least 3 characters")
-            .max(20, "Username must be at most 20 characters")
-            .regex(/^[a-zA-Z0-9_]+$/, "Username can only contain letters, numbers, and underscores"),
-        email: z.email("Please enter a valid email address"),
+            .min(3, "Tên đăng nhập cần có ít nhất 3 ký tự")
+            .max(20, "Tên đăng nhập không được vượt quá 20 ký tự")
+            .regex(/^[a-zA-Z0-9_]+$/, "Chỉ dùng chữ cái, chữ số và dấu gạch dưới"),
+        email: z.email("Vui lòng nhập địa chỉ email hợp lệ"),
         password: z
             .string()
-            .min(8, "Password must be at least 8 characters")
-            .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
-            .regex(/[0-9]/, "Password must contain at least one number"),
+            .min(8, "Mật khẩu cần có ít nhất 8 ký tự")
+            .regex(/[A-Z]/, "Mật khẩu cần có ít nhất một chữ in hoa")
+            .regex(/[0-9]/, "Mật khẩu cần có ít nhất một chữ số"),
         confirmPassword: z.string(),
     })
     .refine((data) => data.password === data.confirmPassword, {
-        message: "Passwords do not match",
+        message: "Mật khẩu xác nhận chưa khớp",
         path: ["confirmPassword"],
     })
 
 type SignUpFormData = z.infer<typeof signUpSchema>
 
 const PASSWORD_RULES = [
-    {label: "At least 8 characters", test: (p: string) => p.length >= 8},
-    {label: "One uppercase letter", test: (p: string) => /[A-Z]/.test(p)},
-    {label: "One number", test: (p: string) => /[0-9]/.test(p)},
+    {label: "Ít nhất 8 ký tự", test: (p: string) => p.length >= 8},
+    {label: "Có chữ in hoa", test: (p: string) => /[A-Z]/.test(p)},
+    {label: "Có chữ số", test: (p: string) => /[0-9]/.test(p)},
 ]
 
 export function SignUpForm() {
@@ -49,6 +50,7 @@ export function SignUpForm() {
     const [isSubmitting, setIsSubmitting] = useState(false)
     const [agreedToTerms, setAgreedToTerms] = useState(false)
     const router = useRouter()
+    const searchParams = useSearchParams()
 
     const {
         register,
@@ -76,30 +78,45 @@ export function SignUpForm() {
 
     const strengthLabel = useMemo(() => {
         if (passwordStrength === 0) return null
-        if (passwordStrength < 50) return "Weak"
-        if (passwordStrength < 100) return "Medium"
-        return "Strong"
+        if (passwordStrength < 50) return "Yếu"
+        if (passwordStrength < 100) return "Khá"
+        return "Mạnh"
     }, [passwordStrength])
 
     const onSubmit = async (data: SignUpFormData) => {
         if (!agreedToTerms) {
-            toast.error("Please agree to the terms of service")
+            toast.warning("Vui lòng đồng ý với điều khoản sử dụng")
             return
         }
-        console.log("Submit...")
         setIsSubmitting(true)
         try {
             const response = await signUp(data)
             if (response.success) {
-                toast.success(response.message || "Account created successfully!")
-                router.push("/auth?tab=signin")
-                router.refresh()
+                toast.success(response.message || "Tạo tài khoản thành công")
+                const params = new URLSearchParams(searchParams.toString())
+                params.set("tab", "signin")
+                params.set("registered", "1")
+                router.replace(`/auth?${params.toString()}`, {scroll: false})
             }
         } catch (error) {
             if (isAxiosError(error) && error.response?.data) {
-                setError("root", {
-                    message: error?.response?.data?.message || error?.message || "Failed to create account. Please try again.",
-                })
+                const responseData = error.response.data as ApiResponse<null>
+                if (responseData.errors && typeof responseData.errors !== "string") {
+                    Object.entries(responseData.errors).forEach(([fieldName, messages]) => {
+                        setError(fieldName as keyof SignUpFormData, {
+                            type: "server",
+                            message: messages[0],
+                        })
+                    })
+                } else {
+                    setError("root", {
+                        message: typeof responseData.errors === "string"
+                            ? responseData.errors
+                            : responseData.message || "Không thể tạo tài khoản. Vui lòng thử lại.",
+                    })
+                }
+            } else {
+                setError("root", {message: "Không thể kết nối tới máy chủ."})
             }
         } finally {
             setIsSubmitting(false)
@@ -107,20 +124,29 @@ export function SignUpForm() {
     }
 
     return (
-        <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
+        <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-5">
+            <div className="mb-1">
+                <p className="text-sm font-medium text-primary">Bắt đầu miễn phí</p>
+                <h2 className="mt-1 text-2xl font-semibold tracking-tight">Tạo tài khoản AlgoTutor</h2>
+                <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                    Lưu tiến độ học và nhận gợi ý phù hợp với mục tiêu của bạn.
+                </p>
+            </div>
+
             {errors.root && (
                 <div
-                    className="rounded-lg bg-destructive/10 border border-destructive/20 px-4 py-2.5 text-sm text-destructive">
+                    role="alert"
+                    className="rounded-xl bg-destructive/10 border border-destructive/20 px-4 py-3 text-sm text-destructive">
                     {errors.root.message}
                 </div>
             )}
 
             <div className="space-y-1.5">
-                <Label htmlFor="signup-username">Username</Label>
+                <Label htmlFor="signup-username">Tên đăng nhập</Label>
                 <Input
                     id="signup-username"
-                    className="h-9"
-                    placeholder="Choose a username"
+                    className="h-11 px-3"
+                    placeholder="Chọn tên đăng nhập"
                     autoComplete="username"
                     aria-invalid={!!errors.username}
                     {...register("username")}
@@ -134,7 +160,7 @@ export function SignUpForm() {
                 <Label htmlFor="signup-email">Email</Label>
                 <Input
                     id="signup-email"
-                    className="h-9"
+                    className="h-11 px-3"
                     type="email"
                     placeholder="you@example.com"
                     autoComplete="email"
@@ -147,13 +173,13 @@ export function SignUpForm() {
             </div>
 
             <div className="space-y-1.5">
-                <Label htmlFor="signup-password">Password</Label>
+                <Label htmlFor="signup-password">Mật khẩu</Label>
                 <div className="relative">
                     <Input
                         id="signup-password"
-                        className="h-9 pr-10"
+                        className="h-11 px-3 pr-11"
                         type={showPassword ? "text" : "password"}
-                        placeholder="Create a strong password"
+                        placeholder="Tạo mật khẩu an toàn"
                         autoComplete="new-password"
                         aria-invalid={!!errors.password}
                         {...register("password")}
@@ -161,8 +187,8 @@ export function SignUpForm() {
                     <button
                         type="button"
                         onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                        aria-label={showPassword ? "Hide password" : "Show password"}
+                        className="absolute right-2.5 top-1/2 flex size-7 -translate-y-1/2 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                        aria-label={showPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
                     >
                         {showPassword ? <EyeOff className="size-4"/> : <Eye className="size-4"/>}
                     </button>
@@ -191,7 +217,7 @@ export function SignUpForm() {
                                         : "text-difficulty-easy"
                             )}
                         >
-                            {strengthLabel} password
+                            Mật khẩu {strengthLabel?.toLowerCase()}
                         </p>
                     </div>
                 )}
@@ -202,13 +228,13 @@ export function SignUpForm() {
             </div>
 
             <div className="space-y-1.5">
-                <Label htmlFor="signup-confirm-password">Confirm Password</Label>
+                <Label htmlFor="signup-confirm-password">Xác nhận mật khẩu</Label>
                 <div className="relative">
                     <Input
                         id="signup-confirm-password"
-                        className="h-9 pr-10"
+                        className="h-11 px-3 pr-11"
                         type={showConfirmPassword ? "text" : "password"}
-                        placeholder="Confirm your password"
+                        placeholder="Nhập lại mật khẩu"
                         autoComplete="new-password"
                         aria-invalid={!!errors.confirmPassword}
                         {...register("confirmPassword")}
@@ -216,8 +242,8 @@ export function SignUpForm() {
                     <button
                         type="button"
                         onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                        aria-label={showConfirmPassword ? "Hide password" : "Show password"}
+                        className="absolute right-2.5 top-1/2 flex size-7 -translate-y-1/2 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                        aria-label={showConfirmPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
                     >
                         {showConfirmPassword ? (
                             <EyeOff className="size-4"/>
@@ -248,25 +274,18 @@ export function SignUpForm() {
                     {agreedToTerms && <Check className="size-3 text-primary-foreground"/>}
                 </button>
                 <p className="text-xs text-muted-foreground leading-relaxed">
-                    I agree to the{" "}
-                    <a href="#" className="text-primary hover:underline">
-                        Terms of Service
-                    </a>{" "}
-                    and{" "}
-                    <a href="#" className="text-primary hover:underline">
-                        Privacy Policy
-                    </a>
+                    Tôi đồng ý với điều khoản sử dụng và chính sách bảo mật của AlgoTutor.
                 </p>
             </div>
 
-            <Button type="submit" size="lg" className="w-full mt-2" disabled={isSubmitting}>
+            <Button type="submit" size="lg" className="mt-1 h-11 w-full" disabled={isSubmitting}>
                 {isSubmitting ? (
                     <>
                         <Loader2 className="size-4 animate-spin"/>
-                        Creating account...
+                        Đang tạo tài khoản...
                     </>
                 ) : (
-                    "Create Account"
+                    "Tạo tài khoản"
                 )}
             </Button>
 
@@ -274,8 +293,8 @@ export function SignUpForm() {
                 <div className="absolute inset-0 flex items-center">
                     <span className="w-full border-t border-border"/>
                 </div>
-                <div className="relative flex justify-center text-xs uppercase">
-                    <span className="bg-card px-3 text-muted-foreground">or continue with</span>
+                <div className="relative flex justify-center text-xs">
+                    <span className="bg-card px-3 text-muted-foreground">hoặc tiếp tục với</span>
                 </div>
             </div>
 

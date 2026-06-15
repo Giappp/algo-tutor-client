@@ -3,8 +3,10 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import {
+    getGeneralChatHistory,
     sendGeneralChat,
     streamGeneralChat,
+    type AiChatHistory,
     type AiChatError,
     type GeneralChatRequest,
     type GeneralChatResponse,
@@ -18,6 +20,7 @@ export interface ChatMessage {
     role: "user" | "assistant";
     content: string;
     timestamp: Date;
+    mode?: string | null;
     roadmaps?: RoadmapRecommendation[];
 }
 
@@ -128,6 +131,20 @@ function getRoadmaps(data: GeneralChatResponse): RoadmapRecommendation[] {
     return data.recommendedRoadmaps ?? data.roadmaps ?? [];
 }
 
+function mapHistoryMessages(history: AiChatHistory): ChatMessage[] {
+    return history.messages.flatMap((message) => {
+        if (message.role !== "USER" && message.role !== "ASSISTANT") return [];
+
+        return [{
+            id: message.id,
+            role: message.role === "USER" ? "user" as const : "assistant" as const,
+            content: message.content,
+            timestamp: new Date(message.createdAt),
+            mode: message.mode,
+        }];
+    });
+}
+
 function getGeneralChatError(error: unknown): AiChatError | null {
     const maybeError = error as Partial<AiChatError>;
     return maybeError?.code ? (maybeError as AiChatError) : null;
@@ -148,18 +165,42 @@ export function useGeneralAIChat(isOpen: boolean) {
 
         const storedMessages = loadGeneralChatHistory();
         const storedConversationId = loadConversationId();
+        let active = true;
 
-        const timer = setTimeout(() => {
-            if (storedMessages.length > 0) {
-                setMessages(storedMessages);
-                setConversationId(storedConversationId);
-            } else {
-                setMessages([createWelcomeMessage()]);
+        const restoreChat = async () => {
+            await Promise.resolve();
+            if (!active) return;
+
+            setMessages(storedMessages.length > 0 ? storedMessages : [createWelcomeMessage()]);
+            setConversationId(storedConversationId);
+
+            if (!storedConversationId) return;
+
+            try {
+                const history = await getGeneralChatHistory(storedConversationId);
+                if (!active) return;
+
+                const historyMessages = mapHistoryMessages(history);
+                setMessages(historyMessages.length > 0 ? historyMessages : [createWelcomeMessage()]);
+                setConversationId(history.conversationId);
+            } catch (error) {
+                if (!active) return;
+
+                const chatError = getGeneralChatError(error);
+                if (chatError?.code !== "CONVERSATION_NOT_FOUND") return;
+
+                saveConversationId(null);
+                localStorage.removeItem(GENERAL_STORAGE_KEY);
                 setConversationId(null);
+                setMessages([createWelcomeMessage()]);
             }
-        }, 0);
+        };
 
-        return () => clearTimeout(timer);
+        void restoreChat();
+
+        return () => {
+            active = false;
+        };
     }, [isOpen]);
 
     useEffect(() => {
@@ -253,13 +294,15 @@ export function useGeneralAIChat(isOpen: boolean) {
         []
     );
 
-    const setAssistantError = useCallback((messageId: string) => {
+    const setAssistantError = useCallback((messageId: string, errorMessage?: string) => {
         setMessages((prev) =>
             prev.map((message) =>
                 message.id === messageId
                     ? {
                         ...message,
-                        content: CONNECTION_ERROR_MESSAGE,
+                        content: errorMessage
+                            ? `⚠️ **Không thể trả lời:** ${errorMessage}`
+                            : CONNECTION_ERROR_MESSAGE,
                     }
                     : message
             )
@@ -320,7 +363,7 @@ export function useGeneralAIChat(isOpen: boolean) {
                     if (chatError?.code === "RATE_LIMITED") {
                         const retryAfter = chatError.retryAfterSeconds ?? 60;
                         setRateLimitCountdown(retryAfter);
-                        toast.error(`Bạn đang thao tác quá nhanh. Vui lòng thử lại sau ${retryAfter} giây.`);
+                        toast.warning(`Bạn đang thao tác quá nhanh. Vui lòng thử lại sau ${retryAfter} giây.`);
                         setMessages((prev) => prev.filter((m) => m.id !== assistantMessage.id));
                         return;
                     }
@@ -332,6 +375,8 @@ export function useGeneralAIChat(isOpen: boolean) {
                             ...requestBody,
                             conversationId: undefined,
                         };
+                    } else if (chatError?.status) {
+                        throw error;
                     }
 
                     console.warn(
@@ -360,7 +405,7 @@ export function useGeneralAIChat(isOpen: boolean) {
                 if (chatError?.code === "RATE_LIMITED") {
                     const retryAfter = chatError.retryAfterSeconds ?? 60;
                     setRateLimitCountdown(retryAfter);
-                    toast.error(`Bạn đang thao tác quá nhanh. Vui lòng thử lại sau ${retryAfter} giây.`);
+                    toast.warning(`Bạn đang thao tác quá nhanh. Vui lòng thử lại sau ${retryAfter} giây.`);
                     setMessages((prev) => prev.filter((m) => m.id !== assistantMessage.id));
                     return;
                 }
@@ -368,16 +413,16 @@ export function useGeneralAIChat(isOpen: boolean) {
                 if (chatError?.code === "CONVERSATION_NOT_FOUND") {
                     setConversationId(null);
                     saveConversationId(null);
-                    toast.error("Phiên chat AI đã hết hạn. Mình sẽ bắt đầu lại ở tin nhắn tiếp theo.");
+                    toast.info("Phiên chat AI đã hết hạn. Mình sẽ bắt đầu lại ở tin nhắn tiếp theo.");
                     setMessages((prev) => prev.filter((m) => m.id !== assistantMessage.id));
                     return;
                 }
 
                 console.error("General AI chat failed.", error);
-                toast.error(
-                    "Không thể kết nối với máy chủ AI. Vui lòng kiểm tra lại kết nối mạng!"
-                );
-                setAssistantError(assistantMessage.id);
+                const errorMessage = chatError?.message
+                    || "Không thể kết nối với máy chủ AI. Vui lòng kiểm tra lại kết nối mạng!";
+                toast.error(errorMessage);
+                setAssistantError(assistantMessage.id, chatError?.message);
             } finally {
                 if (abortControllerRef.current === abortController) {
                     abortControllerRef.current = null;

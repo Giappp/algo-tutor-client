@@ -1,4 +1,3 @@
-import React from 'react'
 import {Button} from "@/components/ui/button";
 import Link from "next/link";
 import {ArrowRight, Loader2} from "lucide-react";
@@ -9,7 +8,9 @@ const CtaButton = () => {
 
     if (isLoading) {
         return (
-            <Loader2 className="animate-spin"/>
+            <div className="flex h-8 w-24 items-center justify-center" aria-label="Đang kiểm tra phiên đăng nhập">
+                <Loader2 className="size-4 animate-spin text-muted-foreground"/>
+            </div>
         )
     }
 
@@ -19,14 +20,14 @@ const CtaButton = () => {
                 {/* Desktop */}
                 <Button variant="gradient" size="sm" className="hidden md:inline-flex gap-1.5" asChild>
                     <Link href="/home">
-                        Go to Dashboard
+                        Vào trang học
                         <ArrowRight className="size-3.5"/>
                     </Link>
                 </Button>
                 {/* Mobile */}
                 <Button variant="gradient" size="sm" className="flex-1 md:hidden gap-1.5" asChild>
                     <Link href="/home">
-                        Go to Dashboard
+                        Vào trang học
                         <ArrowRight className="size-3.5"/>
                     </Link>
                 </Button>
@@ -37,11 +38,11 @@ const CtaButton = () => {
     return (
         <>
             <Button variant="ghost" size="sm" asChild>
-                <Link href="/auth">Sign In</Link>
+                <Link href="/auth">Đăng nhập</Link>
             </Button>
             <Button size="sm" className="gap-1.5" asChild>
                 <Link href="/auth?tab=signup">
-                    Get Started
+                    Học miễn phí
                     <ArrowRight className="size-3.5"/>
                 </Link>
             </Button>

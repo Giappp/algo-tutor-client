@@ -29,6 +29,13 @@ const VERDICT_CONFIG: Record<Verdict, VerdictConfig> = {
         bgColor: "bg-zinc-800/20 dark:bg-zinc-100/5",
         borderColor: "border-zinc-500/20",
     },
+    PROCESSING: {
+        label: "Processing...",
+        icon: Loader2Icon,
+        color: "text-blue-500 animate-spin",
+        bgColor: "bg-blue-500/10",
+        borderColor: "border-blue-500/30",
+    },
     ACCEPTED: {
         label: "Accepted",
         icon: CheckCircleIcon,
@@ -57,12 +64,26 @@ const VERDICT_CONFIG: Record<Verdict, VerdictConfig> = {
         bgColor: "bg-yellow-500/10",
         borderColor: "border-yellow-500/30",
     },
+    MEMORY_LIMIT_EXCEEDED: {
+        label: "Memory Limit Exceeded",
+        icon: AlertTriangleIcon,
+        color: "text-yellow-500",
+        bgColor: "bg-yellow-500/10",
+        borderColor: "border-yellow-500/30",
+    },
     COMPILATION_ERROR: {
         label: "Compilation Error",
         icon: ZapIcon,
         color: "text-orange-500",
         bgColor: "bg-orange-500/10",
         borderColor: "border-orange-500/30",
+    },
+    SYSTEM_ERROR: {
+        label: "System Error",
+        icon: AlertTriangleIcon,
+        color: "text-red-500",
+        bgColor: "bg-red-500/10",
+        borderColor: "border-red-500/30",
     },
 };
 

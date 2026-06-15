@@ -36,7 +36,11 @@ export function SubmissionRow({ submission }: SubmissionRowProps) {
             {/* Performance */}
             <div className="flex items-center gap-2 text-[10px] text-muted-foreground font-mono shrink-0">
                 <span>{submission.executionTime}ms</span>
-                <span>{submission.memoryUsed}MB</span>
+                <span>
+                    {submission.memoryUsed >= 1024
+                        ? `${(submission.memoryUsed / 1024).toFixed(1)}MB`
+                        : `${submission.memoryUsed}KB`}
+                </span>
             </div>
         </div>
     );

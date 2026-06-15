@@ -222,11 +222,15 @@ data: {"answer":"mỗi phần tử cần tìm "}
 
 event: metadata
 data: {"conversationId":"5b1b7e5f-1d1d-4b0d-9c93-67f7d087c0fd","answer":null,"mode":"HINT","quickActions":[...],"sources":[],"canAskNextHint":true}
+
+event: done
+data: {"done":true}
 ```
 
 Quan trọng:
 - `message` event chứa chunk text trong field `answer`.
-- `metadata` event là event cuối, dùng để cập nhật `conversationId`, quick actions, `canAskNextHint`.
+- `metadata` event dùng để cập nhật `conversationId`, quick actions, `canAskNextHint`.
+- `done` là tín hiệu hoàn tất stream. FE chỉ đánh dấu request thành công sau khi nhận event này.
 - Với mode không phải `SOLUTION`, backend có thể buffer response để chạy guardrails trước. FE vẫn xử lý giống nhau, nhưng có thể thấy chunk ít hơn hoặc chỉ một chunk cuối.
 
 ---
@@ -377,6 +381,9 @@ data: {"answer":"mình đề xuất..."}
 
 event: metadata
 data: {"conversationId":"1a89a0c4-bcd2-47d0-885a-b258d8736810","roadmaps":[...]}
+
+event: done
+data: {"done":true}
 ```
 
 Khác với lesson metadata:
@@ -459,8 +466,13 @@ export async function postSse(
       if (eventName === "metadata") {
         handlers.onMetadata(data);
       }
+      if (eventName === "done") {
+        return;
+      }
     }
   }
+
+  throw new Error("SSE connection closed before done event");
 }
 ```
 
@@ -519,7 +531,8 @@ Lesson chat submit flow:
    - `quickActions`
    - `canAskNextHint`
    - `pending=false`
-6. On error, mark pending assistant message as failed or remove it.
+6. On `done`, kết thúc trạng thái streaming.
+7. On error hoặc kết nối đóng trước `done`, mark pending assistant message as failed hoặc dùng blocking fallback.
 
 General chat submit flow:
 
@@ -530,7 +543,8 @@ General chat submit flow:
 5. On `metadata`, update:
    - `conversationId`
    - `roadmaps`
-6. Render roadmap cards if `roadmaps.length > 0`.
+6. On `done`, kết thúc trạng thái streaming.
+7. Render roadmap cards if `roadmaps.length > 0`.
 
 ---
 
@@ -638,21 +652,25 @@ Validation example:
 | Feature | Method | Endpoint | Response |
 |---|---|---|---|
 | Bootstrap lesson chat | GET | `/ai/chat/bootstrap?lessonSlug={slug}` | `ApiResponse<AiChatResponse>` |
+| Lesson chat history | GET | `/ai/chat/history/{conversationId}` | `ApiResponse<AiChatHistoryResponse>` |
 | Lesson chat blocking | POST | `/ai/chat` | `ApiResponse<AiChatResponse>` |
-| Lesson chat streaming | POST | `/ai/chat/stream` | SSE: `message`, `metadata` |
+| Lesson chat streaming | POST | `/ai/chat/stream` | SSE: `message`, `metadata`, `done` |
+| General chat history | GET | `/ai/general/chat/history/{conversationId}` | `ApiResponse<AiChatHistoryResponse>` |
 | General chat blocking | POST | `/ai/general/chat` | `ApiResponse<AiGeneralChatResponse>` |
-| General chat streaming | POST | `/ai/general/chat/stream` | SSE: `message`, `metadata` |
+| General chat streaming | POST | `/ai/general/chat/stream` | SSE: `message`, `metadata`, `done` |
 
 ---
 
 ## 16. Minimal FE Checklist
 
 - [ ] Call bootstrap when entering lesson page.
+- [ ] Restore messages from the matching history endpoint when a conversation ID exists.
 - [ ] Keep lesson `conversationId` in chat state.
 - [ ] Implement POST SSE parser.
 - [ ] Append `message.answer` chunks to current assistant bubble.
 - [ ] Parse lesson `metadata` and update quick actions + hint state.
 - [ ] Parse general `metadata` and update roadmap cards.
+- [ ] Chỉ kết thúc trạng thái streaming sau khi nhận event `done`.
 - [ ] Send editor code for `DEBUG`, `REVIEW`, `COMPLEXITY`.
 - [ ] Respect `Retry-After` on 429.
 - [ ] Reset conversation if backend returns `CONVERSATION_NOT_FOUND`.

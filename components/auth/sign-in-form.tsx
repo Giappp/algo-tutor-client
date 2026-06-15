@@ -4,7 +4,7 @@ import {Suspense, useState} from "react"
 import {useForm} from "react-hook-form"
 import {zodResolver} from "@hookform/resolvers/zod"
 import {z} from "zod"
-import {Eye, EyeOff, Loader2} from "lucide-react"
+import {CircleCheck, Eye, EyeOff, Loader2} from "lucide-react"
 import {toast} from "sonner"
 import {useRouter, useSearchParams} from "next/navigation"
 
@@ -17,8 +17,8 @@ import {ApiResponse} from "@/lib/types";
 import {useUser} from "@/hooks/use-user";
 
 const signInSchema = z.object({
-    username: z.string().min(3, "Username must be at least 3 characters"),
-    password: z.string().min(6, "Password must be at least 6 characters"),
+    username: z.string().min(3, "Tên đăng nhập cần có ít nhất 3 ký tự"),
+    password: z.string().min(6, "Mật khẩu cần có ít nhất 6 ký tự"),
 })
 
 type SignInFormData = z.infer<typeof signInSchema>
@@ -29,7 +29,11 @@ function SignInFormInner() {
     const [isSubmitting, setIsSubmitting] = useState(false)
     const router = useRouter()
     const searchParams = useSearchParams()
-    const redirect = searchParams.get("redirect") ?? "/home"
+    const hasJustRegistered = searchParams.get("registered") === "1"
+    const redirectParam = searchParams.get("redirect")
+    const redirect = redirectParam?.startsWith("/") && !redirectParam.startsWith("//")
+        ? redirectParam
+        : "/home"
 
     const {
         register,
@@ -50,7 +54,7 @@ function SignInFormInner() {
             const responseData = err.response.data as ApiResponse<null>;
 
             // Nếu backend trả về mảng các lỗi validation cho từng field
-            if (responseData.errors) {
+            if (responseData.errors && typeof responseData.errors !== "string") {
                 const fieldErrors = responseData.errors;
 
                 // Lặp qua từng field (username, password...)
@@ -64,7 +68,9 @@ function SignInFormInner() {
             } else {
                 // Nếu là lỗi chung (VD: "Sai mật khẩu", "Tài khoản bị khóa")
                 setError("root", {
-                    message: responseData.message || "Đã có lỗi xảy ra",
+                    message: typeof responseData.errors === "string"
+                        ? responseData.errors
+                        : responseData.message || "Đã có lỗi xảy ra",
                 });
             }
         } else {
@@ -81,7 +87,7 @@ function SignInFormInner() {
             const response = await signIn(data)
             if (response.success) {
                 await mutate();
-                toast.success(response.message || "Sign in successful!")
+                toast.success(response.message || "Đăng nhập thành công")
                 router.push(redirect)
                 router.refresh()
             }
@@ -93,20 +99,39 @@ function SignInFormInner() {
     }
 
     return (
-        <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
+        <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-5">
+            <div className="mb-1">
+                <p className="text-sm font-medium text-primary">Chào mừng bạn trở lại</p>
+                <h2 className="mt-1 text-2xl font-semibold tracking-tight">Tiếp tục hành trình học</h2>
+                <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                    Đăng nhập để xem tiến độ và tiếp tục bài học gần nhất.
+                </p>
+            </div>
+
+            {hasJustRegistered && (
+                <div className="flex items-start gap-3 rounded-xl border border-difficulty-easy/25 bg-difficulty-easy/10 px-4 py-3 text-sm text-foreground">
+                    <CircleCheck className="mt-0.5 size-4 shrink-0 text-difficulty-easy"/>
+                    <p>
+                        <span className="font-medium">Tạo tài khoản thành công.</span>{" "}
+                        Bạn có thể đăng nhập ngay bây giờ.
+                    </p>
+                </div>
+            )}
+
             {errors.root && (
                 <div
-                    className="rounded-lg bg-destructive/10 border border-destructive/20 px-4 py-2.5 text-sm text-destructive">
+                    role="alert"
+                    className="rounded-xl bg-destructive/10 border border-destructive/20 px-4 py-3 text-sm text-destructive">
                     {errors.root.message}
                 </div>
             )}
 
             <div className="space-y-1.5">
-                <Label htmlFor="signin-username">Username</Label>
+                <Label htmlFor="signin-username">Tên đăng nhập</Label>
                 <Input
                     id="signin-username"
-                    className="h-9"
-                    placeholder="Enter your username"
+                    className="h-11 px-3"
+                    placeholder="Nhập tên đăng nhập"
                     autoComplete="username"
                     aria-invalid={!!errors.username}
                     {...register("username")}
@@ -117,21 +142,13 @@ function SignInFormInner() {
             </div>
 
             <div className="space-y-1.5">
-                <div className="flex items-center justify-between">
-                    <Label htmlFor="signin-password">Password</Label>
-                    <a
-                        href="#"
-                        className="text-xs text-muted-foreground hover:text-primary transition-colors"
-                    >
-                        Forgot password?
-                    </a>
-                </div>
+                <Label htmlFor="signin-password">Mật khẩu</Label>
                 <div className="relative">
                     <Input
                         id="signin-password"
-                        className="h-9 pr-10"
+                        className="h-11 px-3 pr-11"
                         type={showPassword ? "text" : "password"}
-                        placeholder="Enter your password"
+                        placeholder="Nhập mật khẩu"
                         autoComplete="current-password"
                         aria-invalid={!!errors.password}
                         {...register("password")}
@@ -139,8 +156,8 @@ function SignInFormInner() {
                     <button
                         type="button"
                         onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                        aria-label={showPassword ? "Hide password" : "Show password"}
+                        className="absolute right-2.5 top-1/2 flex size-7 -translate-y-1/2 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                        aria-label={showPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
                     >
                         {showPassword ? (
                             <EyeOff className="size-4"/>
@@ -154,14 +171,14 @@ function SignInFormInner() {
                 )}
             </div>
 
-            <Button type="submit" size="lg" className="w-full mt-2" disabled={isSubmitting}>
+            <Button type="submit" size="lg" className="mt-1 h-11 w-full" disabled={isSubmitting}>
                 {isSubmitting ? (
                     <>
                         <Loader2 className="size-4 animate-spin"/>
-                        Signing in...
+                        Đang đăng nhập...
                     </>
                 ) : (
-                    "Sign In"
+                    "Đăng nhập"
                 )}
             </Button>
 
@@ -169,8 +186,8 @@ function SignInFormInner() {
                 <div className="absolute inset-0 flex items-center">
                     <span className="w-full border-t border-border"/>
                 </div>
-                <div className="relative flex justify-center text-xs uppercase">
-                    <span className="bg-card px-3 text-muted-foreground">or continue with</span>
+                <div className="relative flex justify-center text-xs">
+                    <span className="bg-card px-3 text-muted-foreground">hoặc tiếp tục với</span>
                 </div>
             </div>
 
@@ -219,7 +236,7 @@ function SignInFormInner() {
 export function SignInForm() {
     return (
         <Suspense fallback={<div
-            className="h-48 flex items-center justify-center text-muted-foreground text-sm">Loading...</div>}>
+            className="h-48 flex items-center justify-center text-muted-foreground text-sm">Đang tải...</div>}>
             <SignInFormInner/>
         </Suspense>
     )

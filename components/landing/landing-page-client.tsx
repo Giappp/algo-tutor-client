@@ -23,7 +23,7 @@ export function LandingPageClient() {
   const sectionRef = useScrollReveal();
 
   return (
-    <main ref={sectionRef} className="min-h-screen">
+    <main id="main-content" ref={sectionRef} className="min-h-dvh">
       <Navbar />
       <HeroSection />
       <TickerBar />

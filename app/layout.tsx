@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
-import { Toaster } from "sonner";
+import { Toaster } from "@/components/ui/sonner";
 import { SWRProvider } from "@/components/providers/SWRProvider";
 
 export const metadata: Metadata = {
@@ -22,7 +22,7 @@ export default function RootLayout({
     children: React.ReactNode;
 }>) {
     return (
-        <html lang="en" suppressHydrationWarning data-scroll-behavior="smooth">
+        <html lang="vi" suppressHydrationWarning data-scroll-behavior="smooth">
             <body className="h-full antialiased font-sans">
                 <ThemeProvider
                     attribute="class"
@@ -33,7 +33,7 @@ export default function RootLayout({
                 >
                     <SWRProvider>
                         {children}
-                        <Toaster position={"bottom-center"} />
+                        <Toaster position="bottom-center" />
                     </SWRProvider>
                 </ThemeProvider>
             </body>

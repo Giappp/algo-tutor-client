@@ -1,6 +1,9 @@
 import { apiClient } from "@/api/api-client";
+import type { ApiResponse } from "@/lib/types/api";
 
 export type AiProvider = "OPENAI" | "GEMINI" | "CLAUDE";
+export type AiConversationType = "LESSON" | "GENERAL";
+export type AiMessageRole = "SYSTEM" | "USER" | "ASSISTANT" | "TOOL";
 
 export type LessonChatMode =
     | "HINT"
@@ -46,7 +49,7 @@ export interface RoadmapRecommendation {
 
 export interface LessonChatRequest {
     conversationId?: string;
-    lessonId?: number;
+    lessonId: number;
     lessonSlug: string;
     provider?: AiProvider;
     mode: LessonChatMode | string;
@@ -80,6 +83,25 @@ export interface GeneralChatResponse {
     recommendedRoadmaps?: RoadmapRecommendation[] | null;
 }
 
+export interface AiChatHistoryMessage {
+    id: string;
+    role: AiMessageRole;
+    content: string;
+    mode: string | null;
+    createdAt: string;
+}
+
+export interface AiChatHistory {
+    conversationId: string;
+    type: AiConversationType;
+    lessonId: number | null;
+    title: string | null;
+    provider: AiProvider;
+    createdAt: string;
+    updatedAt: string | null;
+    messages: AiChatHistoryMessage[];
+}
+
 export type AiChatErrorCode =
     | "INVALID_CHAT_MODE"
     | "CODE_REQUIRED"
@@ -99,12 +121,28 @@ export interface AiChatError extends Error {
 }
 
 interface PostSseOptions<TMetadata> {
-    url: string;
+    endpoint: string;
     body: unknown;
     signal?: AbortSignal;
     onMessageChunk: (chunk: string) => void;
     onMetadata: (metadata: TMetadata) => void;
 }
+
+const AI_ENDPOINTS = {
+    lesson: {
+        bootstrap: "/ai/chat/bootstrap",
+        chat: "/ai/chat",
+        stream: "/ai/chat/stream",
+        history: (conversationId: string) =>
+            `/ai/chat/history/${encodeURIComponent(conversationId)}`,
+    },
+    general: {
+        chat: "/ai/general/chat",
+        stream: "/ai/general/chat/stream",
+        history: (conversationId: string) =>
+            `/ai/general/chat/history/${encodeURIComponent(conversationId)}`,
+    },
+} as const;
 
 const ERROR_CODE_BY_STATUS_CODE: Record<number, AiChatErrorCode> = {
     8000: "INVALID_CHAT_MODE",
@@ -116,10 +154,6 @@ const ERROR_CODE_BY_STATUS_CODE: Record<number, AiChatErrorCode> = {
     8006: "NO_MORE_HINTS",
     8007: "PROVIDER_NOT_CONFIGURED",
 };
-
-export function getAiApiBaseUrl(): string {
-    return process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8080/api/v1";
-}
 
 function parseRetryAfter(value: string | null | undefined): number {
     const seconds = value ? parseInt(value, 10) : 60;
@@ -141,6 +175,25 @@ function createAiChatError(
     error.retryAfterSeconds = options?.retryAfterSeconds;
     error.details = options?.details;
     return error;
+}
+
+function readErrorMessage(payload: unknown, fallback: string): string {
+    if (!payload || typeof payload !== "object") return fallback;
+
+    const data = payload as Record<string, unknown>;
+
+    if (typeof data.errors === "string") return data.errors;
+    if (typeof data.message === "string") return data.message;
+
+    if (data.errors && typeof data.errors === "object") {
+        const firstFieldError = Object.values(data.errors as Record<string, unknown>)
+            .flatMap((value) => Array.isArray(value) ? value : [])
+            .find((value): value is string => typeof value === "string");
+
+        if (firstFieldError) return firstFieldError;
+    }
+
+    return fallback;
 }
 
 function readApiErrorCode(payload: unknown, status: number): AiChatErrorCode {
@@ -190,7 +243,7 @@ async function createErrorFromFetchResponse(response: Response): Promise<AiChatE
             ? parseRetryAfter(response.headers.get("Retry-After"))
             : undefined;
 
-    return createAiChatError(code, `AI chat request failed with status ${response.status}`, {
+    return createAiChatError(code, readErrorMessage(payload, `AI chat request failed with status ${response.status}`), {
         status: response.status,
         retryAfterSeconds,
         details: payload,
@@ -211,7 +264,7 @@ function createErrorFromAxios(error: unknown): AiChatError {
     const retryAfterHeader =
         err.response?.headers?.["retry-after"] || err.response?.headers?.["Retry-After"];
 
-    return createAiChatError(code, "AI chat request failed", {
+    return createAiChatError(code, readErrorMessage(err.response?.data, "AI chat request failed"), {
         status,
         retryAfterSeconds: code === "RATE_LIMITED" ? parseRetryAfter(retryAfterHeader) : undefined,
         details: err.response?.data ?? error,
@@ -234,28 +287,31 @@ function parseSseEvent(rawEvent: string): { eventName: string; data: unknown } |
         }
     }
 
-    if (dataLines.length === 0) return null;
+    if (dataLines.length === 0) {
+        return { eventName, data: null };
+    }
 
+    const rawData = dataLines.join("\n");
     try {
         return {
             eventName,
-            data: JSON.parse(dataLines.join("\n")),
+            data: JSON.parse(rawData),
         };
     } catch {
-        return null;
+        return { eventName, data: rawData };
     }
 }
 
 async function postSse<TMetadata>({
-    url,
+    endpoint,
     body,
     signal,
     onMessageChunk,
     onMetadata,
 }: PostSseOptions<TMetadata>): Promise<void> {
-    const response = await fetch(url, {
+    const response = await fetch(apiClient.getUri({ url: endpoint }), {
         method: "POST",
-        credentials: "include",
+        credentials: apiClient.defaults.withCredentials ? "include" : "same-origin",
         headers: {
             "Content-Type": "application/json",
             Accept: "text/event-stream",
@@ -271,35 +327,61 @@ async function postSse<TMetadata>({
     const reader = response.body.getReader();
     const decoder = new TextDecoder();
     let buffer = "";
+    let receivedDone = false;
 
-    const flushEvents = (text: string) => {
+    const handleEvent = (rawEvent: string): boolean => {
+        const parsedEvent = parseSseEvent(rawEvent);
+        if (!parsedEvent) return false;
+
+        const isDoneEvent =
+            parsedEvent.eventName === "done"
+            || parsedEvent.data === "done"
+            || parsedEvent.data === "[DONE]"
+            || (
+                parsedEvent.data !== null
+                && typeof parsedEvent.data === "object"
+                && (parsedEvent.data as Record<string, unknown>).done === true
+            );
+
+        if (isDoneEvent) {
+            receivedDone = true;
+            return true;
+        }
+
+        if (!parsedEvent.data || typeof parsedEvent.data !== "object") {
+            return false;
+        }
+
+        const payload = parsedEvent.data as Record<string, unknown>;
+
+        if (parsedEvent.eventName === "message") {
+            const chunk =
+                typeof payload.answer === "string"
+                    ? payload.answer
+                    : typeof payload.chunkText === "string"
+                        ? payload.chunkText
+                        : "";
+
+            if (chunk) onMessageChunk(chunk);
+            return false;
+        }
+
+        if (parsedEvent.eventName === "metadata") {
+            onMetadata(payload as TMetadata);
+        }
+
+        return false;
+    };
+
+    const flushEvents = (text: string): boolean => {
         const rawEvents = text.split(/\r?\n\r?\n/);
         buffer = rawEvents.pop() ?? "";
 
         for (const rawEvent of rawEvents) {
-            const parsedEvent = parseSseEvent(rawEvent);
-            if (!parsedEvent || !parsedEvent.data || typeof parsedEvent.data !== "object") {
-                continue;
-            }
-
-            const payload = parsedEvent.data as Record<string, unknown>;
-
-            if (parsedEvent.eventName === "message") {
-                const chunk =
-                    typeof payload.answer === "string"
-                        ? payload.answer
-                        : typeof payload.chunkText === "string"
-                            ? payload.chunkText
-                            : "";
-
-                if (chunk) onMessageChunk(chunk);
-                continue;
-            }
-
-            if (parsedEvent.eventName === "metadata") {
-                onMetadata(payload as TMetadata);
-            }
+            if (handleEvent(rawEvent)) return true;
         }
+
+        return false;
     };
 
     while (true) {
@@ -308,31 +390,23 @@ async function postSse<TMetadata>({
         if (done) break;
 
         buffer += decoder.decode(value, { stream: true });
-        flushEvents(buffer);
+        if (flushEvents(buffer)) {
+            await reader.cancel().catch(() => undefined);
+            return;
+        }
     }
 
     buffer += decoder.decode();
 
     if (buffer.trim()) {
-        const parsedEvent = parseSseEvent(buffer);
+        handleEvent(buffer);
+    }
 
-        if (parsedEvent?.data && typeof parsedEvent.data === "object") {
-            const payload = parsedEvent.data as Record<string, unknown>;
-
-            if (parsedEvent.eventName === "message") {
-                const chunk =
-                    typeof payload.answer === "string"
-                        ? payload.answer
-                        : typeof payload.chunkText === "string"
-                            ? payload.chunkText
-                            : "";
-                if (chunk) onMessageChunk(chunk);
-            }
-
-            if (parsedEvent.eventName === "metadata") {
-                onMetadata(payload as TMetadata);
-            }
-        }
+    if (!receivedDone) {
+        throw createAiChatError(
+            "CHAT_FAILED",
+            "AI stream ended before receiving the done event"
+        );
     }
 }
 
@@ -340,11 +414,34 @@ export async function bootstrapLessonChat(
     lessonSlug: string
 ): Promise<LessonChatResponse | null> {
     try {
-        const response = await apiClient.get<{ data: LessonChatResponse }>("/ai/chat/bootstrap", {
-            params: { lessonSlug },
-        });
+        const response = await apiClient.get<ApiResponse<LessonChatResponse>>(
+            AI_ENDPOINTS.lesson.bootstrap,
+            { params: { lessonSlug } }
+        );
 
         return response.data?.data ?? null;
+    } catch (error) {
+        throw createErrorFromAxios(error);
+    }
+}
+
+export async function getLessonChatHistory(conversationId: string): Promise<AiChatHistory> {
+    try {
+        const response = await apiClient.get<ApiResponse<AiChatHistory>>(
+            AI_ENDPOINTS.lesson.history(conversationId)
+        );
+        return response.data.data;
+    } catch (error) {
+        throw createErrorFromAxios(error);
+    }
+}
+
+export async function getGeneralChatHistory(conversationId: string): Promise<AiChatHistory> {
+    try {
+        const response = await apiClient.get<ApiResponse<AiChatHistory>>(
+            AI_ENDPOINTS.general.history(conversationId)
+        );
+        return response.data.data;
     } catch (error) {
         throw createErrorFromAxios(error);
     }
@@ -359,7 +456,7 @@ export async function streamLessonChat(
     signal?: AbortSignal
 ): Promise<void> {
     await postSse<LessonChatResponse>({
-        url: `${getAiApiBaseUrl()}/ai/chat/stream`,
+        endpoint: AI_ENDPOINTS.lesson.stream,
         body: requestBody,
         signal,
         ...handlers,
@@ -370,7 +467,10 @@ export async function sendLessonChat(
     requestBody: LessonChatRequest
 ): Promise<LessonChatResponse | null> {
     try {
-        const response = await apiClient.post<{ data: LessonChatResponse }>("/ai/chat", requestBody);
+        const response = await apiClient.post<ApiResponse<LessonChatResponse>>(
+            AI_ENDPOINTS.lesson.chat,
+            requestBody
+        );
         return response.data?.data ?? null;
     } catch (error) {
         throw createErrorFromAxios(error);
@@ -386,7 +486,7 @@ export async function streamGeneralChat(
     signal?: AbortSignal
 ): Promise<void> {
     await postSse<GeneralChatResponse>({
-        url: `${getAiApiBaseUrl()}/ai/general/chat/stream`,
+        endpoint: AI_ENDPOINTS.general.stream,
         body: requestBody,
         signal,
         ...handlers,
@@ -397,8 +497,8 @@ export async function sendGeneralChat(
     requestBody: GeneralChatRequest
 ): Promise<GeneralChatResponse | null> {
     try {
-        const response = await apiClient.post<{ data: GeneralChatResponse }>(
-            "/ai/general/chat",
+        const response = await apiClient.post<ApiResponse<GeneralChatResponse>>(
+            AI_ENDPOINTS.general.chat,
             requestBody
         );
 

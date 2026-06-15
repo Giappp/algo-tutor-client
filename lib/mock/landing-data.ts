@@ -22,54 +22,54 @@ export const MOCK_STATS: PlatformStats = {
 export const MOCK_FEATURES: Feature[] = [
     {
         id: "feat-1",
-        title: "Structured Roadmaps",
+        title: "Lộ trình có thứ tự",
         description:
-            "Topics are cleanly isolated — Arrays, Strings, Trees, Graphs, Dynamic Programming, and more — so you never get lost in concepts you haven't reached yet.",
+            "Mỗi chủ đề được sắp xếp theo nền tảng cần có, giúp bạn biết chính xác nên học gì tiếp theo.",
         iconKey: "Map",
         colorToken: "[oklch(0.65_0.2_145)]",
         bgToken: "bg-[oklch(0.65_0.2_145)/0.1]",
     },
     {
         id: "feat-2",
-        title: "Context-Aware AI Tutor",
+        title: "AI Tutor hiểu ngữ cảnh",
         description:
-            "Powered by LLMs and vector databases, the tutor analyzes your code and intent — then delivers targeted hints strictly within the current lesson scope.",
+            "AI phân tích mã nguồn và bài học hiện tại để gợi ý đúng chỗ, không đưa sẵn đáp án.",
         iconKey: "BrainCircuit",
         colorToken: "text-primary",
         bgToken: "bg-primary/10",
     },
     {
         id: "feat-3",
-        title: "Progressive Difficulty",
+        title: "Độ khó tăng dần",
         description:
-            "Problems scale from Easy to Medium to Hard. Milestones unlock advanced content, ensuring a rock-solid foundation before moving up.",
+            "Bài tập tăng dần từ dễ đến khó để bạn xây nền vững trước khi tiếp cận kỹ thuật nâng cao.",
         iconKey: "TrendingUp",
         colorToken: "[oklch(0.7_0.18_85)]",
         bgToken: "bg-[oklch(0.7_0.18_85)/0.1]",
     },
     {
         id: "feat-4",
-        title: "Theory + Practice",
+        title: "Lý thuyết đi cùng thực hành",
         description:
-            "Every topic starts with visual theory and pseudocode. Then quizzes, then coding — a multi-layer approach that locks in understanding.",
+            "Học mô hình tư duy và pseudocode trước, sau đó kiểm tra hiểu biết bằng quiz và bài code.",
         iconKey: "BookOpen",
         colorToken: "[oklch(0.65_0.15_340)]",
         bgToken: "bg-[oklch(0.65_0.15_340)/0.1]",
     },
     {
         id: "feat-5",
-        title: "Auto-Graded Exercises",
+        title: "Chấm bài tự động",
         description:
-            "Submit your code and get instant, detailed feedback. No manual review needed — the platform handles grading across all difficulty tiers.",
+            "Chạy code và nhận phản hồi theo từng test case để biết sai ở đâu và cần sửa điều gì.",
         iconKey: "Layers",
         colorToken: "[oklch(0.6_0.18_180)]",
         bgToken: "bg-[oklch(0.6_0.18_180)/0.1]",
     },
     {
         id: "feat-6",
-        title: "Knowledge Isolation",
+        title: "Không ép dùng kiến thức chưa học",
         description:
-            "Coding problems are scoped to the current topic only. No leaked advanced concepts — what you see is exactly what you need to solve.",
+            "Mỗi bài tập chỉ yêu cầu kiến thức đã xuất hiện trong lộ trình, tránh cảm giác bị bỏ lại phía sau.",
         iconKey: "GraduationCap",
         colorToken: "[oklch(0.7_0.18_250)]",
         bgToken: "bg-[oklch(0.7_0.18_250)/0.1]",
@@ -79,42 +79,42 @@ export const MOCK_FEATURES: Feature[] = [
 export const MOCK_TESTIMONIALS: Testimonial[] = [
     {
         id: "testi-1",
-        name: "Alex Chen",
-        role: "CS Student, Stanford",
-        avatarInitials: "AC",
+        name: "Minh Anh",
+        role: "Sinh viên Công nghệ thông tin",
+        avatarInitials: "MA",
         avatarColorIndex: 0,
         content:
-            "The knowledge isolation is a game changer. I used to get overwhelmed seeing hard DP problems before I even understood arrays. AlgoTutor gates everything perfectly.",
+            "Trước đây mình luyện bài rất ngẫu nhiên. Lộ trình của AlgoTutor giúp mình biết phần nào cần học trước và vì sao.",
         starRating: 5,
     },
     {
         id: "testi-2",
-        name: "Priya Sharma",
-        role: "Frontend Engineer, Meta",
-        avatarInitials: "PS",
+        name: "Hoàng Nam",
+        role: "Frontend Developer",
+        avatarInitials: "HN",
         avatarColorIndex: 1,
         content:
-            "The AI tutor hint system is incredibly well-designed. It nudges you just enough without giving away the solution. I've improved more in 2 months than in a year of random LeetCode.",
+            "AI Tutor không ném đáp án ra ngay. Những câu hỏi gợi mở giúp mình tự nhận ra lỗi và nhớ cách làm lâu hơn.",
         starRating: 5,
     },
     {
         id: "testi-3",
-        name: "Jordan Lee",
-        role: "Self-Taught Developer",
-        avatarInitials: "JL",
+        name: "Thu Trang",
+        role: "Lập trình viên tự học",
+        avatarInitials: "TT",
         avatarColorIndex: 2,
         content:
-            "Coming from a non-CS background, most platforms assumed too much prior knowledge. AlgoTutor's theory-first approach built my foundation from scratch. Highly recommend.",
+            "Mình không học chuyên ngành máy tính nên phần lý thuyết đi trước bài code rất hữu ích. Mình không còn bị ngợp khi gặp bài mới.",
         starRating: 5,
     },
     {
         id: "testi-4",
-        name: "Samantha Wu",
-        role: "Backend Engineer, Stripe",
-        avatarInitials: "SW",
+        name: "Đức Long",
+        role: "Backend Developer",
+        avatarInitials: "ĐL",
         avatarColorIndex: 3,
         content:
-            "The structured roadmaps saved me so much time. I no longer have to wonder 'what should I practice next?' The path is laid out and every topic flows into the next naturally.",
+            "Phản hồi theo từng test case giúp mình phân biệt lỗi thuật toán với lỗi cài đặt, tiết kiệm rất nhiều thời gian debug.",
         starRating: 5,
     },
 ];

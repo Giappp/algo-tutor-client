@@ -225,6 +225,14 @@ main {
     transform: translateY(0);
   }
 
+  @media (prefers-reduced-motion: reduce) {
+    .reveal-up {
+      opacity: 1;
+      transform: none;
+      transition: none;
+    }
+  }
+
   /* Glowing border effect */
   .glow-border {
     box-shadow: 0 0 0 1px var(--ring), 0 0 20px -5px var(--ring);

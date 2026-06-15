@@ -137,7 +137,7 @@ export function AITutorPanel({ context }: { context: LessonContext }) {
             </div>
 
             <div className="relative z-0 flex min-h-0 flex-1 flex-col bg-muted/[0.18]">
-                {messages.length <= 1 ? (
+                {!hasRealMessages ? (
                     <WelcomeDashboard
                         lessonTitle={context.lessonTitle}
                         canAskNextHint={canAskNextHint}

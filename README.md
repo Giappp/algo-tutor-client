@@ -19,14 +19,16 @@ cp .env.example .env.local
 Required variables:
 
 ```bash
-NEXT_PUBLIC_API_BASE_URL=http://localhost:8080/api/v1
+NEXT_PUBLIC_API_BASE_URL=/api/v1
+API_PROXY_TARGET=http://localhost:8080
 NEXT_PUBLIC_WS_URL=http://localhost:8080/ws
 NEXT_PUBLIC_USE_MOCK=false
 ```
 
 Notes:
 
-- `NEXT_PUBLIC_API_BASE_URL` must include the backend API prefix, usually `/api/v1`.
+- Keep `NEXT_PUBLIC_API_BASE_URL=/api/v1` so browser auth requests remain same-site.
+- `API_PROXY_TARGET` is the server-only backend origin used by the Next.js rewrite and must not include `/api/v1`.
 - `NEXT_PUBLIC_WS_URL` is used by the coding judge websocket. If omitted, the app derives `{backend-origin}/ws` from `NEXT_PUBLIC_API_BASE_URL`.
 - Keep `NEXT_PUBLIC_USE_MOCK=false` in production.
 - `NEXT_PUBLIC_*` values are bundled at build time by Next.js, so set production values before running `npm run build`.
@@ -73,6 +75,7 @@ Recommended settings:
 Add these environment variables in Vercel project settings:
 
 - `NEXT_PUBLIC_API_BASE_URL`
+- `API_PROXY_TARGET`
 - `NEXT_PUBLIC_WS_URL`
 - `NEXT_PUBLIC_USE_MOCK=false`
 
@@ -84,7 +87,8 @@ Build with production public environment values:
 
 ```bash
 docker build \
-  --build-arg NEXT_PUBLIC_API_BASE_URL=https://api.example.com/api/v1 \
+  --build-arg NEXT_PUBLIC_API_BASE_URL=/api/v1 \
+  --build-arg API_PROXY_TARGET=https://api.example.com \
   --build-arg NEXT_PUBLIC_WS_URL=https://api.example.com/ws \
   -t algotutor-client .
 ```
@@ -101,7 +105,8 @@ If you use Docker for real production, prefer building one image per environment
 
 - Backend CORS allows the frontend production domain.
 - Auth cookies are configured for the production domain and HTTPS.
-- `NEXT_PUBLIC_API_BASE_URL` points to the public backend URL, not localhost.
+- `NEXT_PUBLIC_API_BASE_URL=/api/v1` and the reverse proxy routes it to the backend.
+- `API_PROXY_TARGET` points to the backend origin.
 - `NEXT_PUBLIC_WS_URL` points to the public websocket/SockJS endpoint.
 - S3/image domains used by roadmap thumbnails are listed in `next.config.ts`.
 - `NEXT_PUBLIC_USE_MOCK=false`.

@@ -1,10 +1,12 @@
 import {
     bootstrapLessonChat,
+    getLessonChatHistory,
     sendLessonChat,
     streamLessonChat,
     type AiChatError,
     type LessonChatRequest,
     type LessonChatResponse,
+    type AiChatHistory,
 } from "@/api/ai-chat-service";
 
 export type TutorChatResponseData = LessonChatResponse;
@@ -21,6 +23,10 @@ export async function bootstrapTutorChat(
     lessonSlug: string
 ): Promise<TutorChatResponseData | null> {
     return bootstrapLessonChat(lessonSlug);
+}
+
+export async function getTutorChatHistory(conversationId: string): Promise<AiChatHistory> {
+    return getLessonChatHistory(conversationId);
 }
 
 export async function streamTutorChat(

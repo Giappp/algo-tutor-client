@@ -13,7 +13,6 @@ import {
     clearConversationId,
     loadChatHistory,
     readActiveCodeSnapshot,
-    readConversationId,
     readFailedTestCases,
     readWorkspaceSnapshot,
     saveChatHistory,
@@ -22,12 +21,27 @@ import {
 } from "@/lib/ai-tutor-storage";
 import {
     bootstrapTutorChat,
+    getTutorChatHistory,
     sendTutorChat,
     streamTutorChat,
     type TutorChatError,
     type TutorChatRequest,
     type TutorChatResponseData,
 } from "@/api/ai-tutor-service";
+
+function mapHistoryMessages(history: Awaited<ReturnType<typeof getTutorChatHistory>>): ChatMessage[] {
+    return history.messages.flatMap((message) => {
+        if (message.role !== "USER" && message.role !== "ASSISTANT") return [];
+
+        return [{
+            id: message.id,
+            role: message.role === "USER" ? "user" as const : "assistant" as const,
+            content: message.content,
+            timestamp: new Date(message.createdAt),
+            mode: message.mode,
+        }];
+    });
+}
 
 function isGuidedMode(mode: string): boolean {
     return mode === "HINT" || mode === "DEBUG" || mode === "EXPLAIN";
@@ -105,7 +119,7 @@ export function useAITutor(context: LessonContext) {
     );
 
     const isRateLimited = rateLimitCountdown !== null && rateLimitCountdown > 0;
-    const hasRealMessages = messages.length > 1;
+    const hasRealMessages = messages.some((message) => message.id !== "intro");
 
     const applyResponseMetadata = useCallback((metadata: TutorChatResponseData) => {
         applyMetadata(metadata, {
@@ -148,7 +162,7 @@ export function useAITutor(context: LessonContext) {
     }, [context.lessonSlug]);
 
     const triggerBootstrap = useCallback(
-        async (activeRef?: { current: boolean }) => {
+        async (activeRef?: { current: boolean }, cachedMessages: ChatMessage[] = []) => {
             setIsLoading(true);
 
             try {
@@ -171,6 +185,29 @@ export function useAITutor(context: LessonContext) {
                             ? resData.quickActions
                             : null
                     );
+
+                    if (resData.conversationId) {
+                        try {
+                            const history = await getTutorChatHistory(resData.conversationId);
+
+                            if (activeRef && !activeRef.current) return;
+
+                            const historyMessages = mapHistoryMessages(history);
+                            if (historyMessages.length > 0) {
+                                setMessages(historyMessages);
+                                setIsLoading(false);
+                                return;
+                            }
+                        } catch (error) {
+                            const chatError = getTutorChatError(error);
+                            if (chatError?.code === "CONVERSATION_NOT_FOUND") {
+                                clearConversationId(context.lessonSlug);
+                                setConversationId(null);
+                            } else {
+                                console.warn("Could not restore lesson chat history.", error);
+                            }
+                        }
+                    }
 
                     setMessages([
                         {
@@ -196,14 +233,18 @@ export function useAITutor(context: LessonContext) {
             setCanAskNextHint(true);
             setServerQuickActions(null);
 
-            setMessages([
-                {
-                    id: "intro",
-                    role: "assistant",
-                    content: fallbackIntroMessage,
-                    timestamp: new Date(),
-                },
-            ]);
+            setMessages(
+                cachedMessages.length > 0
+                    ? cachedMessages
+                    : [
+                        {
+                            id: "intro",
+                            role: "assistant",
+                            content: fallbackIntroMessage,
+                            timestamp: new Date(),
+                        },
+                    ]
+            );
 
             setIsLoading(false);
         },
@@ -214,29 +255,21 @@ export function useAITutor(context: LessonContext) {
         const stored = loadChatHistory(context.lessonSlug);
         const active = { current: true };
 
-        const timer = window.setTimeout(() => {
-            if (!active.current) return;
-
+        const restoreChat = async () => {
             setSelectedMode(getDefaultTutorMode(context.lessonType));
+            setServerQuickActions(null);
 
             if (stored.length > 0) {
                 setMessages(stored);
-                setServerQuickActions(null);
-
-                const cachedConversationId = readConversationId(context.lessonSlug);
-
-                if (cachedConversationId) {
-                    setConversationId(cachedConversationId);
-                }
-            } else {
-                setMessages([]);
-                triggerBootstrap(active);
             }
-        }, 0);
+
+            await triggerBootstrap(active, stored);
+        };
+
+        void restoreChat();
 
         return () => {
             active.current = false;
-            window.clearTimeout(timer);
         };
     }, [context.lessonSlug, context.lessonType, triggerBootstrap]);
 
@@ -263,7 +296,7 @@ export function useAITutor(context: LessonContext) {
             const retrySec = chatError.retryAfterSeconds ?? 60;
 
             setRateLimitCountdown(retrySec);
-            toast.error(`Bạn đang thao tác quá nhanh. Vui lòng thử lại sau ${retrySec} giây.`);
+            toast.warning(`Bạn đang thao tác quá nhanh. Vui lòng thử lại sau ${retrySec} giây.`);
             setMessages((prev) => prev.filter((message) => message.id !== tempAiMsgId));
             setIsLoading(false);
             isLoadingRef.current = false;
@@ -271,7 +304,7 @@ export function useAITutor(context: LessonContext) {
         }
 
         if (chatError.code === "NO_MORE_HINTS") {
-            toast.error("Bạn đã hết lượt xin gợi ý cho bài tập này.");
+            toast.warning("Bạn đã hết lượt xin gợi ý cho bài tập này.");
             setCanAskNextHint(false);
             setMessages((prev) => prev.filter((message) => message.id !== tempAiMsgId));
             setIsLoading(false);
@@ -280,7 +313,7 @@ export function useAITutor(context: LessonContext) {
         }
 
         if (chatError.code === "CODE_REQUIRED") {
-            toast.error("Chế độ này cần mã nguồn hiện tại. Hãy viết hoặc chạy code trước khi nhờ AI phân tích.");
+            toast.warning("Chế độ này cần mã nguồn hiện tại. Hãy viết hoặc chạy code trước khi nhờ AI phân tích.");
             setMessages((prev) => prev.filter((message) => message.id !== tempAiMsgId));
             setIsLoading(false);
             isLoadingRef.current = false;
@@ -290,7 +323,7 @@ export function useAITutor(context: LessonContext) {
         if (chatError.code === "CONVERSATION_NOT_FOUND") {
             setConversationId(null);
             clearConversationId(context.lessonSlug);
-            toast.error("Phiên chat AI đã hết hạn. Mình sẽ bắt đầu lại ở tin nhắn tiếp theo.");
+            toast.info("Phiên chat AI đã hết hạn. Mình sẽ bắt đầu lại ở tin nhắn tiếp theo.");
             setMessages((prev) => prev.filter((message) => message.id !== tempAiMsgId));
             setIsLoading(false);
             isLoadingRef.current = false;
@@ -302,28 +335,38 @@ export function useAITutor(context: LessonContext) {
 
     const sendMessage = useCallback(
         async (text: string, overrideMode?: string) => {
-            if (!text.trim() || isLoading || isLoadingRef.current) return;
+            const trimmedText = text.trim();
+
+            if (!trimmedText || isLoading || isLoadingRef.current) return;
             if (isRateLimited) return;
+            if (context.lessonId === undefined) {
+                toast.error("Không xác định được bài học hiện tại. Vui lòng tải lại trang.");
+                return;
+            }
+            if (trimmedText.length > 5_000) {
+                toast.warning("Tin nhắn gửi AI Tutor không được vượt quá 5.000 ký tự.");
+                return;
+            }
 
             isLoadingRef.current = true;
 
             const modeToSend = overrideMode || selectedMode;
 
             if (modeToSend === "HINT" && !canAskNextHint) {
-                toast.error("Bạn đã hết lượt xin gợi ý cho bài tập này. Hãy thử tự phân tích thêm trước.");
+                toast.warning("Bạn đã hết lượt xin gợi ý cho bài tập này. Hãy thử tự phân tích thêm trước.");
                 isLoadingRef.current = false;
                 return;
             }
 
             const finalPromptText =
                 isSocratic && isGuidedMode(modeToSend)
-                    ? `${text}`
-                    : text;
+                    ? `${trimmedText}`
+                    : trimmedText;
 
             const userMsg: ChatMessage = {
                 id: Date.now().toString(),
                 role: "user",
-                content: text,
+                content: trimmedText,
                 timestamp: new Date(),
             };
 
@@ -348,10 +391,24 @@ export function useAITutor(context: LessonContext) {
                 context.lessonSlug
             );
 
-            const shouldAttachCode = requiresCode(modeToSend);
+            const modeRequiresCode = requiresCode(modeToSend);
+            const hasActiveCode = Boolean(activeCode.code.trim());
+            const canAttachCode = hasActiveCode && activeCode.code.length <= 10_000;
 
-            if (shouldAttachCode && !activeCode.code.trim()) {
-                toast.error("Chế độ này cần mã nguồn hiện tại. Hãy viết hoặc chạy code trước khi nhờ AI phân tích.");
+            if (modeRequiresCode && activeCode.code.length > 10_000) {
+                toast.warning("Mã nguồn gửi AI Tutor không được vượt quá 10.000 ký tự.");
+                setMessages((prev) =>
+                    prev.filter(
+                        (message) => message.id !== tempAiMsgId && message.id !== userMsg.id
+                    )
+                );
+                setIsLoading(false);
+                isLoadingRef.current = false;
+                return;
+            }
+
+            if (modeRequiresCode && !hasActiveCode) {
+                toast.warning("Chế độ này cần mã nguồn hiện tại. Hãy viết hoặc chạy code trước khi nhờ AI phân tích.");
                 setMessages((prev) =>
                     prev.filter(
                         (message) => message.id !== tempAiMsgId && message.id !== userMsg.id
@@ -368,12 +425,12 @@ export function useAITutor(context: LessonContext) {
                 lessonSlug: context.lessonSlug,
                 mode: modeToSend,
                 message: finalPromptText,
-                code: shouldAttachCode ? activeCode.code : undefined,
-                language: shouldAttachCode ? activeCode.language : undefined,
-                judgeResult: shouldAttachCode ? verdict : undefined,
-                errorMessage: shouldAttachCode ? errorMessage || undefined : undefined,
+                code: canAttachCode ? activeCode.code : undefined,
+                language: canAttachCode ? activeCode.language : undefined,
+                judgeResult: verdict,
+                errorMessage: errorMessage || undefined,
                 failedTestCases:
-                    shouldAttachCode && failedTestCases.length > 0
+                    failedTestCases.length > 0
                         ? failedTestCases
                         : undefined,
             };
@@ -400,6 +457,18 @@ export function useAITutor(context: LessonContext) {
                 streamSuccess = true;
             } catch (error) {
                 if (handleChatError(error, tempAiMsgId)) return;
+
+                const chatError = getTutorChatError(error);
+                if (chatError?.status) {
+                    toast.error(chatError.message);
+                    setMessages((prev) =>
+                        prev.filter((message) => message.id !== tempAiMsgId)
+                    );
+                    setIsLoading(false);
+                    isLoadingRef.current = false;
+                    return;
+                }
+
                 console.warn("Streaming chat failed, falling back to sync chat.", error);
             }
 
@@ -427,6 +496,12 @@ export function useAITutor(context: LessonContext) {
                 } catch (error) {
                     console.warn("Synchronous chat failed.", error);
                     if (handleChatError(error, tempAiMsgId)) return;
+
+                    const chatError = getTutorChatError(error);
+                    toast.error(chatError?.message || "AI Tutor chưa thể trả lời lúc này. Vui lòng thử lại.");
+                    setMessages((prev) =>
+                        prev.filter((message) => message.id !== tempAiMsgId)
+                    );
                 }
             }
 
@@ -480,22 +555,27 @@ export function useAITutor(context: LessonContext) {
         [sendMessage]
     );
 
-    const handleClearChat = useCallback(async () => {
+    const handleClearChat = useCallback(() => {
         const confirmed = window.confirm(
             "Bạn có chắc chắn muốn xóa toàn bộ lịch sử trò chuyện và bắt đầu lại với AI Tutor?"
         );
 
         if (!confirmed) return;
 
-        setMessages([]);
         setConversationId(null);
         setCanAskNextHint(true);
         setServerQuickActions(null);
+        setMessages([
+            {
+                id: "intro",
+                role: "assistant",
+                content: fallbackIntroMessage,
+                timestamp: new Date(),
+            },
+        ]);
 
         clearTutorSession(context.lessonSlug);
-
-        await triggerBootstrap();
-    }, [context.lessonSlug, triggerBootstrap]);
+    }, [context.lessonSlug, fallbackIntroMessage]);
 
     const handleDebugRequest = useCallback(() => {
         setSelectedMode("DEBUG");

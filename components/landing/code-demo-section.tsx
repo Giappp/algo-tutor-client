@@ -7,18 +7,15 @@ import {Card, CardContent} from "@/components/ui/card";
 
 export function CodeDemoSection() {
     return (
-        <section className="py-24 lg:py-32 bg-muted/10">
+        <section id="ai-tutor" className="bg-muted/10 py-24 lg:py-32">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <div className="text-center max-w-2xl mx-auto mb-16 reveal-up">
-                    <Badge variant="secondary" className="text-xs mb-3">
-                        Live Demo
-                    </Badge>
-                    <h2 className="text-4xl sm:text-5xl font-bold tracking-tight mb-4">
-                        AI that actually helps, not spoils
+                <div className="mb-14 max-w-3xl reveal-up">
+                    <p className="mb-3 text-sm font-medium text-primary">AI Tutor trong bài học</p>
+                    <h2 className="mb-4 text-balance text-4xl font-semibold tracking-tight sm:text-5xl">
+                        Gợi ý để bạn tự tìm ra lời giải, không làm hộ.
                     </h2>
-                    <p className="text-muted-foreground text-lg">
-                        The tutor sees your code, understands your intent, and offers guidance exactly where you need
-                        it.
+                    <p className="max-w-2xl text-lg leading-8 text-muted-foreground">
+                        AI Tutor đọc code hiện tại, hiểu chủ đề bạn đang học và chỉ đưa ra bước gợi mở phù hợp.
                     </p>
                 </div>
 
@@ -28,21 +25,20 @@ export function CodeDemoSection() {
                         <CardContent className="p-6 space-y-4">
                             <div className="flex items-center justify-between">
                                 <Badge variant="secondary" className="text-xs">
-                                    Arrays
+                                    Mảng
                                 </Badge>
-                                <Badge className="text-xs bg-[oklch(0.65_0.2_145)] text-white">Easy</Badge>
+                                <Badge className="text-xs bg-[oklch(0.65_0.2_145)] text-white">Dễ</Badge>
                             </div>
-                            <h3 className="font-bold text-lg">Two Sum</h3>
+                            <h3 className="font-bold text-lg">Tổng hai phần tử</h3>
                             <p className="text-sm text-muted-foreground leading-relaxed">
-                                Given an array of integers{" "}
+                                Cho một mảng số nguyên{" "}
                                 <code className="px-1 py-0.5 rounded bg-muted text-xs font-mono">nums</code> and an
-                                integer{" "}
+                                và số nguyên{" "}
                                 <code className="px-1 py-0.5 rounded bg-muted text-xs font-mono">target</code>, return
-                                the
-                                indices of the two numbers that add up to target.
+                                hãy trả về vị trí của hai số có tổng bằng target.
                             </p>
                             <div className="space-y-2">
-                                <div className="text-xs font-medium text-muted-foreground">Examples</div>
+                                <div className="text-xs font-medium text-muted-foreground">Ví dụ</div>
                                 <div className="bg-muted/50 rounded-lg p-3 font-mono text-xs space-y-1">
                                     <div>Input: nums = [2,7,11,15], target = 9</div>
                                     <div>Output: [0,1]</div>
@@ -66,7 +62,7 @@ export function CodeDemoSection() {
                             </div>
                             <Button size="sm" className="gap-1.5 h-7 text-xs">
                                 <Terminal className="size-3"/>
-                                Run
+                                Chạy
                             </Button>
                         </div>
 
@@ -143,26 +139,23 @@ export function CodeDemoSection() {
                                     <div className="flex items-center gap-2">
                                         <span className="text-sm font-semibold text-primary">AI Tutor</span>
                                         <Badge variant="secondary" className="text-[10px] px-1.5 py-0.5">
-                                            Hint 1 of 3
+                                            Gợi ý 1/3
                                         </Badge>
                                     </div>
                                     <p className="text-sm text-foreground leading-relaxed">
-                                        You&#39;re on the right track with the map. Think about this: for each
-                                        element{" "}
+                                        Bạn đang đi đúng hướng với hash map. Với mỗi phần tử{" "}
                                         <code className="px-1 py-0.5 rounded bg-muted text-xs font-mono">nums[i]</code>,
-                                        what
-                                        single value would complete the sum to{" "}
+                                        giá trị duy nhất nào sẽ giúp tổng bằng{" "}
                                         <code className="px-1 py-0.5 rounded bg-muted text-xs font-mono">target</code>?
-                                        That&#39;s your <strong>complement</strong> — check if it&apos;s already in the
-                                        map.
+                                        Hãy kiểm tra xem phần bù đó đã xuất hiện trong map chưa.
                                     </p>
                                     <div className="flex gap-2 pt-1">
                                         <Button size="sm" variant="secondary" className="h-7 text-xs gap-1.5">
                                             <MessageSquare className="size-3"/>
-                                            Ask Follow-up
+                                            Hỏi thêm
                                         </Button>
                                         <Button size="sm" variant="ghost" className="h-7 text-xs text-muted-foreground">
-                                            Next Hint
+                                            Gợi ý tiếp
                                             <ChevronRight className="size-3"/>
                                         </Button>
                                     </div>

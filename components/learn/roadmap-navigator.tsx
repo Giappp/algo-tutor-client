@@ -60,7 +60,7 @@ export function RoadmapNavigator({
     const isMobile = panelVariant === "mobile";
 
     return (
-        <div className="flex h-full min-h-0 flex-col bg-background/75">
+        <div className="flex h-full min-h-0 w-full min-w-0 flex-col overflow-hidden bg-background/75">
             <div className="shrink-0 border-b border-border/50 px-4 py-3.5">
                 <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-muted-foreground">
                     Nội dung lộ trình
@@ -70,12 +70,12 @@ export function RoadmapNavigator({
                 </h2>
             </div>
 
-            <ScrollArea className="min-h-0 flex-1">
+            <ScrollArea className="min-h-0 min-w-0 flex-1 overflow-x-hidden [&_[data-slot=scroll-area-viewport]]:overflow-x-hidden">
                 <Accordion
                     type="multiple"
                     defaultValue={defaultOpenTopics}
                     className={cn(
-                        "space-y-2",
+                        "min-w-0 max-w-full space-y-2",
                         isMobile ? "p-3" : "p-2.5"
                     )}
                 >
@@ -93,7 +93,7 @@ export function RoadmapNavigator({
                                 key={topic.id}
                                 value={String(topic.id)}
                                 className={cn(
-                                    "overflow-hidden rounded-xl border bg-card/65 shadow-sm transition-colors",
+                                    "w-full min-w-0 overflow-hidden rounded-xl border bg-card/65 shadow-sm transition-colors",
                                     hasActiveLesson
                                         ? "border-[var(--lesson-accent-border)] bg-[var(--lesson-accent-muted)]"
                                         : "border-border/60"
@@ -101,7 +101,7 @@ export function RoadmapNavigator({
                             >
                                 <AccordionTrigger
                                     className={cn(
-                                        "group px-3.5 py-3 hover:no-underline",
+                                        "group w-full min-w-0 gap-2 overflow-hidden px-3.5 py-3 hover:no-underline",
                                         "data-[state=open]:border-b data-[state=open]:border-border/50"
                                     )}
                                 >
@@ -124,8 +124,8 @@ export function RoadmapNavigator({
                                         </div>
 
                                         <div className="min-w-0 flex-1">
-                                            <div className="flex items-center gap-2">
-                                                <h3 className="line-clamp-2 text-sm font-semibold leading-snug text-foreground">
+                                            <div className="flex min-w-0 items-start gap-2">
+                                                <h3 className="min-w-0 flex-1 break-words line-clamp-2 text-sm font-semibold leading-snug text-foreground">
                                                     {topic.name}
                                                 </h3>
 
@@ -183,7 +183,7 @@ export function RoadmapNavigator({
                                                         }
                                                     }}
                                                     className={cn(
-                                                        "group/lesson relative flex w-full items-center gap-3 rounded-lg border px-3 py-2.5 text-left transition-all",
+                                                        "group/lesson relative flex w-full min-w-0 items-start gap-3 overflow-hidden rounded-lg border px-3 py-2.5 text-left transition-all",
                                                         isActive
                                                             ? "border-[var(--lesson-accent-border)] bg-[var(--lesson-accent-muted)] text-[var(--lesson-accent)] shadow-sm"
                                                             : isLocked
@@ -228,7 +228,7 @@ export function RoadmapNavigator({
                                                         <div className="flex min-w-0 items-center gap-2">
                                                             <span
                                                                 className={cn(
-                                                                    "truncate text-sm leading-snug",
+                                                                    "min-w-0 break-words line-clamp-2 text-sm leading-snug",
                                                                     isActive
                                                                         ? "font-bold"
                                                                         : "font-medium"
@@ -238,7 +238,7 @@ export function RoadmapNavigator({
                                                             </span>
                                                         </div>
 
-                                                        <div className="mt-1 flex items-center gap-2">
+                                                        <div className="mt-1 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
                                                             <DifficultyBadge
                                                                 difficulty={lesson.difficulty}
                                                                 className="h-4 shrink-0 px-1.5 text-[10px]"

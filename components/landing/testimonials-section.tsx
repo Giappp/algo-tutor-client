@@ -1,12 +1,12 @@
 "use client";
 
 import {useApiData} from "@/hooks";
-import {Badge} from "@/components/ui/badge";
 import {Card, CardContent} from "@/components/ui/card";
 import {Separator} from "@/components/ui/separator";
 import {cn} from "@/lib/utils";
 import {Skeleton} from "@/components/ui/skeleton";
 import type {Testimonial} from "@/lib/types/landing";
+import {MOCK_TESTIMONIALS} from "@/lib/mock/landing-data";
 
 const AVATAR_GRADIENTS = [
     "from-primary to-[oklch(0.65_0.15_340)]",
@@ -16,24 +16,23 @@ const AVATAR_GRADIENTS = [
 ];
 
 export function TestimonialsSection() {
-    const {data: testimonials, isLoading} = useApiData<Testimonial[]>("/landing/testimonials");
+    const {data: testimonials, isLoading, error} = useApiData<Testimonial[]>("/landing/testimonials");
+    const visibleTestimonials = testimonials?.length ? testimonials : MOCK_TESTIMONIALS;
 
     return (
         <section className="py-24 lg:py-32">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <div className="text-center max-w-2xl mx-auto mb-16 reveal-up">
-                    <Badge variant="secondary" className="text-xs mb-3">
-                        Testimonials
-                    </Badge>
-                    <h2 className="text-4xl sm:text-5xl font-bold tracking-tight mb-4">
-                        Loved by learners everywhere
+                <div className="mx-auto mb-14 max-w-2xl text-center reveal-up">
+                    <p className="mb-3 text-sm font-medium text-primary">Từ người học</p>
+                    <h2 className="mb-4 text-balance text-4xl font-semibold tracking-tight sm:text-5xl">
+                        Tiến bộ đến từ việc hiểu đúng, không phải giải thật nhiều.
                     </h2>
                     <p className="text-muted-foreground text-lg">
-                        Join thousands of students who&apos;ve transformed their algorithmic thinking.
+                        Những thay đổi nhỏ trong cách học tạo ra nền tảng giải thuật bền vững hơn.
                     </p>
                 </div>
 
-                <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
                     {isLoading
                         ? Array.from({length: 4}).map((_, i) => (
                             <Card key={i} className="border-border/50">
@@ -54,10 +53,13 @@ export function TestimonialsSection() {
                                 </CardContent>
                             </Card>
                         ))
-                        : testimonials?.map((t, i) => (
+                        : visibleTestimonials.map((t, i) => (
                             <Card
                                 key={t.id}
-                                className="border-border/50 reveal-up hover:shadow-md transition-all duration-300"
+                                className={cn(
+                                    "border-border/50 reveal-up transition-all duration-300 hover:-translate-y-1 hover:shadow-lg",
+                                    i % 2 === 1 && "lg:translate-y-8 lg:hover:translate-y-7"
+                                )}
                                 style={{transitionDelay: `${i * 80}ms`}}
                             >
                                 <CardContent className="p-5 space-y-4">
@@ -94,6 +96,11 @@ export function TestimonialsSection() {
                             </Card>
                         ))}
                 </div>
+                {error && !testimonials?.length && (
+                    <p className="mt-12 text-center text-sm text-muted-foreground">
+                        Đang hiển thị phản hồi mẫu trong khi kết nối dữ liệu nền tảng.
+                    </p>
+                )}
             </div>
         </section>
     );

@@ -6,7 +6,7 @@ import {
     CheckCircleIcon,
     XCircleIcon,
     BugIcon,
-    EyeOffIcon,
+    AlertTriangleIcon,
 } from "lucide-react";
 
 interface TestCaseResultProps {
@@ -15,7 +15,7 @@ interface TestCaseResultProps {
 }
 
 function getStatusInfo(result: TestResult) {
-    if (result.passed) {
+    if (!result.status && result.passed) {
         return {
             icon: CheckCircleIcon,
             label: "Accepted",
@@ -24,54 +24,51 @@ function getStatusInfo(result: TestResult) {
             bgColor: "bg-emerald-500/5",
         };
     }
-    if (result.error) {
+
+    switch (result.status) {
+    case "ACCEPTED":
+        return {
+            icon: CheckCircleIcon,
+            label: "Accepted",
+            color: "text-emerald-500",
+            borderColor: "border-emerald-500/30",
+            bgColor: "bg-emerald-500/5",
+        };
+    case "RUNTIME_ERROR":
+    case "COMPILATION_ERROR":
+    case "SYSTEM_ERROR":
         return {
             icon: BugIcon,
-            label: "Runtime Error",
+            label: result.status.replaceAll("_", " "),
             color: "text-orange-500",
             borderColor: "border-orange-500/30",
             bgColor: "bg-orange-500/5",
         };
+    case "TIME_LIMIT_EXCEEDED":
+    case "MEMORY_LIMIT_EXCEEDED":
+        return {
+            icon: AlertTriangleIcon,
+            label: result.status.replaceAll("_", " "),
+            color: "text-yellow-500",
+            borderColor: "border-yellow-500/30",
+            bgColor: "bg-yellow-500/5",
+        };
+    default:
+        return {
+            icon: XCircleIcon,
+            label: "Wrong Answer",
+            color: "text-rose-500",
+            borderColor: "border-rose-500/30",
+            bgColor: "bg-rose-500/5",
+        };
     }
-    return {
-        icon: XCircleIcon,
-        label: "Wrong Answer",
-        color: "text-rose-500",
-        borderColor: "border-rose-500/30",
-        bgColor: "bg-rose-500/5",
-    };
 }
 
 export function TestCaseResult({ result, index }: TestCaseResultProps) {
-    // Hidden test case with no visible data
-    if (result.hidden && !result.stdin && !result.expected) {
-        return (
-            <div className="rounded-lg border border-border/50 bg-muted/30 p-3">
-                <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                        <EyeOffIcon className="size-3.5" />
-                        <span className="font-medium">Test #{index + 1}</span>
-                        <span className="text-muted-foreground/60">— Hidden</span>
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                        {result.passed ? (
-                            <CheckCircleIcon className="size-3.5 text-emerald-500" />
-                        ) : (
-                            <XCircleIcon className="size-3.5 text-rose-500" />
-                        )}
-                        {result.executionTime !== undefined && result.executionTime > 0 && (
-                            <span className="text-[10px] text-muted-foreground font-mono">
-                                {result.executionTime}ms
-                            </span>
-                        )}
-                    </div>
-                </div>
-            </div>
-        );
-    }
-
     const status = getStatusInfo(result);
     const Icon = status.icon;
+    const stderr = result.stderr ?? result.error ?? "";
+    const stdout = result.stdout ?? result.actual ?? "";
 
     return (
         <div
@@ -92,58 +89,34 @@ export function TestCaseResult({ result, index }: TestCaseResultProps) {
                         {status.label}
                     </span>
                 </div>
-                {result.executionTime !== undefined && result.executionTime > 0 && (
-                    <span className="text-[10px] text-muted-foreground font-mono">
-                        {result.executionTime}ms
-                    </span>
-                )}
+                <div className="flex gap-2 text-[10px] text-muted-foreground font-mono">
+                    <span>{result.executionTime ?? 0}ms</span>
+                    <span>{result.memoryKb ?? 0}KB</span>
+                </div>
             </div>
 
-            {/* Input / Expected / Actual grid */}
             <div className="grid grid-cols-1 gap-2">
-                {/* Input */}
-                {result.stdin && (
+                {stderr && (
                     <div>
-                        <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1">
-                            Input
+                        <div className="text-[10px] font-bold text-orange-500/80 uppercase tracking-wider mb-1">
+                            Stderr
                         </div>
-                        <pre className="text-xs font-mono bg-background/80 border border-border/50 rounded p-2 overflow-x-auto whitespace-pre-wrap text-foreground/80">
-                            {result.stdin}
+                        <pre className="text-xs font-mono bg-orange-500/5 border border-orange-500/20 rounded p-2 overflow-x-auto whitespace-pre-wrap text-orange-600 dark:text-orange-400">
+                            {stderr}
                         </pre>
                     </div>
                 )}
 
-                {/* Expected vs Actual side by side */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                    {result.expected && (
-                        <div>
-                            <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1">
-                                Expected Output
-                            </div>
-                            <pre className="text-xs font-mono bg-background/80 border border-border/50 rounded p-2 overflow-x-auto whitespace-pre-wrap text-foreground/80">
-                                {result.expected}
-                            </pre>
+                {stdout && (
+                    <div>
+                        <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1">
+                            Stdout
                         </div>
-                    )}
-                    {!result.passed && (
-                        <div>
-                            <div className={cn(
-                                "text-[10px] font-bold uppercase tracking-wider mb-1",
-                                result.error ? "text-orange-500/80" : "text-rose-500/80"
-                            )}>
-                                {result.error ? "Error" : "Your Output"}
-                            </div>
-                            <pre className={cn(
-                                "text-xs font-mono border rounded p-2 overflow-x-auto whitespace-pre-wrap",
-                                result.error
-                                    ? "bg-orange-500/5 border-orange-500/20 text-orange-600 dark:text-orange-400"
-                                    : "bg-rose-500/5 border-rose-500/20 text-rose-600 dark:text-rose-400"
-                            )}>
-                                {result.error || result.actual || "(empty)"}
-                            </pre>
-                        </div>
-                    )}
-                </div>
+                        <pre className="text-xs font-mono bg-background/80 border border-border/50 rounded p-2 overflow-x-auto whitespace-pre-wrap text-foreground/80">
+                            {stdout}
+                        </pre>
+                    </div>
+                )}
             </div>
         </div>
     );

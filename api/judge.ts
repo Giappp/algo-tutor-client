@@ -1,6 +1,10 @@
 import { apiClient } from "@/api/api-client";
 import type { ApiResponse } from "@/lib/types/api";
-import type { TestResult, Submission } from "@/lib/types/lesson";
+import type {
+    Submission,
+    SubmissionStatus,
+    TestResult,
+} from "@/lib/types/lesson";
 
 export interface RunRequest {
     lessonSlug: string;
@@ -8,40 +12,73 @@ export interface RunRequest {
     code: string;
 }
 
-// ─── Raw backend response shapes ──────────────────────────────────────────────
-
-interface RawTestCase {
+export interface JudgeTestCase {
     index: number;
-    status: string;
-    stdin: string | null;
-    expectedOutput: string | null;
-    actualOutput: string | null;
+    status: SubmissionStatus;
     timeMs: number;
     memoryKb: number;
-    hidden: boolean;
-    errorMessage: string | null;
+    stdout: string;
+    stderr: string;
 }
+
+export type SubmissionEvent =
+    | {
+        type: "TEST_CASE";
+        submissionId: string;
+        testCaseId: number;
+        sortOrder: number;
+        status: SubmissionStatus;
+        timeMs: number;
+        memoryKb: number;
+        stdout: string;
+        stderr: string;
+        isCompleted: boolean;
+    }
+    | {
+        type: "FINAL_RESULT";
+        submissionId: string;
+        status: SubmissionStatus;
+        passed: number;
+        total: number;
+        maxTimeMs: number;
+        maxMemoryKb: number;
+        compilationError?: string | null;
+        isCompleted: true;
+    };
 
 interface RawJudgeResponse {
     submissionId: string | null;
-    verdict: string;
-    summary: { passed: number; failed: number; total: number };
-    performance: { totalTimeMs: number; maxMemoryKb: number };
-    testCases: RawTestCase[];
+    verdict: SubmissionStatus;
+    summary: JudgeSummary | null;
+    performance: JudgePerformance | null;
+    testCases: JudgeTestCase[] | null;
     compilationError: string | null;
-    lessonProgressUpdated: boolean | null;
+    progressUpdated: boolean;
 }
 
-// ─── FE-facing response types ─────────────────────────────────────────────────
+interface RawSubmissionDetail {
+    id: string;
+    language: string;
+    status: SubmissionStatus;
+    sourceCode: string;
+    passedTestCases: number;
+    totalTestCases: number;
+    executionTime: number;
+    memoryUsed: number;
+    compileOutput: string | null;
+    submittedAt: string;
+    testCases: JudgeTestCase[];
+}
 
 export interface JudgeSummary {
     passed: number;
     failed: number;
     total: number;
+    executed: number;
 }
 
 export interface JudgePerformance {
-    totalTimeMs: number;
+    maxTimeMs: number;
     maxMemoryKb: number;
 }
 
@@ -57,71 +94,84 @@ export interface RunResponse {
 export interface SubmitResponse {
     id: string;
     status: Submission["status"];
-    summary: JudgeSummary;
-    performance: JudgePerformance;
-    results: TestResult[];
-    totalTime: number;
-    memoryUsed: number;
+    summary: JudgeSummary | null;
+    performance: JudgePerformance | null;
+    results: TestResult[] | null;
     compilationError: string | null;
-    lessonProgressUpdated: boolean;
+    progressUpdated: boolean;
 }
 
 export interface SubmissionSummary {
     id: string;
     language: string;
     status: Submission["status"];
-    passedTestcases: number;
-    totalTestcases: number;
+    passedTestCases: number;
+    totalTestCases: number;
     executionTime: number;
     memoryUsed: number;
-    submittedAt: Date;
+    submittedAt: string;
 }
 
-// ─── Mapping helpers ──────────────────────────────────────────────────────────
-
-function mapTestCases(raw: RawTestCase[]): TestResult[] {
-    return raw.map((tc) => ({
-        stdin: tc.stdin ?? "",
-        expected: tc.expectedOutput ?? "",
-        actual: tc.actualOutput ?? "",
-        passed: tc.status === "ACCEPTED",
-        hidden: tc.hidden,
-        executionTime: tc.timeMs,
-        error: tc.errorMessage ?? undefined,
-    }));
+export interface SubmissionDetail extends SubmissionSummary {
+    sourceCode: string;
+    compileOutput: string | null;
+    results: TestResult[];
 }
 
-function mapVerdict(verdict: string): Submission["status"] {
-    const map: Record<string, Submission["status"]> = {
-        PENDING: "PENDING",
-        ACCEPTED: "ACCEPTED",
-        WRONG_ANSWER: "WRONG_ANSWER",
-        RUNTIME_ERROR: "RUNTIME_ERROR",
-        TIME_LIMIT_EXCEEDED: "TIME_LIMIT_EXCEEDED",
-        MEMORY_LIMIT_EXCEEDED: "TIME_LIMIT_EXCEEDED",
-        COMPILATION_ERROR: "COMPILATION_ERROR",
+export function isSubmissionInProgress(status: SubmissionStatus): boolean {
+    return status === "PENDING" || status === "PROCESSING";
+}
+
+export function mapTestCase(raw: JudgeTestCase): TestResult {
+    return {
+        index: raw.index,
+        status: raw.status,
+        stdout: raw.stdout,
+        stderr: raw.stderr,
+        memoryKb: raw.memoryKb,
+        stdin: "",
+        expected: "",
+        actual: raw.stdout,
+        passed: raw.status === "ACCEPTED",
+        hidden: false,
+        executionTime: raw.timeMs,
+        error: raw.stderr || undefined,
     };
-    return map[verdict] ?? "WRONG_ANSWER";
 }
 
-// ─── API client ───────────────────────────────────────────────────────────────
+export function mapTestCases(raw: JudgeTestCase[]): TestResult[] {
+    return raw.toSorted((a, b) => a.index - b.index).map(mapTestCase);
+}
+
+function mapSubmissionDetail(raw: RawSubmissionDetail): SubmissionDetail {
+    return {
+        id: raw.id,
+        language: raw.language,
+        status: raw.status,
+        sourceCode: raw.sourceCode,
+        passedTestCases: raw.passedTestCases,
+        totalTestCases: raw.totalTestCases,
+        executionTime: raw.executionTime,
+        memoryUsed: raw.memoryUsed,
+        compileOutput: raw.compileOutput,
+        submittedAt: raw.submittedAt,
+        results: mapTestCases(raw.testCases ?? []),
+    };
+}
 
 export const judgeApi = {
     run: async (data: RunRequest): Promise<RunResponse> => {
         const response = await apiClient.post<ApiResponse<RawJudgeResponse>>(
             "/judge/run",
-            {
-                ...data,
-                language: data.language.toUpperCase(),
-            }
+            data
         );
         const raw = response.data.data;
         return {
-            verdict: mapVerdict(raw.verdict),
-            summary: raw.summary ?? { passed: 0, failed: 0, total: 0 },
-            performance: raw.performance ?? { totalTimeMs: 0, maxMemoryKb: 0 },
+            verdict: raw.verdict,
+            summary: raw.summary ?? { passed: 0, failed: 0, total: 0, executed: 0 },
+            performance: raw.performance ?? { maxTimeMs: 0, maxMemoryKb: 0 },
             results: mapTestCases(raw.testCases ?? []),
-            totalTime: raw.performance?.totalTimeMs ?? 0,
+            totalTime: raw.performance?.maxTimeMs ?? 0,
             compilationError: raw.compilationError,
         };
     },
@@ -129,23 +179,30 @@ export const judgeApi = {
     submit: async (data: RunRequest): Promise<SubmitResponse> => {
         const response = await apiClient.post<ApiResponse<RawJudgeResponse>>(
             "/judge/submit",
-            {
-                ...data,
-                language: data.language.toUpperCase(),
-            }
+            data
         );
         const raw = response.data.data;
+
+        if (!raw.submissionId) {
+            throw new Error("Judge submit response is missing submissionId");
+        }
+
         return {
-            id: raw.submissionId ?? "",
-            status: mapVerdict(raw.verdict),
-            summary: raw.summary ?? { passed: 0, failed: 0, total: 0 },
-            performance: raw.performance ?? { totalTimeMs: 0, maxMemoryKb: 0 },
-            results: mapTestCases(raw.testCases ?? []),
-            totalTime: raw.performance?.totalTimeMs ?? 0,
-            memoryUsed: Math.round((raw.performance?.maxMemoryKb ?? 0) / 1024),
+            id: raw.submissionId,
+            status: raw.verdict,
+            summary: raw.summary,
+            performance: raw.performance,
+            results: raw.testCases ? mapTestCases(raw.testCases) : null,
             compilationError: raw.compilationError,
-            lessonProgressUpdated: raw.lessonProgressUpdated ?? false,
+            progressUpdated: raw.progressUpdated,
         };
+    },
+
+    getSubmission: async (submissionId: string): Promise<SubmissionDetail> => {
+        const response = await apiClient.get<ApiResponse<RawSubmissionDetail>>(
+            `/submissions/${submissionId}`
+        );
+        return mapSubmissionDetail(response.data.data);
     },
 
     getSubmissions: async (
