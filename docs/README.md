@@ -29,3 +29,13 @@ learning roadmaps. It guides learners systematically from foundational concepts 
 - Powered by LLMs and vector databases to analyze the user's code and intent.
 - Provides helpful hints strictly within the scope of the current lesson. This helps students debug and solve problems
   on their own without being overwhelmed by overly complex, out-of-scope solutions.
+
+# API Alignment Documents
+
+- [Current Lesson API](./CURRENT_LESSON_API.md): yêu cầu backend triển khai `GET /users/me/current-lesson` cho dashboard.
+- [Auth Alignment](./AUTH_ALIGNMENT_BE.MD): đồng bộ luồng xác thực giữa FE và BE.
+- [Landing API](./LANDING_API.md): dữ liệu landing page.
+- [AI Chat Integration Guide](./ai_chat_integration_guide.md): tích hợp AI chatbot.
+- [Chat History](./CHAT_HISTORY.md): API lịch sử hội thoại.
+- [Video Lesson Integration](./video_lesson_integration.md): API bài học video.
+- [Judge Alignment](./judge_alignment.md): đồng bộ judge/coding submission.

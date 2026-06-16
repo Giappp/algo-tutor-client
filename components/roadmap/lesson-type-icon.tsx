@@ -19,21 +19,21 @@ const lessonTypeConfig: Record<
 > = {
     THEORY: {
         icon: BookOpenIcon,
-        label: "Theory",
+        label: "Lý thuyết",
         pillClass:
             "bg-blue-500/10 text-blue-600 border-blue-500/20 dark:bg-blue-500/15 dark:text-blue-400 dark:border-blue-500/25",
         iconClass: "text-blue-500 dark:text-blue-400",
     },
     QUIZ: {
         icon: HelpCircleIcon,
-        label: "Quiz",
+        label: "Trắc nghiệm",
         pillClass:
             "bg-amber-500/10 text-amber-600 border-amber-500/20 dark:bg-amber-500/15 dark:text-amber-400 dark:border-amber-500/25",
         iconClass: "text-amber-500 dark:text-amber-400",
     },
     CODING: {
         icon: Code2Icon,
-        label: "Coding",
+        label: "Lập trình",
         pillClass:
             "bg-emerald-500/10 text-emerald-600 border-emerald-500/20 dark:bg-emerald-500/15 dark:text-emerald-400 dark:border-emerald-500/25",
         iconClass: "text-emerald-500 dark:text-emerald-400",

@@ -14,19 +14,19 @@ export function WhatYoullLearn({ skills, className }: WhatYoullLearnProps) {
     return (
         <div
             className={cn(
-                "grid grid-cols-1 gap-2 sm:grid-cols-2 rounded-xl border border-border bg-card p-5",
+                "grid grid-cols-1 gap-3 rounded-xl border border-border/70 bg-card/70 p-5 shadow-sm shadow-foreground/5 sm:grid-cols-2",
                 className
             )}
         >
-            <h3 className="col-span-full text-sm font-semibold text-foreground mb-1">
-                What you&apos;ll learn
+            <h3 className="col-span-full mb-1 text-sm font-semibold text-foreground">
+                Bạn sẽ học được gì
             </h3>
             {skills.map((skill, i) => (
                 <div
                     key={i}
                     className="flex items-start gap-2.5"
                 >
-                    <div className="flex size-5 shrink-0 items-center justify-center rounded-full bg-emerald-500/15 mt-0.5">
+                    <div className="mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-md bg-emerald-500/15 ring-1 ring-emerald-500/20">
                         <CheckIcon className="size-3 text-emerald-500" />
                     </div>
                     <span className="text-sm text-muted-foreground leading-relaxed">

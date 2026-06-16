@@ -1,7 +1,6 @@
 "use client";
 
 import { useUser } from "@/hooks/use-user";
-import { useCurrentLesson } from "@/hooks/use-current-lesson";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import Link from "next/link";
@@ -9,24 +8,10 @@ import { ArrowRightIcon, MapIcon, UserIcon } from "lucide-react";
 
 export function WelcomeSection() {
     const { user } = useUser();
-    const { currentLesson, isLoading, isError } = useCurrentLesson();
 
     let subtitle: React.ReactNode;
     let ctaHref: string = "/roadmaps";
     let showContinue = false;
-
-    if (isLoading) {
-        subtitle = <Skeleton className="h-5 w-72 bg-muted/60" />;
-    } else if (isError || !currentLesson) {
-        subtitle =
-            currentLesson === undefined && isError
-                ? "Chào mừng bạn trở lại"
-                : "Bắt đầu hành trình học thuật toán ngay hôm nay";
-    } else {
-        subtitle = `Tiếp tục hành trình trong ${currentLesson.roadmapName} - bạn đã hoàn thành ${currentLesson.completionPercentage}%`;
-        ctaHref = `/learn/${currentLesson.roadmapSlug}/${currentLesson.lessonSlug}`;
-        showContinue = true;
-    }
 
     return (
         <section className="relative overflow-hidden rounded-2xl border border-primary/15 bg-card shadow-sm">

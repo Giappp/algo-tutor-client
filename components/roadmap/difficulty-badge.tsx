@@ -12,12 +12,12 @@ const difficultyConfig: Record<
     string,
     { label: string; variant: "easy" | "medium" | "hard" }
 > = {
-    EASY: { label: "Easy", variant: "easy" },
-    MEDIUM: { label: "Medium", variant: "medium" },
-    HARD: { label: "Hard", variant: "hard" },
-    BEGINNER: { label: "Beginner", variant: "easy" },
-    INTERMEDIATE: { label: "Intermediate", variant: "medium" },
-    ADVANCED: { label: "Advanced", variant: "hard" },
+    EASY: { label: "Dễ", variant: "easy" },
+    MEDIUM: { label: "Vừa", variant: "medium" },
+    HARD: { label: "Khó", variant: "hard" },
+    BEGINNER: { label: "Nhập môn", variant: "easy" },
+    INTERMEDIATE: { label: "Trung cấp", variant: "medium" },
+    ADVANCED: { label: "Nâng cao", variant: "hard" },
 };
 
 export function DifficultyBadge({ difficulty, className }: DifficultyBadgeProps) {
@@ -26,7 +26,7 @@ export function DifficultyBadge({ difficulty, className }: DifficultyBadgeProps)
     return (
         <span
             className={cn(
-                "inline-flex h-6 min-w-[60px] items-center justify-center rounded-full border px-2.5 text-[11px] font-bold uppercase tracking-wider",
+                "inline-flex h-6 min-w-[60px] items-center justify-center rounded-md border px-2.5 text-[11px] font-semibold",
                 config.variant === "easy" &&
                     "border-[oklch(0.72_0.18_145/0.5)] bg-[oklch(0.72_0.18_145/0.2)] text-[oklch(0.72_0.18_145)] dark:border-[oklch(0.72_0.18_145/0.6)] dark:bg-[oklch(0.72_0.18_145/0.25)] dark:text-[oklch(0.72_0.18_145)]",
                 config.variant === "medium" &&

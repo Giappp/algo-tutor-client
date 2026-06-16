@@ -10,7 +10,7 @@ import {
     AccordionTrigger,
     AccordionContent,
 } from "@/components/ui/accordion";
-import { LockIcon, CheckIcon } from "lucide-react";
+import { CheckIcon, ChevronRightIcon, LockIcon } from "lucide-react";
 import type { ProgressStatus } from "@/lib/types";
 
 interface TopicAccordionProps {
@@ -57,7 +57,7 @@ function LessonItem({
     const router = useRouter();
 
     const handleClick = () => {
-        if (isLocked) return;
+        if (isLocked || !roadmapSlug) return;
         router.push(`/learn/${roadmapSlug}/${lesson.slug}`);
     };
 
@@ -66,14 +66,19 @@ function LessonItem({
             onClick={handleClick}
             role="button"
             tabIndex={isLocked ? -1 : 0}
-            onKeyDown={(e) => e.key === "Enter" && handleClick()}
+            aria-disabled={isLocked}
+            onKeyDown={(e) => {
+                if (e.key !== "Enter" && e.key !== " ") return;
+                e.preventDefault();
+                handleClick();
+            }}
             className={cn(
-                "group/lesson flex items-center gap-3 rounded-xl p-3",
+                "group/lesson flex items-center gap-3 rounded-xl p-3 outline-none",
                 "border border-transparent",
                 "transition-all duration-200",
                 isLocked
                     ? "opacity-50 cursor-not-allowed"
-                    : "hover:bg-muted/60 hover:border-border cursor-pointer",
+                    : "hover:bg-muted/60 hover:border-border cursor-pointer focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30",
             )}
             style={{ animationDelay: `${index * 40}ms` }}
         >
@@ -114,7 +119,10 @@ function LessonItem({
                 {isLocked ? (
                     <LockIcon className="size-4 text-muted-foreground" />
                 ) : (
-                    statusIcon(lesson.progress ?? null)
+                    <div className="flex items-center gap-2">
+                        {statusIcon(lesson.progress ?? null)}
+                        <ChevronRightIcon className="size-4 text-muted-foreground/45 transition-transform duration-200 group-hover/lesson:translate-x-0.5 group-hover/lesson:text-primary"/>
+                    </div>
                 )}
             </div>
         </div>
@@ -128,9 +136,11 @@ export function TopicAccordion({
     roadmapSlug,
 }: TopicAccordionProps) {
     const totalLessons = topic.lessonCount;
+    const isLocked = topic.isLocked || topic.unlocked === false;
     const codingLessons = topic.lessons.filter((l) => l.type === "CODING").length;
     const theoryLessons = topic.lessons.filter((l) => l.type === "THEORY").length;
     const quizLessons = topic.lessons.filter((l) => l.type === "QUIZ").length;
+    const videoLessons = topic.lessons.filter((l) => l.type === "VIDEO").length;
 
     const progressPercent =
         totalLessons > 0 ? Math.round((completedCount / totalLessons) * 100) : 0;
@@ -140,15 +150,15 @@ export function TopicAccordion({
             value={topic.name}
             className={cn("border-b border-border/60 last:border-b-0", className)}
         >
-            <AccordionTrigger className="px-4 py-4 hover:no-underline hover:bg-muted/30 rounded-xl transition-colors duration-200">
+            <AccordionTrigger className="rounded-xl px-4 py-4 transition-colors duration-200 hover:bg-muted/40 hover:no-underline focus-visible:ring-2 focus-visible:ring-ring/30">
                 <div className="flex items-start gap-4 text-left w-full pr-2">
                     {/* Topic Number Badge */}
                     <div
                         className={cn(
                             "flex size-10 shrink-0 items-center justify-center rounded-xl text-sm font-bold transition-colors duration-200",
-                            !topic.unlocked
+                            isLocked
                                 ? "bg-muted text-muted-foreground"
-                                : "bg-primary/10 text-primary",
+                                : "bg-primary/10 text-primary ring-1 ring-primary/15",
                         )}
                     >
                         {topic.displayOrder}
@@ -160,10 +170,10 @@ export function TopicAccordion({
                             <span className="text-sm font-bold text-foreground tracking-tight">
                                 {topic.name}
                             </span>
-                            {!topic.unlocked && (
-                                <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5">
+                            {isLocked && (
+                                <span className="inline-flex items-center gap-1 rounded-md bg-muted px-2 py-0.5">
                                     <LockIcon className="size-2.5 text-muted-foreground" />
-                                    <span className="text-[10px] font-medium text-muted-foreground">Locked</span>
+                                    <span className="text-[10px] font-medium text-muted-foreground">Đang khóa</span>
                                 </span>
                             )}
                         </div>
@@ -177,37 +187,42 @@ export function TopicAccordion({
                         <div className="flex items-center gap-3 flex-wrap">
                             <span className="flex items-center gap-1.5 text-[11px] text-muted-foreground/70">
                                 <span className="font-semibold text-foreground">{totalLessons}</span>
-                                <span>lessons</span>
+                                <span>bài học</span>
                             </span>
                             {theoryLessons > 0 && (
                                 <span className="text-[11px] text-blue-500/80 font-medium">
-                                    {theoryLessons} theory
+                                    {theoryLessons} lý thuyết
                                 </span>
                             )}
                             {quizLessons > 0 && (
                                 <span className="text-[11px] text-amber-500/80 font-medium">
-                                    {quizLessons} quiz
+                                    {quizLessons} trắc nghiệm
                                 </span>
                             )}
                             {codingLessons > 0 && (
                                 <span className="text-[11px] text-emerald-500/80 font-medium">
-                                    {codingLessons} coding
+                                    {codingLessons} lập trình
+                                </span>
+                            )}
+                            {videoLessons > 0 && (
+                                <span className="text-[11px] text-rose-500/80 font-medium">
+                                    {videoLessons} video
                                 </span>
                             )}
 
                             {/* Progress indicator */}
-                            {completedCount > 0 && topic.unlocked && (
+                            {completedCount > 0 && !isLocked && (
                                 <div className="flex items-center gap-2 ml-auto">
                                     <span className="text-[11px] font-semibold text-primary">
                                         {completedCount}/{totalLessons}
                                     </span>
-                                    <span className="text-[11px] text-muted-foreground">done</span>
+                                    <span className="text-[11px] text-muted-foreground">đã học</span>
                                 </div>
                             )}
                         </div>
  
                         {/* Progress Bar */}
-                        {completedCount > 0 && topic.unlocked && (
+                        {completedCount > 0 && !isLocked && (
                             <div className="h-1 rounded-full bg-muted overflow-hidden">
                                 <div
                                     className="h-full rounded-full bg-gradient-to-r from-primary/80 to-primary transition-all duration-700 ease-out"
@@ -225,7 +240,7 @@ export function TopicAccordion({
                         <LessonItem
                             key={lesson.slug}
                             lesson={lesson}
-                            isLocked={!topic.unlocked}
+                            isLocked={isLocked}
                             index={i}
                             roadmapSlug={roadmapSlug ?? ""}
                         />
