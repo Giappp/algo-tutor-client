@@ -1,21 +1,3 @@
-/**
- * Landing Page — entry point.
- *
- * Each section fetches its own data via SWR / Axios from the Spring Boot backend.
- * Spring Boot endpoints expected:
- *   GET /api/landing/stats
- *   GET /api/landing/features
- *   GET /api/landing/roadmaps
- *   GET /api/landing/testimonials
- *   GET /api/landing/faqs
- *   GET /api/landing/how-it-works
- *
- * Mock data for demo mode (when backend is offline): @/lib/mock/landing-data.ts
- * Axios client: @/lib/api-client.ts
- * SWR hook: @/hooks/use-landing-data.ts
- * Types: @/lib/types/landing.ts
- */
-
 import type {Metadata} from "next";
 import {LandingPageClient} from "@/components/landing/landing-page-client";
 

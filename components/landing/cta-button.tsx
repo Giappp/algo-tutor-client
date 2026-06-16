@@ -1,7 +1,24 @@
+"use client";
+
 import {Button} from "@/components/ui/button";
 import Link from "next/link";
 import {ArrowRight, Loader2} from "lucide-react";
 import {useUser} from "@/hooks/use-user";
+
+const LEARNING_HREF = "/home";
+const SIGN_IN_HREF = "/auth";
+const SIGN_UP_HREF = "/auth?tab=signup";
+
+function LearningButton({className}: { className?: string }) {
+    return (
+        <Button variant="gradient" size="sm" className={className} asChild>
+            <Link href={LEARNING_HREF}>
+                Vào trang học
+                <ArrowRight className="size-3.5"/>
+            </Link>
+        </Button>
+    );
+}
 
 const CtaButton = () => {
     const {isLoading, isLoggedIn} = useUser();
@@ -17,20 +34,8 @@ const CtaButton = () => {
     if (isLoggedIn) {
         return (
             <>
-                {/* Desktop */}
-                <Button variant="gradient" size="sm" className="hidden md:inline-flex gap-1.5" asChild>
-                    <Link href="/home">
-                        Vào trang học
-                        <ArrowRight className="size-3.5"/>
-                    </Link>
-                </Button>
-                {/* Mobile */}
-                <Button variant="gradient" size="sm" className="flex-1 md:hidden gap-1.5" asChild>
-                    <Link href="/home">
-                        Vào trang học
-                        <ArrowRight className="size-3.5"/>
-                    </Link>
-                </Button>
+                <LearningButton className="hidden md:inline-flex gap-1.5"/>
+                <LearningButton className="flex-1 md:hidden gap-1.5"/>
             </>
         )
     }
@@ -38,10 +43,10 @@ const CtaButton = () => {
     return (
         <>
             <Button variant="ghost" size="sm" asChild>
-                <Link href="/auth">Đăng nhập</Link>
+                <Link href={SIGN_IN_HREF}>Đăng nhập</Link>
             </Button>
             <Button size="sm" className="gap-1.5" asChild>
-                <Link href="/auth?tab=signup">
+                <Link href={SIGN_UP_HREF}>
                     Học miễn phí
                     <ArrowRight className="size-3.5"/>
                 </Link>
