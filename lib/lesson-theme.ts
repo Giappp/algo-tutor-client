@@ -31,6 +31,16 @@ export const LESSON_THEME_MAP = {
       "--lesson-accent-glow": "oklch(0.72 0.18 145 / 20%)",
     },
   },
+  VIDEO: {
+    accent: "video" as const,
+    hue: 25,
+    cssVars: {
+      "--lesson-accent": "oklch(0.68 0.2 25)",
+      "--lesson-accent-muted": "oklch(0.68 0.2 25 / 10%)",
+      "--lesson-accent-border": "oklch(0.68 0.2 25 / 30%)",
+      "--lesson-accent-glow": "oklch(0.68 0.2 25 / 20%)",
+    },
+  },
 } as const;
 
 export type LessonThemeConfig =

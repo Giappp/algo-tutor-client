@@ -5,6 +5,7 @@ import Link from "next/link";
 import { TheoryContent } from "@/components/learn/theory-content";
 import { QuizContent } from "@/components/learn/quiz/quiz-content";
 import { CodingContent } from "@/components/learn/coding-content";
+import { VideoContent } from "@/components/learn/video-content";
 import { useRoadmapActions, useRoadmapDetail, useLessonContent, useAutoMarkInProgress } from "@/hooks";
 import type { RoadmapDetailResponse, LessonType } from "@/lib/types/roadmap";
 import type { TheoryLesson, Quiz, CodingProblem } from "@/lib/types/lesson";
@@ -23,6 +24,7 @@ function getLessonType(
         if (lesson) return lesson.type;
     }
     // Fallback: detect from slug
+    if (lessonSlug.includes("video")) return "VIDEO";
     if (lessonSlug.includes("quiz")) return "QUIZ";
     if (lessonSlug.includes("coding")) return "CODING";
     return "THEORY";
@@ -128,10 +130,13 @@ export default function LearnPage({ params }: PageProps) {
 
     const lessonType: LessonType = roadmap
         ? getLessonType(roadmap.topics, lessonSlug)
-        : (lessonSlug.includes("quiz") ? "QUIZ" : lessonSlug.includes("coding") ? "CODING" : "THEORY");
+        : (lessonSlug.includes("video") ? "VIDEO" : lessonSlug.includes("quiz") ? "QUIZ" : lessonSlug.includes("coding") ? "CODING" : "THEORY");
 
     // Fetch lesson content based on type using custom hook
-    const { lessonData, isLoading: isLoadingContent, error: contentError, mutate: mutateContent } = useLessonContent(lessonSlug, lessonType);
+    const { lessonData, isLoading: isLoadingContent, error: contentError, mutate: mutateContent } = useLessonContent(
+        lessonSlug,
+        lessonType === "VIDEO" ? null : lessonType
+    );
     const { enroll, isEnrolling, updateLessonProgress } = useRoadmapActions();
     const [contentCompleted, setContentCompleted] = useState(false);
 
@@ -179,8 +184,19 @@ export default function LearnPage({ params }: PageProps) {
                 isEnrolling={isEnrolling}
             />
         );
-    } else if (isLoadingContent) {
+    } else if (lessonType !== "VIDEO" && isLoadingContent) {
         content = <LessonLoading />;
+    } else if (lessonType === "VIDEO") {
+        content = (
+            <VideoContent
+                key={lessonSlug}
+                lessonSlug={lessonSlug}
+                onComplete={() => {
+                    handleContentComplete();
+                    mutateRoadmap();
+                }}
+            />
+        );
     } else if (lessonType === "THEORY" && lessonData) {
         content = (
             <TheoryContent

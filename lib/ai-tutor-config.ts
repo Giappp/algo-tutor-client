@@ -30,12 +30,14 @@ const DEFAULT_MODE_BY_LESSON_TYPE: Record<LessonContext["lessonType"], string> =
     CODING: "HINT",
     QUIZ: "EXPLAIN",
     THEORY: "EXPLAIN",
+    VIDEO: "EXPLAIN",
 };
 
 const LESSON_TYPE_DESCRIPTIONS: Record<LessonContext["lessonType"], string> = {
     CODING: "thử thách lập trình",
     QUIZ: "bài tập trắc nghiệm",
     THEORY: "bài học lý thuyết",
+    VIDEO: "bài học video",
 };
 
 const CODING_QUICK_ACTIONS: QuickAction[] = [

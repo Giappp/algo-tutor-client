@@ -10,7 +10,7 @@ export {useEnrollments} from "./use-enrollments";
 export {useRoadmaps} from "./use-roadmaps";
 export {useRoadmapDetail} from "./use-roadmap-detail";
 export {useLessonContent} from "./use-lesson-content";
+export {useVideoLesson} from "./use-video-lesson";
 export {useLessonProgress, useRoadmapProgress} from "./use-lesson-progress";
 export {useAutoMarkInProgress} from "./use-auto-mark-progress";
-
 

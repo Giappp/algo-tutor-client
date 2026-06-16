@@ -34,6 +34,7 @@ interface LearningLayoutProps {
     isUpdating?: boolean;
     isCompleted?: boolean;
     isLocked?: boolean;
+    allowManualComplete?: boolean;
     children: React.ReactNode;
 }
 
@@ -134,6 +135,7 @@ export function LearningLayout({
     isUpdating = false,
     isCompleted: isCompletedProp,
     isLocked = false,
+    allowManualComplete = true,
     children,
 }: LearningLayoutProps) {
     const router = useRouter();
@@ -314,6 +316,7 @@ export function LearningLayout({
                             onMarkComplete={onMarkComplete}
                             isUpdating={isUpdating}
                             isCompleted={isCompleted}
+                            allowManualComplete={allowManualComplete}
                         >
                             {children}
                         </LessonContentArea>

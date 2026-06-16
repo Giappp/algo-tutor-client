@@ -46,10 +46,37 @@ export interface TheoryLesson {
     estimatedMinutes: number;
 }
 
+export interface VideoContent {
+    id: number;
+    slug: string;
+    title: string;
+    description: string | null;
+    durationSeconds: number;
+    playbackUrl: string;
+    expiresAt: string;
+}
+
+export interface VideoProgress {
+    lessonId: number;
+    lessonSlug: string;
+    durationSeconds: number;
+    positionSeconds: number;
+    watchedSeconds: number;
+    watchedPercentage: number;
+    status: "NOT_STARTED" | "IN_PROGRESS" | "COMPLETED";
+    completed: boolean;
+    updatedAt: string | null;
+}
+
+export interface VideoProgressUpdate {
+    positionSeconds: number;
+    watchedDeltaSeconds: number;
+}
+
 export interface LessonSummary {
     slug: string;
     title: string;
-    type: "THEORY" | "QUIZ" | "CODING";
+    type: "THEORY" | "QUIZ" | "CODING" | "VIDEO";
 }
 
 export interface LessonNav {
@@ -62,7 +89,7 @@ export interface LessonContext {
     roadmapName: string;
     lessonSlug: string;
     lessonTitle: string;
-    lessonType: "THEORY" | "QUIZ" | "CODING";
+    lessonType: "THEORY" | "QUIZ" | "CODING" | "VIDEO";
     lessonId?: number;
     problemDescription?: string;
 }

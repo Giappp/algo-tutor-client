@@ -21,6 +21,7 @@ interface LessonContentAreaProps {
     onMarkComplete: () => void;
     isUpdating: boolean;
     isCompleted: boolean;
+    allowManualComplete?: boolean;
     children: ReactNode;
 }
 
@@ -90,6 +91,7 @@ export function LessonContentArea({
     onMarkComplete,
     isUpdating,
     isCompleted,
+    allowManualComplete = true,
     children,
 }: LessonContentAreaProps) {
     return (
@@ -109,11 +111,13 @@ export function LessonContentArea({
                         <Button
                             size="sm"
                             onClick={onMarkComplete}
-                            disabled={isUpdating || isCompleted}
+                            disabled={isUpdating || isCompleted || !allowManualComplete}
                             aria-live="polite"
                             className={cn(
                                 "h-9 gap-2 rounded-lg px-3.5 text-sm font-bold shadow-sm transition-all sm:px-5",
-                                isCompleted
+                                !allowManualComplete
+                                    ? "cursor-default border border-[var(--lesson-accent-border)] bg-[var(--lesson-accent-muted)] text-[var(--lesson-accent)] shadow-none hover:bg-[var(--lesson-accent-muted)]"
+                                    : isCompleted
                                     ? "cursor-default border border-emerald-500/25 bg-emerald-500/10 text-emerald-700 shadow-none hover:bg-emerald-500/10 dark:text-emerald-400"
                                     : "bg-primary text-primary-foreground shadow-primary/20 hover:bg-primary/90"
                             )}
@@ -132,13 +136,15 @@ export function LessonContentArea({
                             <span className="hidden sm:inline">
                                 {isUpdating
                                     ? "Đang cập nhật..."
+                                    : !allowManualComplete
+                                        ? "Tự động lưu"
                                     : isCompleted
                                         ? "Đã hoàn thành"
                                         : "Đánh dấu xong"}
                             </span>
 
                             <span className="sm:hidden">
-                                {isCompleted ? "Done" : "Complete"}
+                                {!allowManualComplete ? "Auto" : isCompleted ? "Done" : "Complete"}
                             </span>
                         </Button>
                     </div>

@@ -22,6 +22,7 @@ function getLessonType(
         const lesson = topic.lessons.find((l) => l.slug === lessonSlug);
         if (lesson) return lesson.type;
     }
+    if (lessonSlug.includes("video")) return "VIDEO";
     if (lessonSlug.includes("quiz")) return "QUIZ";
     if (lessonSlug.includes("coding")) return "CODING";
     return "THEORY";
@@ -55,6 +56,7 @@ export default function RoadmapLearnLayout({ children, params }: LayoutProps) {
     const isLocked = !roadmap.enrolled;
 
     const handleMarkComplete = async () => {
+        if (lessonType === "VIDEO") return;
         if (!lessonSlug) return;
         try {
             await updateLessonProgress(roadmapSlug, lessonSlug, "COMPLETED");
@@ -73,6 +75,7 @@ export default function RoadmapLearnLayout({ children, params }: LayoutProps) {
                 roadmapData={roadmap}
                 isUpdating={isUpdatingProgress}
                 isLocked={isLocked}
+                allowManualComplete={lessonType !== "VIDEO"}
                 onMarkComplete={handleMarkComplete}
             >
                 {children}

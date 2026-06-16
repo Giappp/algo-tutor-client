@@ -2,7 +2,7 @@ export type Level = "BEGINNER" | "INTERMEDIATE" | "ADVANCED";
 
 export type Difficulty = "EASY" | "MEDIUM" | "HARD";
 
-export type LessonType = "THEORY" | "QUIZ" | "CODING";
+export type LessonType = "THEORY" | "QUIZ" | "CODING" | "VIDEO";
 
 export type ProgressStatus = "NOT_STARTED" | "IN_PROGRESS" | "COMPLETED";
 
@@ -111,4 +111,5 @@ export const LESSON_TYPE_COUNTS = {
     THEORY: { label: "theory", color: "text-blue-500/80" },
     QUIZ: { label: "quiz", color: "text-amber-500/80" },
     CODING: { label: "coding", color: "text-emerald-500/80" },
+    VIDEO: { label: "video", color: "text-rose-500/80" },
 } as const;

@@ -4,7 +4,7 @@ import { createContext, useContext, useMemo } from "react";
 import type { LessonType } from "@/lib/types/roadmap";
 import { LESSON_THEME_MAP, getLessonThemeVars } from "@/lib/lesson-theme";
 
-type LessonAccent = "theory" | "quiz" | "coding";
+type LessonAccent = "theory" | "quiz" | "coding" | "video";
 
 interface LessonThemeContextValue {
   accent: LessonAccent;

@@ -5,7 +5,7 @@ import type { CodingProblem, Quiz, TheoryLesson } from "@/lib/types/lesson";
 type LessonContent = TheoryLesson | Quiz | CodingProblem;
 
 export function useLessonContent(lessonSlug: string | null | undefined, lessonType: LessonType | null | undefined) {
-    const endpoint = lessonSlug && lessonType
+    const endpoint = lessonSlug && lessonType && lessonType !== "VIDEO"
         ? `/lessons/${lessonSlug}/${lessonType.toLowerCase()}`
         : null;
 

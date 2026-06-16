@@ -1,6 +1,6 @@
 import { cn } from "@/lib/utils";
 import type { LessonType } from "@/lib/types";
-import { BookOpenIcon, HelpCircleIcon, Code2Icon } from "lucide-react";
+import { BookOpenIcon, HelpCircleIcon, Code2Icon, PlaySquareIcon } from "lucide-react";
 
 interface LessonTypeIconProps {
     type: LessonType;
@@ -37,6 +37,13 @@ const lessonTypeConfig: Record<
         pillClass:
             "bg-emerald-500/10 text-emerald-600 border-emerald-500/20 dark:bg-emerald-500/15 dark:text-emerald-400 dark:border-emerald-500/25",
         iconClass: "text-emerald-500 dark:text-emerald-400",
+    },
+    VIDEO: {
+        icon: PlaySquareIcon,
+        label: "Video",
+        pillClass:
+            "bg-rose-500/10 text-rose-600 border-rose-500/20 dark:bg-rose-500/15 dark:text-rose-400 dark:border-rose-500/25",
+        iconClass: "text-rose-500 dark:text-rose-400",
     },
 };
 
