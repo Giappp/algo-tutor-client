@@ -1,8 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import SockJS from "sockjs-client";
-import { Client } from "@stomp/stompjs";
 import {
     CheckCircle2Icon,
     CodeIcon,
@@ -15,9 +13,7 @@ import {
 import {
     isSubmissionInProgress,
     judgeApi,
-    mapTestCase,
     type SubmissionDetail,
-    type SubmissionEvent,
     type SubmissionSummary,
 } from "@/api/judge";
 import type { CodingProblem, Submission } from "@/lib/types/lesson";
@@ -48,7 +44,8 @@ interface CodingContentProps {
 type LeftTab = "description" | "submissions";
 
 const DEFAULT_LANGUAGE = "java";
-const DEFAULT_WS_ENDPOINT = "http://localhost:8080/ws";
+const SUBMISSION_POLL_INTERVAL_MS = 1500;
+const SUBMISSION_POLL_ERROR_INTERVAL_MS = 3000;
 
 const MIN_LEFT_WIDTH = 28;
 const MAX_LEFT_WIDTH = 62;
@@ -57,24 +54,6 @@ const MAX_EDITOR_HEIGHT = 78;
 
 function clamp(value: number, min: number, max: number): number {
     return Math.max(min, Math.min(max, value));
-}
-
-function getWsEndpointUrl(): string {
-    if (process.env.NEXT_PUBLIC_WS_URL) {
-        return process.env.NEXT_PUBLIC_WS_URL;
-    }
-
-    const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
-    if (!apiBaseUrl) {
-        return DEFAULT_WS_ENDPOINT;
-    }
-
-    try {
-        const url = new URL(apiBaseUrl);
-        return `${url.protocol}//${url.host}/ws`;
-    } catch {
-        return DEFAULT_WS_ENDPOINT;
-    }
 }
 
 function getStarterCode(problem: CodingProblem, language: string): string {
@@ -147,40 +126,6 @@ function upsertSubmission(
     ];
 }
 
-function createStompClient(): Client {
-    const endpointUrl = getWsEndpointUrl();
-
-    const client = new Client({
-        webSocketFactory: () => new SockJS(endpointUrl),
-        reconnectDelay: 5000,
-        heartbeatIncoming: 4000,
-        heartbeatOutgoing: 4000,
-        debug: (message) => {
-            if (process.env.NODE_ENV === "development") {
-                console.log("[STOMP]", message);
-            }
-        },
-    });
-
-    client.onConnect = () => {
-        console.log("[WebSocket] Connected.");
-    };
-
-    client.onStompError = (frame) => {
-        console.error("[WebSocket] STOMP error:", frame.headers["message"]);
-    };
-
-    client.onWebSocketError = (event) => {
-        console.error("[WebSocket] Connection error:", event);
-    };
-
-    client.onWebSocketClose = () => {
-        console.log("[WebSocket] Closed.");
-    };
-
-    return client;
-}
-
 export function CodingContent({
     problem,
     onComplete,
@@ -207,9 +152,10 @@ export function CodingContent({
     const rightPanelRef = useRef<HTMLDivElement>(null);
     const isDraggingHorizontal = useRef(false);
     const isDraggingVertical = useRef(false);
-    const stompClientRef = useRef<Client | null>(null);
+    const submissionPollTimerRef = useRef<ReturnType<typeof setTimeout> | null>(
+        null
+    );
     const activeSubmissionIdRef = useRef<string | null>(null);
-    const activeSubmissionContextRef = useRef({ language, code });
     const currentProblemSlugRef = useRef(problem.slug);
 
     const codeByLang = useRef<Record<string, string>>({
@@ -226,13 +172,11 @@ export function CodingContent({
         setRevealedHints((value) => Math.min(value + 1, problem.hints.length));
     }, [problem.hints.length]);
 
-    const deactivateStompClient = useCallback(() => {
-        const client = stompClientRef.current;
+    const stopSubmissionPolling = useCallback(() => {
+        if (!submissionPollTimerRef.current) return;
 
-        if (client) {
-            client.deactivate().catch(() => undefined);
-            stompClientRef.current = null;
-        }
+        clearTimeout(submissionPollTimerRef.current);
+        submissionPollTimerRef.current = null;
     }, []);
 
     const markLessonCompleted = useCallback(
@@ -268,9 +212,9 @@ export function CodingContent({
             };
 
             activeSubmissionIdRef.current = null;
-            deactivateStompClient();
+            stopSubmissionPolling();
         });
-    }, [problem, deactivateStompClient]);
+    }, [problem, stopSubmissionPolling]);
 
     useEffect(() => {
         queueMicrotask(() => {
@@ -316,9 +260,9 @@ export function CodingContent({
 
     useEffect(() => {
         return () => {
-            deactivateStompClient();
+            stopSubmissionPolling();
         };
-    }, [deactivateStompClient]);
+    }, [stopSubmissionPolling]);
 
     const handleLanguageChange = useCallback(
         (nextLanguage: string) => {
@@ -437,112 +381,32 @@ export function CodingContent({
         }
     }, [code, isRunning, language, problem.slug]);
 
-    const updateTestCaseResult = useCallback(
-        (event: Extract<SubmissionEvent, { type: "TEST_CASE" }>) => {
-            setJudgeResult((prev) => {
-                const nextResult = mapTestCase({
-                    index: event.sortOrder,
-                    status: event.status,
-                    timeMs: event.timeMs,
-                    memoryKb: event.memoryKb,
-                    stdout: event.stdout,
-                    stderr: event.stderr,
-                });
-                const currentResults = (prev?.results ?? [])
-                    .filter((item) => item.index !== event.sortOrder)
-                    .concat(nextResult)
-                    .toSorted((a, b) => (a.index ?? 0) - (b.index ?? 0));
-
-                const passedCount = currentResults.filter((item) => item.passed).length;
-                const maxTimeMs = Math.max(
-                    0,
-                    ...currentResults.map((item) => item.executionTime ?? 0)
-                );
-                const maxMemoryKb = Math.max(
-                    0,
-                    ...currentResults.map((item) => item.memoryKb ?? 0)
-                );
-
-                return {
-                    verdict: "PROCESSING",
-                    results: currentResults,
-                    totalTimeMs: maxTimeMs,
-                    maxMemoryKb,
-                    compilationError: null,
-                    passed: passedCount,
-                    total: prev?.total ?? 0,
-                };
-            });
-        },
-        []
-    );
-
-    const handleFinalResult = useCallback(
-        async (event: Extract<SubmissionEvent, { type: "FINAL_RESULT" }>) => {
+    const completeSubmissionFromDetail = useCallback(
+        async (detail: SubmissionDetail) => {
             const lessonSlug = problem.slug;
 
             if (
                 currentProblemSlugRef.current !== lessonSlug ||
-                activeSubmissionIdRef.current !== event.submissionId
+                activeSubmissionIdRef.current !== detail.id
             ) {
                 return;
             }
 
-            setJudgeResult((prev) => {
-                return {
-                    verdict: event.status,
-                    results: prev?.results ?? [],
-                    totalTimeMs: event.maxTimeMs,
-                    maxMemoryKb: event.maxMemoryKb,
-                    compilationError: event.compilationError ?? null,
-                    passed: event.passed,
-                    total: event.total,
-                };
-            });
+            setJudgeResult(mapDetailToJudgeResult(detail));
+            setSubmissions((prev) =>
+                upsertSubmission(prev, mapDetailToSubmission(detail))
+            );
 
-            let submission: Submission = {
-                id: event.submissionId,
-                timestamp: new Date(),
-                language: activeSubmissionContextRef.current.language,
-                status: event.status,
-                passedTestcases: event.passed,
-                totalTestcases: event.total,
-                executionTime: event.maxTimeMs,
-                memoryUsed: event.maxMemoryKb,
-                code: activeSubmissionContextRef.current.code,
-            };
-
-            try {
-                const detail = await judgeApi.getSubmission(event.submissionId);
-                submission = mapDetailToSubmission(detail);
-                setJudgeResult(mapDetailToJudgeResult(detail));
-            } catch (error) {
-                console.warn("Failed to fetch final submission details:", error);
-            }
-
-            if (
-                currentProblemSlugRef.current !== lessonSlug ||
-                activeSubmissionIdRef.current !== event.submissionId
-            ) {
-                return;
-            }
-
-            setSubmissions((prev) => upsertSubmission(prev, submission));
-
-            if (event.status === "ACCEPTED") {
+            if (detail.status === "ACCEPTED") {
                 await markLessonCompleted(false);
             }
 
             sessionStorage.removeItem(getActiveSubmissionKey(lessonSlug));
             activeSubmissionIdRef.current = null;
-            deactivateStompClient();
+            stopSubmissionPolling();
             setIsSubmitting(false);
         },
-        [
-            problem.slug,
-            markLessonCompleted,
-            deactivateStompClient,
-        ]
+        [markLessonCompleted, problem.slug, stopSubmissionPolling]
     );
 
     const recoverSubmission = useCallback(
@@ -554,106 +418,68 @@ export function CodingContent({
                 return true;
             }
 
+            activeSubmissionIdRef.current = submissionId;
             setJudgeResult(mapDetailToJudgeResult(detail));
 
             if (isSubmissionInProgress(detail.status)) {
-                activeSubmissionIdRef.current = submissionId;
-                activeSubmissionContextRef.current = {
-                    language: detail.language,
-                    code: detail.sourceCode,
-                };
                 setIsSubmitting(true);
                 return false;
             }
 
-            sessionStorage.removeItem(getActiveSubmissionKey(lessonSlug));
-            activeSubmissionIdRef.current = null;
-            setSubmissions((prev) =>
-                upsertSubmission(prev, mapDetailToSubmission(detail))
-            );
-
-            if (detail.status === "ACCEPTED") {
-                await markLessonCompleted(false);
-            }
-
-            deactivateStompClient();
-            setIsSubmitting(false);
+            await completeSubmissionFromDetail(detail);
             return true;
         },
-        [deactivateStompClient, markLessonCompleted, problem.slug]
+        [completeSubmissionFromDetail, problem.slug]
     );
 
-    const subscribeToSubmission = useCallback(
+    const startSubmissionPolling = useCallback(
         (submissionId: string) => {
-            deactivateStompClient();
+            stopSubmissionPolling();
             activeSubmissionIdRef.current = submissionId;
 
-            const client = createStompClient();
+            const scheduleNextPoll = (delay: number) => {
+                submissionPollTimerRef.current = setTimeout(pollSubmission, delay);
+            };
 
-            client.onConnect = () => {
-                console.log("[WebSocket] Connected.");
+            function shouldContinuePolling() {
+                return (
+                    currentProblemSlugRef.current === problem.slug &&
+                    activeSubmissionIdRef.current === submissionId
+                );
+            }
 
-                client.subscribe(`/topic/submissions/${submissionId}`, (message) => {
-                    if (!message.body) return;
+            async function pollSubmission() {
+                if (!shouldContinuePolling()) return;
 
-                    try {
-                        const payload = JSON.parse(message.body) as SubmissionEvent;
+                try {
+                    const detail = await judgeApi.getSubmission(submissionId);
 
-                        if (
-                            payload.submissionId !== submissionId ||
-                            activeSubmissionIdRef.current !== submissionId
-                        ) {
-                            return;
-                        }
+                    if (!shouldContinuePolling()) return;
 
-                        if (payload.type === "TEST_CASE") {
-                            updateTestCaseResult(payload);
-                            return;
-                        }
+                    setJudgeResult(mapDetailToJudgeResult(detail));
 
-                        if (payload.type === "FINAL_RESULT") {
-                            handleFinalResult(payload).catch(
-                                (error) => {
-                                    console.error(
-                                        "Failed to handle final result:",
-                                        error
-                                    );
-                                    setIsSubmitting(false);
-                                }
-                            );
-                        }
-                    } catch (error) {
-                        console.error("Failed to process WebSocket payload:", error);
+                    if (isSubmissionInProgress(detail.status)) {
+                        setIsSubmitting(true);
+                        scheduleNextPoll(SUBMISSION_POLL_INTERVAL_MS);
+                        return;
                     }
-                });
-            };
 
-            client.onStompError = (frame) => {
-                console.error("[WebSocket] STOMP error:", frame.headers["message"]);
-                if (activeSubmissionIdRef.current !== submissionId) return;
+                    await completeSubmissionFromDetail(detail);
+                } catch (error) {
+                    console.warn("Failed to poll submission status:", error);
 
-                recoverSubmission(submissionId).catch((error) => {
-                    console.error("Failed to recover submission:", error);
-                });
-            };
+                    if (shouldContinuePolling()) {
+                        scheduleNextPoll(SUBMISSION_POLL_ERROR_INTERVAL_MS);
+                    }
+                }
+            }
 
-            client.onWebSocketError = (event) => {
-                console.error("[WebSocket] Error:", event);
-                if (activeSubmissionIdRef.current !== submissionId) return;
-
-                recoverSubmission(submissionId).catch((error) => {
-                    console.error("Failed to recover submission:", error);
-                });
-            };
-
-            stompClientRef.current = client;
-            client.activate();
+            pollSubmission();
         },
         [
-            deactivateStompClient,
-            handleFinalResult,
-            recoverSubmission,
-            updateTestCaseResult,
+            completeSubmissionFromDetail,
+            problem.slug,
+            stopSubmissionPolling,
         ]
     );
 
@@ -673,7 +499,7 @@ export function CodingContent({
                     if (!isMounted) return;
 
                     if (!isCompleted) {
-                        subscribeToSubmission(submissionId);
+                        startSubmissionPolling(submissionId);
                     }
                 })
                 .catch((error) => {
@@ -684,7 +510,7 @@ export function CodingContent({
         return () => {
             isMounted = false;
         };
-    }, [problem.slug, recoverSubmission, subscribeToSubmission]);
+    }, [problem.slug, recoverSubmission, startSubmissionPolling]);
 
     const handleSubmit = useCallback(async () => {
         if (isSubmitting) return;
@@ -692,7 +518,6 @@ export function CodingContent({
         const lessonSlug = problem.slug;
         setIsSubmitting(true);
         setJudgeResult(createPendingJudgeResult(0));
-        activeSubmissionContextRef.current = { language, code };
 
         try {
             const response = await judgeApi.submit({
@@ -723,7 +548,7 @@ export function CodingContent({
                 getActiveSubmissionKey(lessonSlug),
                 response.id
             );
-            subscribeToSubmission(response.id);
+            startSubmissionPolling(response.id);
         } catch (error) {
             console.error("Failed to submit code:", error);
             if (currentProblemSlugRef.current === lessonSlug) {
@@ -736,7 +561,7 @@ export function CodingContent({
         language,
         markLessonCompleted,
         problem.slug,
-        subscribeToSubmission,
+        startSubmissionPolling,
     ]);
 
     const desktopLeftPanel = useMemo(

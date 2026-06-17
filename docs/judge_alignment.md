@@ -20,7 +20,6 @@ Tài liệu này là contract cho luồng chạy thử và nộp bài qua Piston
 - `stdout` là output do code người dùng in ra.
 - `stderr` là compile/runtime error hoặc warning từ code người dùng.
 - `stdout`/`stderr` giữ nguyên nội dung và xuống dòng; FE nên render bằng `white-space: pre-wrap`.
-- Các field không áp dụng trong WebSocket final event sẽ bị bỏ khỏi JSON.
 - BE gửi memory limit tới Piston bằng `run_memory_limit` theo đơn vị bytes.
 
 Piston contract tham chiếu: <https://github.com/engineer-man/piston/blob/master/docs/api-v2.md#execute>
@@ -104,54 +103,17 @@ Submit tạo submission và chấm async trên toàn bộ testcase. HTTP respons
 }
 ```
 
-FE subscribe topic:
+FE lưu `submissionId`, sau đó polling `GET /submissions/{submissionId}` bằng REST API cho tới khi `status` không còn `PENDING` hoặc `PROCESSING`.
 
-```text
-/topic/submissions/{submissionId}
-```
+Khuyến nghị FE polling mỗi `1.5s`; nếu request lỗi tạm thời, retry chậm hơn, ví dụ `3s`. Khi reload trang, FE có thể đọc `submissionId` đang active trong session storage và tiếp tục polling endpoint detail.
 
-### WebSocket testcase event
-
-```json
-{
-  "type": "TEST_CASE",
-  "submissionId": "c973b055-f6ec-47bc-bac8-388838248ada",
-  "testCaseId": 12,
-  "status": "RUNTIME_ERROR",
-  "timeMs": 31,
-  "memoryKb": 2048,
-  "stdout": "partial output",
-  "stderr": "division by zero",
-  "sortOrder": 2,
-  "isCompleted": true
-}
-```
-
-`isCompleted=true` nghĩa là judge đã dừng hoặc đã chạy testcase cuối. FE vẫn phải chờ event `FINAL_RESULT` để chốt summary.
-
-### WebSocket final event
-
-```json
-{
-  "type": "FINAL_RESULT",
-  "submissionId": "c973b055-f6ec-47bc-bac8-388838248ada",
-  "status": "RUNTIME_ERROR",
-  "passed": 1,
-  "total": 10,
-  "maxTimeMs": 31,
-  "maxMemoryKb": 2048,
-  "compilationError": null,
-  "isCompleted": true
-}
-```
-
-Submit dừng ở testcase lỗi đầu tiên. Vì vậy `passed` có thể nhỏ hơn `total` và FE không nên tự suy ra các testcase còn lại là `WRONG_ANSWER`.
+Submit dừng ở testcase lỗi đầu tiên. Vì vậy `passedTestCases` có thể nhỏ hơn `totalTestCases` và FE không nên tự suy ra các testcase còn lại là `WRONG_ANSWER`.
 
 ## Submission detail
 
 `GET /submissions/{submissionId}`
 
-Dùng endpoint này để recover state khi FE reload hoặc mất WebSocket event.
+Dùng endpoint này để polling trạng thái chấm bài và recover state khi FE reload.
 
 ```json
 {
@@ -187,4 +149,4 @@ Dùng endpoint này để recover state khi FE reload hoặc mất WebSocket eve
 2. Hiển thị `stdout` cho `WRONG_ANSWER` để người dùng thấy output thực tế.
 3. Với `TIME_LIMIT_EXCEEDED` hoặc `MEMORY_LIMIT_EXCEEDED`, hiển thị verdict cùng `timeMs`/`memoryKb`; vẫn hiển thị `stderr` nếu có.
 4. Không đổi tên hoặc tự map verdict dựa trên exit code ở FE; verdict từ BE là nguồn chính xác.
-5. Dùng `sortOrder`/`index` để sắp xếp testcase, không dùng thứ tự nhận WebSocket event.
+5. Dùng `index` để sắp xếp testcase, không dùng thứ tự nhận từ API.
