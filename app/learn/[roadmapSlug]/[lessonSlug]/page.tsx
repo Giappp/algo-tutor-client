@@ -237,14 +237,12 @@ export default function LearnPage({ params }: PageProps) {
             <CodingContent
                 problem={lessonData as CodingProblem}
                 onComplete={handleContentComplete}
-                onMarkComplete={async () => {
-                    try {
-                        await updateLessonProgress(roadmapSlug, lessonSlug, "COMPLETED");
-                        mutateRoadmap();
-                        setContentCompleted(true);
-                    } catch {
-                        // error handled by API interceptor
-                    }
+                onProgressUpdated={async () => {
+                    await Promise.all([
+                        mutateRoadmap(),
+                        mutateContent(),
+                    ]);
+                    setContentCompleted(true);
                 }}
                 isCompleted={isCompleted}
             />

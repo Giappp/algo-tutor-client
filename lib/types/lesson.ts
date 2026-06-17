@@ -126,9 +126,10 @@ export interface Submission {
     language: string;
     status: SubmissionStatus;
     passedTestcases: number;
-    totalTestcases: number;
-    executionTime: number;
-    memoryUsed: number;
+    totalTestcases: number | null;
+    executionTime: number | null;
+    memoryUsed: number | null;
+    progressUpdated: boolean;
     code: string;
 }
 

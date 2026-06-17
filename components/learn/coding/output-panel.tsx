@@ -13,6 +13,12 @@ import {
     TerminalIcon,
 } from "lucide-react";
 
+function getResultColor(verdict: JudgeResult["verdict"]) {
+    if (verdict === "ACCEPTED") return "text-emerald-400";
+    if (verdict === "PENDING" || verdict === "PROCESSING") return "text-blue-300";
+    return "text-rose-400";
+}
+
 interface OutputPanelProps {
     judgeResult: JudgeResult | null;
     isSolved: boolean;
@@ -41,11 +47,7 @@ export function OutputPanel({
                         <>
                             <span className="text-white/20">·</span>
                             <span
-                                className={
-                                    judgeResult.verdict === "ACCEPTED"
-                                        ? "text-emerald-400"
-                                        : "text-rose-400"
-                                }
+                                className={getResultColor(judgeResult.verdict)}
                             >
                                 {judgeResult.passed}/{judgeResult.total} passed
                             </span>

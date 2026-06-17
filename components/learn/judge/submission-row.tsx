@@ -10,6 +10,15 @@ interface SubmissionRowProps {
 
 export function SubmissionRow({ submission }: SubmissionRowProps) {
     const config = VERDICT_CONFIG[submission.status];
+    const totalText = submission.totalTestcases ?? "?";
+    const timeText =
+        submission.executionTime === null ? "--" : `${submission.executionTime}ms`;
+    const memoryText =
+        submission.memoryUsed === null
+            ? "--"
+            : submission.memoryUsed >= 1024
+                ? `${(submission.memoryUsed / 1024).toFixed(1)}MB`
+                : `${submission.memoryUsed}KB`;
 
     return (
         <div className="flex items-center gap-3 rounded-lg border border-border p-3 hover:bg-muted/30 transition-colors">
@@ -29,18 +38,22 @@ export function SubmissionRow({ submission }: SubmissionRowProps) {
                 <span className="font-mono">{submission.language}</span>
                 <span className="mx-1.5">·</span>
                 <span>
-                    {submission.passedTestcases}/{submission.totalTestcases} passed
+                    {submission.passedTestcases}/{totalText} passed
                 </span>
+                {submission.progressUpdated && (
+                    <>
+                        <span className="mx-1.5">·</span>
+                        <span className="text-emerald-600 dark:text-emerald-400">
+                            progress updated
+                        </span>
+                    </>
+                )}
             </div>
 
             {/* Performance */}
             <div className="flex items-center gap-2 text-[10px] text-muted-foreground font-mono shrink-0">
-                <span>{submission.executionTime}ms</span>
-                <span>
-                    {submission.memoryUsed >= 1024
-                        ? `${(submission.memoryUsed / 1024).toFixed(1)}MB`
-                        : `${submission.memoryUsed}KB`}
-                </span>
+                <span>{timeText}</span>
+                <span>{memoryText}</span>
             </div>
         </div>
     );

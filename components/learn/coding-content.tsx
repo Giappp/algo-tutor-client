@@ -37,7 +37,7 @@ import { cn } from "@/lib/utils";
 interface CodingContentProps {
     problem: CodingProblem;
     onComplete: () => void;
-    onMarkComplete?: () => Promise<void>;
+    onProgressUpdated?: () => Promise<void>;
     isCompleted: boolean;
 }
 
@@ -73,15 +73,19 @@ function createPendingJudgeResult(total: number): JudgeResult {
 }
 
 function mapHistoryToSubmission(sub: SubmissionSummary): Submission {
+    const passedTestcases = sub.passedTestCases ?? sub.passedTestcases ?? 0;
+    const totalTestcases = sub.totalTestCases ?? sub.totalTestcases ?? null;
+
     return {
         id: sub.id,
         timestamp: new Date(sub.submittedAt),
         language: sub.language,
         status: sub.status,
-        passedTestcases: sub.passedTestCases,
-        totalTestcases: sub.totalTestCases,
+        passedTestcases,
+        totalTestcases,
         executionTime: sub.executionTime,
         memoryUsed: sub.memoryUsed,
+        progressUpdated: sub.progressUpdated ?? false,
         code: "",
     };
 }
@@ -90,11 +94,11 @@ function mapDetailToJudgeResult(detail: SubmissionDetail): JudgeResult {
     return {
         verdict: detail.status,
         results: detail.results,
-        totalTimeMs: detail.executionTime,
-        maxMemoryKb: detail.memoryUsed,
+        totalTimeMs: detail.executionTime ?? 0,
+        maxMemoryKb: detail.memoryUsed ?? 0,
         compilationError: detail.compileOutput,
         passed: detail.passedTestCases,
-        total: detail.totalTestCases,
+        total: detail.totalTestCases ?? detail.results.length,
     };
 }
 
@@ -108,6 +112,7 @@ function mapDetailToSubmission(detail: SubmissionDetail): Submission {
         totalTestcases: detail.totalTestCases,
         executionTime: detail.executionTime,
         memoryUsed: detail.memoryUsed,
+        progressUpdated: detail.progressUpdated,
         code: detail.sourceCode,
     };
 }
@@ -129,7 +134,7 @@ function upsertSubmission(
 export function CodingContent({
     problem,
     onComplete,
-    onMarkComplete,
+    onProgressUpdated,
     isCompleted,
 }: CodingContentProps) {
     const [language, setLanguage] = useState(DEFAULT_LANGUAGE);
@@ -179,18 +184,18 @@ export function CodingContent({
         submissionPollTimerRef.current = null;
     }, []);
 
-    const markLessonCompleted = useCallback(
-        async (shouldUpdateProgress = true) => {
+    const refreshProgressAfterSubmission = useCallback(
+        async () => {
             if (hasCompleted || isCompleted) return;
 
             setHasCompleted(true);
             onComplete();
 
-            if (shouldUpdateProgress && onMarkComplete) {
-                await onMarkComplete().catch(() => undefined);
+            if (onProgressUpdated) {
+                await onProgressUpdated().catch(() => undefined);
             }
         },
-        [hasCompleted, isCompleted, onComplete, onMarkComplete]
+        [hasCompleted, isCompleted, onComplete, onProgressUpdated]
     );
 
     useEffect(() => {
@@ -397,8 +402,8 @@ export function CodingContent({
                 upsertSubmission(prev, mapDetailToSubmission(detail))
             );
 
-            if (detail.status === "ACCEPTED") {
-                await markLessonCompleted(false);
+            if (detail.status === "ACCEPTED" && detail.progressUpdated) {
+                await refreshProgressAfterSubmission();
             }
 
             sessionStorage.removeItem(getActiveSubmissionKey(lessonSlug));
@@ -406,7 +411,7 @@ export function CodingContent({
             stopSubmissionPolling();
             setIsSubmitting(false);
         },
-        [markLessonCompleted, problem.slug, stopSubmissionPolling]
+        [problem.slug, refreshProgressAfterSubmission, stopSubmissionPolling]
     );
 
     const recoverSubmission = useCallback(
@@ -420,6 +425,9 @@ export function CodingContent({
 
             activeSubmissionIdRef.current = submissionId;
             setJudgeResult(mapDetailToJudgeResult(detail));
+            setSubmissions((prev) =>
+                upsertSubmission(prev, mapDetailToSubmission(detail))
+            );
 
             if (isSubmissionInProgress(detail.status)) {
                 setIsSubmitting(true);
@@ -457,6 +465,9 @@ export function CodingContent({
                     if (!shouldContinuePolling()) return;
 
                     setJudgeResult(mapDetailToJudgeResult(detail));
+                    setSubmissions((prev) =>
+                        upsertSubmission(prev, mapDetailToSubmission(detail))
+                    );
 
                     if (isSubmissionInProgress(detail.status)) {
                         setIsSubmitting(true);
@@ -537,8 +548,8 @@ export function CodingContent({
                 setSubmissions((prev) =>
                     upsertSubmission(prev, mapDetailToSubmission(detail))
                 );
-                if (detail.status === "ACCEPTED") {
-                    await markLessonCompleted(false);
+                if (detail.status === "ACCEPTED" && detail.progressUpdated) {
+                    await refreshProgressAfterSubmission();
                 }
                 setIsSubmitting(false);
                 return;
@@ -559,8 +570,8 @@ export function CodingContent({
         code,
         isSubmitting,
         language,
-        markLessonCompleted,
         problem.slug,
+        refreshProgressAfterSubmission,
         startSubmissionPolling,
     ]);
 

@@ -53,7 +53,7 @@ interface RawJudgeResponse {
     performance: JudgePerformance | null;
     testCases: JudgeTestCase[] | null;
     compilationError: string | null;
-    progressUpdated: boolean;
+    progressUpdated?: boolean;
 }
 
 interface RawSubmissionDetail {
@@ -62,10 +62,11 @@ interface RawSubmissionDetail {
     status: SubmissionStatus;
     sourceCode: string;
     passedTestCases: number;
-    totalTestCases: number;
-    executionTime: number;
-    memoryUsed: number;
+    totalTestCases: number | null;
+    executionTime: number | null;
+    memoryUsed: number | null;
     compileOutput: string | null;
+    progressUpdated?: boolean;
     submittedAt: string;
     testCases: JudgeTestCase[];
 }
@@ -105,14 +106,26 @@ export interface SubmissionSummary {
     id: string;
     language: string;
     status: Submission["status"];
-    passedTestCases: number;
-    totalTestCases: number;
-    executionTime: number;
-    memoryUsed: number;
+    passedTestCases?: number;
+    totalTestCases?: number | null;
+    passedTestcases?: number;
+    totalTestcases?: number | null;
+    executionTime: number | null;
+    memoryUsed: number | null;
+    progressUpdated?: boolean;
     submittedAt: string;
 }
 
-export interface SubmissionDetail extends SubmissionSummary {
+export interface SubmissionDetail {
+    id: string;
+    language: string;
+    status: Submission["status"];
+    passedTestCases: number;
+    totalTestCases: number | null;
+    executionTime: number | null;
+    memoryUsed: number | null;
+    progressUpdated: boolean;
+    submittedAt: string;
     sourceCode: string;
     compileOutput: string | null;
     results: TestResult[];
@@ -154,6 +167,7 @@ function mapSubmissionDetail(raw: RawSubmissionDetail): SubmissionDetail {
         executionTime: raw.executionTime,
         memoryUsed: raw.memoryUsed,
         compileOutput: raw.compileOutput,
+        progressUpdated: raw.progressUpdated ?? false,
         submittedAt: raw.submittedAt,
         results: mapTestCases(raw.testCases ?? []),
     };
@@ -194,24 +208,31 @@ export const judgeApi = {
             performance: raw.performance,
             results: raw.testCases ? mapTestCases(raw.testCases) : null,
             compilationError: raw.compilationError,
-            progressUpdated: raw.progressUpdated,
+            progressUpdated: raw.progressUpdated ?? false,
         };
     },
 
     getSubmission: async (submissionId: string): Promise<SubmissionDetail> => {
         const response = await apiClient.get<ApiResponse<RawSubmissionDetail>>(
-            `/submissions/${submissionId}`
+            `/judge/submissions/${submissionId}`
         );
         return mapSubmissionDetail(response.data.data);
     },
 
     getSubmissions: async (
         lessonSlug: string,
-        params?: { page?: number; size?: number }
+        params?: {
+            page?: number;
+            limit?: number;
+            size?: number;
+            status?: SubmissionStatus;
+            language?: string;
+        }
     ): Promise<SubmissionSummary[]> => {
+        const { size, ...restParams } = params ?? {};
         const response = await apiClient.get<ApiResponse<SubmissionSummary[]>>(
             "/submissions",
-            { params: { lessonSlug, ...params } }
+            { params: { lessonSlug, limit: restParams.limit ?? size, ...restParams } }
         );
         return response.data.data;
     },

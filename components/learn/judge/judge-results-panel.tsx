@@ -32,6 +32,9 @@ export function JudgeResultsPanel({ result, className }: JudgeResultsPanelProps)
         );
     }
 
+    const isInProgress =
+        result.verdict === "PENDING" || result.verdict === "PROCESSING";
+
     return (
         <ScrollArea className={className}>
             <div className="p-4 space-y-3">
@@ -45,7 +48,7 @@ export function JudgeResultsPanel({ result, className }: JudgeResultsPanelProps)
                 />
 
                 {/* AI Assistant Quick Tutor Help */}
-                {result.verdict !== "ACCEPTED" && (
+                {result.verdict !== "ACCEPTED" && !isInProgress && (
                     <div className="p-3 rounded-xl border border-primary/20 bg-linear-to-r from-primary/5 via-indigo-500/5 to-purple-500/5 flex items-center justify-between gap-3 text-xs shadow-2xs animate-in fade-in duration-300">
                         <div className="flex gap-2.5 min-w-0">
                             <div className="size-8 rounded-lg bg-gradient-to-br from-primary to-purple-600 flex items-center justify-center text-primary-foreground shrink-0 shadow-xs animate-pulse">
