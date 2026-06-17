@@ -81,8 +81,9 @@ export function VideoContent({
     onComplete?: () => void;
 }) {
     const videoRef = useRef<HTMLVideoElement | null>(null);
-    const pendingDeltaRef = useRef(0);
+    const pendingWatchedMsRef = useRef(0);
     const lastTickRef = useRef<number>(0);
+    const lastMediaTimeRef = useRef(0);
     const hasSeekedRef = useRef(false);
     const hasCompletedRef = useRef(false);
     const flushInFlightRef = useRef(false);
@@ -116,8 +117,9 @@ export function VideoContent({
         hasSeekedRef.current = false;
         hasCompletedRef.current = false;
         currentTimeRef.current = 0;
-        pendingDeltaRef.current = 0;
+        pendingWatchedMsRef.current = 0;
         lastTickRef.current = performance.now();
+        lastMediaTimeRef.current = 0;
     }, [lessonSlug]);
 
     useEffect(() => {
@@ -134,21 +136,23 @@ export function VideoContent({
     const captureWatchTime = useCallback(() => {
         const video = videoRef.current;
         const now = performance.now();
-        const elapsed = Math.floor((now - lastTickRef.current) / 1000);
+        const elapsedMs = Math.max(0, now - lastTickRef.current);
         lastTickRef.current = now;
 
-        if (!video || elapsed <= 0) return;
+        if (!video || elapsedMs <= 0) return;
 
-        currentTimeRef.current = video.currentTime;
+        const currentMediaTime = video.currentTime;
+        const mediaDeltaMs = Math.max(0, (currentMediaTime - lastMediaTimeRef.current) * 1000);
+        currentTimeRef.current = currentMediaTime;
+        lastMediaTimeRef.current = currentMediaTime;
 
         const activelyWatching =
             !video.paused &&
             !video.ended &&
-            video.readyState >= HTMLMediaElement.HAVE_FUTURE_DATA &&
-            document.visibilityState === "visible";
+            video.readyState >= HTMLMediaElement.HAVE_FUTURE_DATA;
 
-        if (activelyWatching) {
-            pendingDeltaRef.current += elapsed;
+        if (activelyWatching && mediaDeltaMs > 0) {
+            pendingWatchedMsRef.current += Math.min(elapsedMs, mediaDeltaMs);
         }
     }, []);
 
@@ -162,13 +166,14 @@ export function VideoContent({
             captureWatchTime();
 
             const hasDeltaOverride = deltaOverride !== undefined;
-            const rawDelta = hasDeltaOverride ? deltaOverride : pendingDeltaRef.current;
+            const rawDelta = hasDeltaOverride
+                ? deltaOverride
+                : Math.floor(pendingWatchedMsRef.current / 1000);
             const delta = Math.min(Math.max(0, Math.floor(rawDelta)), MAX_DELTA_SECONDS);
-            const remainder = Math.max(0, rawDelta - delta);
             const positionSeconds = Math.floor(video.currentTime);
 
             if (!hasDeltaOverride) {
-                pendingDeltaRef.current = remainder;
+                pendingWatchedMsRef.current = Math.max(0, pendingWatchedMsRef.current - delta * 1000);
             }
 
             if (keepalive) {
@@ -193,7 +198,7 @@ export function VideoContent({
                 }
             } catch {
                 if (!hasDeltaOverride) {
-                    pendingDeltaRef.current += delta;
+                    pendingWatchedMsRef.current += delta * 1000;
                 }
             } finally {
                 flushInFlightRef.current = false;
@@ -212,9 +217,7 @@ export function VideoContent({
         }, HEARTBEAT_SECONDS * 1000);
 
         const handleVisibilityChange = () => {
-            if (document.visibilityState === "hidden") {
-                void flushProgress();
-            }
+            void flushProgress();
         };
 
         const handlePageHide = () => {
@@ -249,6 +252,7 @@ export function VideoContent({
         if (seekTo > 0 && Number.isFinite(seekTo)) {
             video.currentTime = seekTo;
             currentTimeRef.current = seekTo;
+            lastMediaTimeRef.current = seekTo;
         }
         hasSeekedRef.current = true;
     };
@@ -257,8 +261,10 @@ export function VideoContent({
         const video = videoRef.current;
         if (!video) return;
 
-        pendingDeltaRef.current = 0;
+        pendingWatchedMsRef.current = 0;
         currentTimeRef.current = 0;
+        lastMediaTimeRef.current = 0;
+        lastTickRef.current = performance.now();
         video.currentTime = 0;
         void video.play().catch(() => {
             // Native controls remain available when autoplay is blocked.
@@ -351,7 +357,12 @@ export function VideoContent({
                             currentTimeRef.current = event.currentTarget.currentTime;
                         }}
                         onPause={() => void flushProgress()}
-                        onSeeked={() => void flushProgress(0)}
+                        onSeeked={(event) => {
+                            currentTimeRef.current = event.currentTarget.currentTime;
+                            lastMediaTimeRef.current = event.currentTarget.currentTime;
+                            lastTickRef.current = performance.now();
+                            void flushProgress(0);
+                        }}
                         onEnded={() => void flushProgress()}
                         onError={() => void refreshContent()}
                         aria-label={`Video bài học ${content.title}`}
